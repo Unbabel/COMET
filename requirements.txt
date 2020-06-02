@@ -1,0 +1,15 @@
+numpy==1.17.*
+pandas==1.0.*
+PyYAML==5.3.*
+scipy==1.4.*
+tensorboard==2.0.2
+torch==1.4.0
+tqdm==4.43.*
+transformers==2.10.0
+fairseq==0.9.*
+pytorch-lightning==0.7.6
+test-tube==0.7.5
+pytorch-nlp==0.5.0
+Cython==0.29.15
+fastBPE==0.1.0
+scikit-learn==0.22.2.post1

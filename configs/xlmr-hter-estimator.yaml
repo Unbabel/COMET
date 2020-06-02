@@ -1,0 +1,52 @@
+# -------------------------- Trainer args --------------------------
+# metrics to monitor
+monitor: kendall
+metric_mode: max
+period: 1
+
+# early stopping
+early_stopping: True
+patience: 3
+min_delta: 0.0
+save_top_k: 1
+min_epochs: 1
+max_epochs: 2
+
+gradient_clip_val: 1.0
+gpus: 1
+distributed_backend: dp
+batch_size: 4
+accumulate_grad_batches: 4
+loader_workers: 4
+
+# ---------------------- Optimizer args --------------------------
+optimizer: Adam
+learning_rate: 0.00002
+encoder_learning_rate: 0.00001
+
+# ---------------------- Scheduler args --------------------------
+scheduler: constant
+
+# -------------------------- Data --------------------------
+data_type: csv
+train_path: data/qt21/train.csv
+val_path: data/qt21/test.csv
+
+# percentage of training to be used after one epoch to control overfit (default is 1%)
+train_val_percent_check: 0.01
+
+# ----------------------- Model args --------------------------
+model: CometEstimator
+nr_frozen_epochs: 1
+loss: mse
+encoder_model: XLMR
+pretrained_model: xlmr.base
+
+pool: avg
+layer: mix
+
+# Feed Forward definition:
+dropout: 0.1
+activations: Tanh
+hidden_sizes: "1536,768"
+scalar_mix_dropout: 0.1
