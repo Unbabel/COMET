@@ -9,7 +9,7 @@ from .regression import regression_dataset
 from .translation_ranking import ranking_dataset
 
 corpus2download = {
-    # "apequest": None,
+    "apequest": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/hter/apequest.zip",
     "qt21": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/hter/qt21.zip",
     "wmt17": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/relative-ranks/wmt17.zip",
     "wmt18": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/relative-ranks/wmt18.zip",
