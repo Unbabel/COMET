@@ -2,6 +2,8 @@
 *DS_Store 
 *lightning_logs/
 ._data
+experiments/
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
