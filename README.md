@@ -9,7 +9,6 @@ Currently supported encoders:
 - [XLM-R: Unsupervised Cross-lingual Representation Learning at Scale](https://arxiv.org/pdf/1911.02116.pdf)
 
 ## Model Architectures:
-<div style="text-align:center"><img src="resources/models.png" alt="model_architectures" width="400"></div>
 
 ### Estimator Architectures:
 > **CometEstimator:** Uses a pretrained encoder to independently encode the source, MT and Reference and then uses a feed-forward neural network to estimate a MT quality score such as HTER
