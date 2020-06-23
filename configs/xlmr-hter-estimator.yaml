@@ -1,6 +1,6 @@
 # -------------------------- Trainer args --------------------------
 # metrics to monitor
-monitor: kendall
+monitor: pearson
 metric_mode: max
 period: 1
 
@@ -8,9 +8,9 @@ period: 1
 early_stopping: True
 patience: 3
 min_delta: 0.0
-save_top_k: 1
+save_top_k: 3
 min_epochs: 1
-max_epochs: 2
+max_epochs: 5
 
 gradient_clip_val: 1.0
 gpus: 1
