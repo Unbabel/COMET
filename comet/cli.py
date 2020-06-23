@@ -157,7 +157,7 @@ def score(model, source, hypothesis, reference, cuda, to_json):
 @click.option(
     "--model",
     "-m",
-    type=click.Choice(model2download.keys(), case_sensitive=False),
+    type=click.Choice(model2download().keys(), case_sensitive=False),
     multiple=True,
     help="Pretrained models to download.",
 )
