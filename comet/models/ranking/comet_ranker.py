@@ -12,7 +12,6 @@ from typing import Dict, List, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from torch.nn.functional import pairwise_distance
 from tqdm import tqdm
 
 from comet.models.ranking.ranking_base import RankingBase
