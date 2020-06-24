@@ -15,6 +15,7 @@ from pytorch_lightning import seed_everything
 def install(package):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package])
 
+
 def uninstall(package):
     subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package])
 
@@ -35,74 +36,64 @@ class TestFeedForward(unittest.TestCase):
         import torchvision.transforms as transforms
 
         seed_everything(3)
-        
-        '''
+
+        """
         STEP 1: LOADING DATASET
-        '''
+        """
         train_dataset = dsets.MNIST(
-            root=DATA_PATH, 
-            train=True, 
-            transform=transforms.ToTensor(),
-            download=True
+            root=DATA_PATH, train=True, transform=transforms.ToTensor(), download=True
         )
 
         test_dataset = dsets.MNIST(
-            root=DATA_PATH, 
-            train=False, 
-            transform=transforms.ToTensor()
+            root=DATA_PATH, train=False, transform=transforms.ToTensor()
         )
 
-        '''
+        """
         STEP 2: MAKING DATASET ITERABLE
-        '''
+        """
         batch_size = 100
         n_iters = 600
         num_epochs = n_iters / (len(train_dataset) / batch_size)
         num_epochs = int(num_epochs)
 
         train_loader = torch.utils.data.DataLoader(
-            dataset=train_dataset, 
-            batch_size=batch_size, 
-            shuffle=True
+            dataset=train_dataset, batch_size=batch_size, shuffle=True
         )
 
         test_loader = torch.utils.data.DataLoader(
-            dataset=test_dataset, 
-            batch_size=batch_size, 
-            shuffle=False
+            dataset=test_dataset, batch_size=batch_size, shuffle=False
         )
 
-        '''
+        """
         STEP 3: INSTANTIATE MODEL CLASS
-        '''
+        """
         model = FeedForward(
-            in_dim=28*28,
+            in_dim=28 * 28,
             out_dim=10,
-            hidden_sizes = 100,
-            activations = "Tanh",
-            final_activation=False
+            hidden_sizes=100,
+            activations="Tanh",
+            final_activation=False,
         )
 
-        '''
+        """
         STEP 4: INSTANTIATE LOSS CLASS
-        '''
+        """
         criterion = nn.CrossEntropyLoss()
 
-        '''
+        """
         STEP 5: INSTANTIATE OPTIMIZER CLASS
-        '''
+        """
         learning_rate = 0.1
         optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
-
-        '''
+        """
         STEP 7: TRAIN THE MODEL
-        '''
+        """
         iter = 0
         for epoch in range(num_epochs):
             for i, (images, labels) in enumerate(train_loader):
                 # Load images with gradient accumulation capabilities
-                images = images.view(-1, 28*28).requires_grad_()
+                images = images.view(-1, 28 * 28).requires_grad_()
 
                 # Clear gradients w.r.t. parameters
                 optimizer.zero_grad()
@@ -122,13 +113,13 @@ class TestFeedForward(unittest.TestCase):
                 iter += 1
 
                 if iter % 500 == 0:
-                    # Calculate Accuracy         
+                    # Calculate Accuracy
                     correct = 0
                     total = 0
                     # Iterate through test dataset
                     for images, labels in test_loader:
                         # Load images with gradient accumulation capabilities
-                        images = images.view(-1, 28*28).requires_grad_()
+                        images = images.view(-1, 28 * 28).requires_grad_()
 
                         # Forward pass only to get logits/output
                         outputs = model(images)
