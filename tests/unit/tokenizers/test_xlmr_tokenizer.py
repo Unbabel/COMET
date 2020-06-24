@@ -26,16 +26,16 @@ class TestXLMRTextEncoder(unittest.TestCase):
         self.assertEqual(self.tokenizer.unk_index, self.original_vocab["<unk>"])
 
     def test_pad_property(self):
-        self.assertEqual( self.tokenizer.padding_index, self.original_vocab["<pad>"])
+        self.assertEqual(self.tokenizer.padding_index, self.original_vocab["<pad>"])
 
     def test_bos_property(self):
-        self.assertEqual( self.tokenizer.bos_index, self.original_vocab["<s>"])
+        self.assertEqual(self.tokenizer.bos_index, self.original_vocab["<s>"])
 
     def test_eos_property(self):
-        self.assertEqual( self.tokenizer.eos_index, self.original_vocab["</s>"])
+        self.assertEqual(self.tokenizer.eos_index, self.original_vocab["</s>"])
 
     def test_mask_property(self):
-        self.assertEqual( self.tokenizer.mask_index, self.original_vocab["<mask>"])
+        self.assertEqual(self.tokenizer.mask_index, self.original_vocab["<mask>"])
 
     def test_vocab_property(self):
         self.assertEqual(self.tokenizer.vocab, self.original_vocab)
@@ -58,9 +58,9 @@ class TestXLMRTextEncoder(unittest.TestCase):
         encoded_batch, lengths = self.tokenizer.batch_encode(batch)
 
         self.assertTrue(torch.equal(encoded_batch[0], self.tokenizer.encode(batch[0])))
-        self.assertTrue(torch.equal(
-            encoded_batch[1][: lengths[1]], self.tokenizer.encode(batch[1])
-        ))
+        self.assertTrue(
+            torch.equal(encoded_batch[1][: lengths[1]], self.tokenizer.encode(batch[1]))
+        )
         self.assertEqual(lengths[0], len(self.xlmr.encode("Hello, my dog is cute")))
         self.assertEqual(lengths[1], len(self.xlmr.encode("hello world!")))
 
