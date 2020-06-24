@@ -3,6 +3,12 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR
 from argparse import Namespace
 
+class ConstantPolicy(object):
+    """ Policy for updating the LR of the ConstantLR scheduler.
+        With this class LambdaLR objects became picklable.
+    """
+    def __call__(self, *args, **kwargs):
+        return 1
 
 class ConstantLR(LambdaLR):
     """
@@ -16,13 +22,25 @@ class ConstantLR(LambdaLR):
     """
 
     def __init__(self, optimizer: Optimizer, last_epoch: int = -1) -> None:
-        super(ConstantLR, self).__init__(optimizer, lambda _: 1, last_epoch)
+        super(ConstantLR, self).__init__(optimizer, ConstantPolicy(), last_epoch)
 
     @classmethod
     def from_hparams(cls, optimizer: Optimizer, hparams: Namespace) -> LambdaLR:
         """ Initializes a constant learning rate scheduler. """
         return ConstantLR(optimizer)
 
+
+class WarmupPolicy(object):
+    """ Policy for updating the LR of the WarmupConstant scheduler.
+        With this class LambdaLR objects became picklable.
+    """
+    def __init__(self, warmup_steps):
+        self.warmup_steps = warmup_steps
+    
+    def __call__(self, current_step):
+        if current_step < self.warmup_steps:
+            return float(current_step) / float(max(1.0, self.warmup_steps))
+        return 1.0
 
 class WarmupConstant(LambdaLR):
     """
@@ -39,18 +57,30 @@ class WarmupConstant(LambdaLR):
     def __init__(
         self, optimizer: Optimizer, warmup_steps: int, last_epoch: int = -1
     ) -> None:
-        def lr_lambda(current_step: int) -> float:
-            if current_step < warmup_steps:
-                return float(current_step) / float(max(1.0, warmup_steps))
-            return 1.0
-
-        super(WarmupConstant, self).__init__(optimizer, lr_lambda, last_epoch)
+        super(WarmupConstant, self).__init__(optimizer, WarmupPolicy(warmup_steps), last_epoch)
 
     @classmethod
     def from_hparams(cls, optimizer: Optimizer, hparams: Namespace) -> LambdaLR:
         """ Initializes a constant learning rate scheduler with warmup period. """
         return WarmupConstant(optimizer, hparams.warmup_steps)
 
+
+class LinearWarmupPolicy(object):
+    """ Policy for updating the LR of the LinearWarmup scheduler.
+        With this class LambdaLR objects became picklable.
+    """
+    def __init__(self, warmup_steps, num_training_steps):
+        self.num_training_steps = num_training_steps
+        self.warmup_steps = warmup_steps
+    
+    def __call__(self, current_step):
+        if current_step < self.warmup_steps:
+            return float(current_step) / float(max(1, self.warmup_steps))
+        return max(
+            0.0,
+            float(self.num_training_steps - current_step)
+            / float(max(1, self.num_training_steps - self.warmup_steps)),
+        )
 
 class LinearWarmup(LambdaLR):
     """
@@ -71,16 +101,9 @@ class LinearWarmup(LambdaLR):
         num_training_steps: int,
         last_epoch: int = -1,
     ) -> None:
-        def lr_lambda(current_step: int) -> float:
-            if current_step < warmup_steps:
-                return float(current_step) / float(max(1, warmup_steps))
-            return max(
-                0.0,
-                float(num_training_steps - current_step)
-                / float(max(1, num_training_steps - warmup_steps)),
-            )
-
-        super(LinearWarmup, self).__init__(optimizer, lr_lambda, last_epoch)
+        super(LinearWarmup, self).__init__(
+            optimizer, LinearWarmupPolicy(warmup_steps, num_training_steps), last_epoch
+        )
 
     @classmethod
     def from_hparams(cls, optimizer: Optimizer, hparams: Namespace) -> LambdaLR:
