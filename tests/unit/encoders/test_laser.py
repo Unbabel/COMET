@@ -13,6 +13,7 @@ class TestLASEREncoder(unittest.TestCase):
     The only thing we are interested is in maintaining a well defined interface 
     between all encoders.
     """
+
     model = LASEREncoder.from_pretrained(None)
     bpe_tokenizer = model.tokenizer
 

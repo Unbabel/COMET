@@ -15,6 +15,7 @@ class TestXLMREncoder(unittest.TestCase):
     The only thing we are interested is in maintaining a well defined interface 
     between all encoders.
     """
+
     hparams = Namespace(pretrained_model="xlmr.base")
     model_base = XLMREncoder.from_pretrained(hparams)
 
@@ -38,7 +39,7 @@ class TestXLMREncoder(unittest.TestCase):
         expected = self.model_base.model.encode(sample[0])
         self.assertTrue(torch.equal(expected, model_input["tokens"][0]))
         self.assertEqual(len(expected), model_input["lengths"][0])
-    
+
     def test_forward(self):
         sample = ["hello world!", "This is a batch"]
         model_input = self.model_base.prepare_sample(sample)

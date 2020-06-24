@@ -15,6 +15,7 @@ class TestBERTEncoder(unittest.TestCase):
     The only thing we are interested is in maintaining a well defined interface 
     between all encoders.
     """
+
     hparams = Namespace(pretrained_model="bert-base-cased")
     model_base = BERTEncoder.from_pretrained(hparams)
     tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")

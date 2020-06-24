@@ -13,7 +13,6 @@ from comet.models.utils import (
 
 
 class TestUtils(unittest.TestCase):
-
     def test_mask_fill(self):
         tokens = torch.tensor([[2, 3, 2], [1, 2, 0]])
         embeddings = torch.tensor(
@@ -21,7 +20,7 @@ class TestUtils(unittest.TestCase):
                 [
                     [3.1416, 3.1416, 3.1416],
                     [4.1416, 4.1416, 4.1416],
-                    [3.1416, 3.1416, 3.1416]
+                    [3.1416, 3.1416, 3.1416],
                 ],
                 [
                     [1.1416, 1.1416, 1.1416],
@@ -36,7 +35,7 @@ class TestUtils(unittest.TestCase):
                 [
                     [3.1416, 3.1416, 3.1416],
                     [4.1416, 4.1416, 4.1416],
-                    [3.1416, 3.1416, 3.1416]
+                    [3.1416, 3.1416, 3.1416],
                 ],
                 [
                     [1.1416, 1.1416, 1.1416],
@@ -53,7 +52,7 @@ class TestUtils(unittest.TestCase):
                 [
                     [3.1416, 3.1416, 3.1416],
                     [10.000, 10.000, 10.000],
-                    [3.1416, 3.1416, 3.1416]
+                    [3.1416, 3.1416, 3.1416],
                 ],
                 [
                     [1.1416, 1.1416, 1.1416],
@@ -113,7 +112,7 @@ class TestUtils(unittest.TestCase):
 
     def test_apply_to_sample(self):
         """ If this works then move_to_cuda and move_to_cpu should work. """
-        
+
         def to_float(tensor):
             return tensor.float()
 
@@ -122,7 +121,7 @@ class TestUtils(unittest.TestCase):
 
         sample = {
             "tensor": torch.tensor([2, 2, 2, 2]),
-            "another_tensor": torch.tensor([1, 2, 1, 2])
+            "another_tensor": torch.tensor([1, 2, 1, 2]),
         }
 
         sample = apply_to_sample(to_float, sample)
@@ -133,10 +132,7 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(sample["tensor"].is_floating_point())
         self.assertFalse(sample["another_tensor"].is_floating_point())
 
-        sample = [
-            torch.tensor([2, 2, 2, 2]),
-            torch.tensor([1, 2, 1, 2])
-        ]
+        sample = [torch.tensor([2, 2, 2, 2]), torch.tensor([1, 2, 1, 2])]
         sample = apply_to_sample(to_float, sample)
         self.assertTrue(sample[0].is_floating_point())
         self.assertTrue(sample[1].is_floating_point())
@@ -144,10 +140,9 @@ class TestUtils(unittest.TestCase):
         sample = apply_to_sample(to_int, sample)
         self.assertFalse(sample[0].is_floating_point())
         self.assertFalse(sample[1].is_floating_point())
-        
+
         sample = torch.tensor([2, 2, 2, 2])
         sample = apply_to_sample(to_float, sample)
         self.assertTrue(sample.is_floating_point())
         sample = apply_to_sample(to_int, sample)
         self.assertFalse(sample.is_floating_point())
-        
