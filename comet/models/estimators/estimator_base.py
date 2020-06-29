@@ -5,16 +5,15 @@ Estimator Base Model
     Abstract base class used to build new estimator models
     inside COMET.
 """
-import warnings
 from argparse import Namespace
 from typing import Dict, Iterable, List, Union
 
+import pandas as pd
 import torch
 import torch.nn as nn
-from scipy.stats import kendalltau, pearsonr, spearmanr
 from tqdm import tqdm
 
-from comet.datasets import regression_dataset
+from comet.metrics import RegressionReport
 from comet.models.model_base import ModelBase
 from comet.models.utils import move_to_cpu, move_to_cuda
 
@@ -36,20 +35,39 @@ class Estimator(ModelBase):
     def __init__(self, hparams: Namespace) -> None:
         super().__init__(hparams)
 
+
+    def _build_model(self) -> ModelBase:
+        """
+        Initializes the estimator architecture.
+        """
+        super()._build_model()
+        self.metrics = RegressionReport()
+
     def _build_loss(self):
         """ Initializes the loss function/s. """
+        super()._build_loss()
         if self.hparams.loss == "mse":
             self.loss = nn.MSELoss(reduction="sum")
         elif self.hparams.loss == "binary_xent":
             self.loss = nn.BCELoss(reduction="sum")
         else:
             raise Exception("{} is not a valid loss option.".format(self.hparams.loss))
-
-    def _retrieve_dataset(
-        self, hparams: Namespace, train=True, val=True, test=True
-    ) -> Iterable:
-        """ Retrieves task specific dataset """
-        return regression_dataset(hparams, train, val, test)
+    
+    def read_csv(self, path: str) -> List[dict]:
+        """ Reads a comma separated value file.
+        
+        :param path: path to a csv file.
+        
+        Return:
+            - List of records as dictionaries
+        """
+        df = pd.read_csv(path)
+        df = df[["src", "mt", "ref", "score"]]
+        df["src"] = df["src"].astype(str)
+        df["mt"] = df["mt"].astype(str)
+        df["ref"] = df["ref"].astype(str)
+        df["score"] = df["score"].astype(float)
+        return df.to_dict("records")
 
     def predict(
         self, samples: Dict[str, str], cuda: bool = False, show_progress: bool = False
@@ -121,7 +139,7 @@ class Estimator(ModelBase):
             samples[i]["predicted_score"] = scores[i]
         return samples, scores
 
-    def _compute_loss(
+    def compute_loss(
         self, model_out: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]
     ) -> torch.Tensor:
         """
@@ -132,7 +150,7 @@ class Estimator(ModelBase):
         """
         return self.loss(model_out["score"].view(-1), targets["score"])
 
-    def _compute_metrics(self, outputs: List[Dict[str, torch.Tensor]]) -> dict:
+    def compute_metrics(self, outputs: List[Dict[str, torch.Tensor]]) -> dict:
         """ 
         Private function that computes metrics of interest based on model predictions and 
         respective targets.
@@ -145,10 +163,4 @@ class Estimator(ModelBase):
         targets = (
             torch.cat([batch["val_target"]["score"] for batch in outputs]).cpu().numpy()
         )
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            return {
-                "pearson": torch.tensor(pearsonr(predictions, targets)[0]),
-                "spearman": torch.tensor(spearmanr(predictions, targets)[0]),
-                "kendall": torch.tensor(kendalltau(predictions, targets)[0]),
-            }
+        return self.metrics(predictions, targets)

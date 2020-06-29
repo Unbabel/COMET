@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import pickle
+import sys
 
 import click
 import pandas as pd
@@ -23,7 +24,14 @@ str2model = {
 MODELS_URL = "https://unbabel-experimental-models.s3.amazonaws.com/comet/share/model2download.pkl" 
 
 
-def model2download(saving_directory: str) -> dict:
+def get_cache_folder():
+    if "HOME" in os.environ:
+        return os.environ["HOME"] + "/.cache/torch/unbabel_comet/"
+    else:
+        raise Exception("HOME environment variable is not defined.")
+
+
+def model2download(saving_directory: str = get_cache_folder(), verbose: bool = False) -> dict:
     """ Download a dictionary with the mapping between models and downloading urls.
     :param saving_directory: RELATIVE path to the saving folder (must end with /).
     Return:
@@ -32,7 +40,14 @@ def model2download(saving_directory: str) -> dict:
     if os.path.exists(saving_directory + "model2download.pkl"):
         os.remove(saving_directory + "model2download.pkl")
     
-    wget.download(MODELS_URL, saving_directory + "model2download.pkl")
+    if verbose:
+        wget.download(MODELS_URL, saving_directory + "model2download.pkl")
+    else:
+        sys.stdout = open(os.devnull, 'w') # Disable prints
+        wget.download(MODELS_URL, saving_directory + "model2download.pkl")
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__ # Restore prints
+
     with open(saving_directory + "model2download.pkl", "rb") as handle:
         return pickle.load(handle)
 
@@ -46,15 +61,12 @@ def download_model(comet_model: str, saving_directory: str = None) -> ModelBase:
         - Pretrained model.
     """
     if saving_directory is None:
-        if "HOME" in os.environ:
-            saving_directory = os.environ["HOME"] + "/.cache/torch/unbabel_comet/"
-        else:
-            raise Exception("HOME environment variable is not defined.")
+        saving_directory = get_cache_folder()
     
     if not os.path.exists(saving_directory):
         os.makedirs(saving_directory)
 
-    models = model2download(saving_directory)
+    models = model2download(saving_directory, verbose=True)
 
     if os.path.isdir(saving_directory + comet_model):
         click.secho(f"{comet_model} is already in cache.", fg="yellow")
@@ -96,7 +108,7 @@ def load_checkpoint(checkpoint: str) -> ModelBase:
 
     tags = pd.read_csv(tags_csv_file, header=None, index_col=0, squeeze=True).to_dict()
     model = str2model[tags["model"]].load_from_checkpoint(
-        checkpoint, tags_csv=tags_csv_file
+        checkpoint, 
     )
     model.eval()
     model.freeze()

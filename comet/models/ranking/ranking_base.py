@@ -8,15 +8,16 @@ Translation Ranking Base Model
 from argparse import Namespace
 from typing import Dict, List, Union
 
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from tqdm import tqdm
 
-from comet.datasets import ranking_dataset
 from comet.models.model_base import ModelBase
 from comet.models.utils import average_pooling, max_pooling, move_to_cuda
 from comet.modules.scalar_mix import ScalarMixWithDropout
+from comet.metrics import WMTKendall
 
 
 class RankingBase(ModelBase):
@@ -30,9 +31,21 @@ class RankingBase(ModelBase):
     def __init__(self, hparams: Namespace,) -> None:
         super().__init__(hparams)
 
-    def _retrieve_dataset(self, hparams, train=True, val=True, test=True):
-        """ Retrieves task specific dataset """
-        return ranking_dataset(self.hparams, train, val, test)
+    def read_csv(self, path: str) -> List[dict]:
+        """ Reads a comma separated value file.
+        
+        :param path: path to a csv file.
+        
+        Return:
+            - List of records as dictionaries
+        """
+        df = pd.read_csv(path)
+        df = df[["src", "ref", "pos", "neg"]]
+        df["src"] = df["src"].astype(str)
+        df["ref"] = df["ref"].astype(str)
+        df["pos"] = df["pos"].astype(str)
+        df["neg"] = df["neg"].astype(str)
+        return df.to_dict("records")
 
     def _build_loss(self):
         """ Initializes the loss function/s. """
@@ -42,6 +55,8 @@ class RankingBase(ModelBase):
         """
         Initializes the ranking model architecture.
         """
+        super()._build_model()
+        self.metrics = WMTKendall()
         if self.hparams.encoder_model != "LASER":
             self.layer = (
                 int(self.hparams.layer)
@@ -59,7 +74,7 @@ class RankingBase(ModelBase):
                 else None
             )
 
-    def _compute_loss(self, model_out: Dict[str, torch.Tensor], *args) -> torch.Tensor:
+    def compute_loss(self, model_out: Dict[str, torch.Tensor], *args) -> torch.Tensor:
         """
         Computes Triplet Margin Loss.
         :param model_out: model specific output with reference, pos and neg
@@ -70,26 +85,24 @@ class RankingBase(ModelBase):
         negative = model_out["neg_sentemb"]
         return self.loss(ref, positive, negative)
 
-    def _compute_metrics(
+    def compute_metrics(
         self, outputs: List[Dict[str, torch.Tensor]]
     ) -> Dict[str, torch.Tensor]:
         """  Computes WMT19 shared task kendall tau like metric. """
-        concordance, discordance = 0, 0
+        distance_pos, distance_neg = [], []
         for minibatch in outputs:
             minibatch = minibatch["val_prediction"]
             ref_embedding = minibatch["ref_sentemb"]
             pos_embedding = minibatch["pos_sentemb"]
             neg_embedding = minibatch["neg_sentemb"]
-
             distance_ref_pos = F.pairwise_distance(pos_embedding, ref_embedding)
             distance_ref_neg = F.pairwise_distance(neg_embedding, ref_embedding)
-
-            concordance += torch.sum((distance_ref_pos < distance_ref_neg).float())
-            discordance += torch.sum((distance_ref_pos >= distance_ref_neg).float())
-
+            distance_pos.append(distance_pos)
+            distance_neg.append(distance_neg)
+            
+        kendall, _, _ = self.metrics(torch.cat(distance_pos), torch.cat(distance_neg))
         return {
-            "kendall": torch.abs(concordance - discordance)
-            / torch.abs(concordance + discordance)
+            "kendall": kendall
         }
 
     def predict(

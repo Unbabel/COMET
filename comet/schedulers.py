@@ -1,9 +1,14 @@
 # -*- coding: utf-8 -*-
+r"""
+Schedulers
+==============
+    Leraning Rate schedulers used to train COMET models.
+"""
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR
 from argparse import Namespace
 
-class ConstantPolicy(object):
+class ConstantPolicy:
     """ Policy for updating the LR of the ConstantLR scheduler.
         With this class LambdaLR objects became picklable.
     """
@@ -30,7 +35,7 @@ class ConstantLR(LambdaLR):
         return ConstantLR(optimizer)
 
 
-class WarmupPolicy(object):
+class WarmupPolicy:
     """ Policy for updating the LR of the WarmupConstant scheduler.
         With this class LambdaLR objects became picklable.
     """
@@ -65,7 +70,7 @@ class WarmupConstant(LambdaLR):
         return WarmupConstant(optimizer, hparams.warmup_steps)
 
 
-class LinearWarmupPolicy(object):
+class LinearWarmupPolicy:
     """ Policy for updating the LR of the LinearWarmup scheduler.
         With this class LambdaLR objects became picklable.
     """

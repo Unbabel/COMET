@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+r"""
+Feed Forward 
+==============
+    Simple Feed Forward Neural Network module that can be used for classification or regression
+"""
 import torch
 from torch import nn
 

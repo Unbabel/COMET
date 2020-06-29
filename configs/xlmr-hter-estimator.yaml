@@ -2,7 +2,6 @@
 # metrics to monitor
 monitor: pearson
 metric_mode: max
-period: 1
 
 # early stopping
 early_stopping: True
@@ -10,14 +9,17 @@ patience: 3
 min_delta: 0.0
 save_top_k: 3
 min_epochs: 1
-max_epochs: 5
+max_epochs: 3
 
 gradient_clip_val: 1.0
 gpus: 1
-distributed_backend: dp
+#distributed_backend: ddp
 batch_size: 4
 accumulate_grad_batches: 4
 loader_workers: 4
+
+#limit_train_batches: 5
+#limit_val_batches: 3
 
 # ---------------------- Optimizer args --------------------------
 optimizer: Adam
@@ -32,21 +34,18 @@ data_type: csv
 train_path: data/qt21/train.csv
 val_path: data/qt21/test.csv
 
-# percentage of training to be used after one epoch to control overfit (default is 1%)
-train_val_percent_check: 0.01
-
 # ----------------------- Model args --------------------------
 model: CometEstimator
 nr_frozen_epochs: 1
 loss: mse
-encoder_model: XLMR
-pretrained_model: xlmr.base
+encoder_model: LASER
+#pretrained_model: xlmr.base
 
-pool: avg
-layer: mix
+#pool: avg
+#layer: mix
 
 # Feed Forward definition:
 dropout: 0.1
 activations: Tanh
 hidden_sizes: "1536,768"
-scalar_mix_dropout: 0.1
+#scalar_mix_dropout: 0.1

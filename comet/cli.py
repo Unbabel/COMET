@@ -16,7 +16,7 @@ import pandas as pd
 import torch
 import yaml
 
-from comet.datasets import corpus2download, download_corpus
+from comet.corpora import corpus2download, download_corpus
 from comet.models import download_model, load_checkpoint, model2download, str2model
 from comet.trainer import TrainerConfig, build_trainer
 from pytorch_lightning import Trainer, seed_everything
@@ -37,16 +37,11 @@ def comet():
 )
 def train(config):
     yaml_file = yaml.load(open(config).read(), Loader=yaml.FullLoader)
-    # Load Train Configs
+    
+    # Build Trainer
     train_configs = TrainerConfig(yaml_file)
     seed_everything(train_configs.seed)
-
-    # Build Model
-    try:
-        model_config = str2model[train_configs.model].ModelConfig(yaml_file)
-        model = str2model[train_configs.model](model_config.namespace())
-    except KeyError:
-        raise Exception(f"Invalid model {train_configs.model}!")
+    trainer = build_trainer(train_configs.namespace())
 
     # Print Trainer parameters into terminal
     result = "Hyperparameters:\n"
@@ -54,13 +49,19 @@ def train(config):
         result += "{0:30}| {1}\n".format(k, v)
     click.secho(f"{result}", fg="blue", nl=False)
 
+    # Build Model
+    try:
+        model_config = str2model[train_configs.model].ModelConfig(yaml_file)
+        model = str2model[train_configs.model](model_config.namespace())
+    except KeyError:
+        raise Exception(f"Invalid model {train_configs.model}!")
+    
     result = ""
     for k, v in model_config.namespace().__dict__.items():
         result += "{0:30}| {1}\n".format(k, v)
     click.secho(f"{result}", fg="cyan")
 
-    # Build Trainer
-    trainer = build_trainer(train_configs.namespace())
+    # Train model
     click.secho(f"{model.__class__.__name__} train starting:", fg="yellow")
     trainer.fit(model)
 
@@ -88,7 +89,7 @@ def test(checkpoint, test_path, cuda, to):
     model = load_checkpoint(checkpoint)
     click.secho(f"{checkpoint} reloaded for testing.", fg="yellow")
     click.secho(f"Testing with {test_path} testset.", fg="yellow")
-    model._test_dataset = pd.read_csv(test_path).to_dict("records")
+    model.test_dataset = pd.read_csv(test_path).to_dict("records")
     trainer = Trainer(
         deterministic=True,
         logger=False,
@@ -135,7 +136,9 @@ def score(model, source, hypothesis, reference, cuda, to_json):
 
     model = load_checkpoint(model) if os.path.exists(model) else download_model(model)
     data, scores = model.predict(data, cuda, show_progress=True)
-
+    print (data)
+    print (scores)
+    return
     if isinstance(to_json, str):
         with open(to_json, "w") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)

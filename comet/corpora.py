@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+r"""
+Corpora
+==============
+    Available corpora to train/test COMET models.
+"""
 import os
 
 import click
 
 from torchnlp.download import download_file_maybe_extract
-
-from .regression import regression_dataset
-from .translation_ranking import ranking_dataset
 
 corpus2download = {
     "apequest": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/hter/apequest.zip",
@@ -32,6 +34,7 @@ def download_corpus(corpus: str, saving_directory: str = None) -> None:
 
     if os.path.isdir(saving_directory + corpus):
         click.secho(f"{corpus} is already in cache.", fg="yellow")
+        return
 
     elif corpus in corpus2download:
         download_file_maybe_extract(
@@ -42,7 +45,6 @@ def download_corpus(corpus: str, saving_directory: str = None) -> None:
         raise Exception(f"{corpus} is not a valid corpus!")
 
     click.secho("Download succeeded.", fg="yellow")
-
     if os.path.exists(saving_directory + corpus + ".zip"):
         os.remove(saving_directory + corpus + ".zip")
 

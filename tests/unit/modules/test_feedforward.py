@@ -5,54 +5,36 @@ import sys
 import unittest
 
 import torch
-from tests.unit.data import DATA_PATH
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
+from tests.data import DATA_PATH
 from torch import nn
 
 from comet.modules.feedforward import FeedForward
 from pytorch_lightning import seed_everything
 
 
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-
-
-def uninstall(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", package])
-
-
 class TestFeedForward(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        install("torchvision")
-
-    @classmethod
-    def tearDownClass(cls):
-        uninstall("torchvision")
-        # FIXME: reinstall torch==1.4.0 ??
-        shutil.rmtree(DATA_PATH + "/MNIST")
 
     def test_MNIST(self):
-        import torchvision.datasets as dsets
-        import torchvision.transforms as transforms
-
         seed_everything(3)
-
         """
         STEP 1: LOADING DATASET
         """
-        train_dataset = dsets.MNIST(
-            root=DATA_PATH, train=True, transform=transforms.ToTensor(), download=True
-        )
+        images, labels = load_digits(return_X_y=True)
+        images = [torch.Tensor(images[i, :]) for i in range(images.shape[0])]
+        labels = torch.tensor(labels, dtype=torch.long)
 
-        test_dataset = dsets.MNIST(
-            root=DATA_PATH, train=False, transform=transforms.ToTensor()
-        )
+        train_images, test_images, train_labels, test_labels = train_test_split(images, labels, test_size=0.2, random_state=42)
+        
+        train_dataset = list(zip(train_images, train_labels))
+        test_dataset = list(zip(test_images, test_labels))
 
         """
         STEP 2: MAKING DATASET ITERABLE
         """
-        batch_size = 100
-        n_iters = 600
+        batch_size = 256
+        n_iters = 80
         num_epochs = n_iters / (len(train_dataset) / batch_size)
         num_epochs = int(num_epochs)
 
@@ -68,7 +50,7 @@ class TestFeedForward(unittest.TestCase):
         STEP 3: INSTANTIATE MODEL CLASS
         """
         model = FeedForward(
-            in_dim=28 * 28,
+            in_dim=8 * 8,
             out_dim=10,
             hidden_sizes=100,
             activations="Tanh",
@@ -93,7 +75,7 @@ class TestFeedForward(unittest.TestCase):
         for epoch in range(num_epochs):
             for i, (images, labels) in enumerate(train_loader):
                 # Load images with gradient accumulation capabilities
-                images = images.view(-1, 28 * 28).requires_grad_()
+                images = images.view(-1, 8 * 8).requires_grad_()
 
                 # Clear gradients w.r.t. parameters
                 optimizer.zero_grad()
@@ -112,14 +94,14 @@ class TestFeedForward(unittest.TestCase):
 
                 iter += 1
 
-                if iter % 500 == 0:
+                if iter % 10 == 0:
                     # Calculate Accuracy
                     correct = 0
                     total = 0
                     # Iterate through test dataset
                     for images, labels in test_loader:
                         # Load images with gradient accumulation capabilities
-                        images = images.view(-1, 28 * 28).requires_grad_()
+                        images = images.view(-1, 8 * 8).requires_grad_()
 
                         # Forward pass only to get logits/output
                         outputs = model(images)
@@ -134,5 +116,5 @@ class TestFeedForward(unittest.TestCase):
                         correct += (predicted == labels).sum()
 
                     accuracy = 100 * correct / total
-                    self.assertEqual(91, accuracy)
-                    self.assertEqual(0.4050501585006714, loss.item())
+        self.assertGreaterEqual(accuracy, 95)
+        self.assertEqual(round(0.1257449835538864, 5), round(loss.item(), 5))

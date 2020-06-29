@@ -67,3 +67,4 @@ class TestXLMRTextEncoder(unittest.TestCase):
         # Check if last sentence is padded.
         self.assertEqual(encoded_batch[1][-1], self.tokenizer.padding_index)
         self.assertEqual(encoded_batch[1][-2], self.tokenizer.padding_index)
+    

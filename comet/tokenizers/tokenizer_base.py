@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+r"""
+Text Encoder 
+==============
+    Base class difining a common interface between the different tokenizers used
+    in COMET.
+"""
 from typing import List, Dict, Tuple, Iterator
 
 import torch
