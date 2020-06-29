@@ -14,7 +14,7 @@ max_epochs: 3
 
 gradient_clip_val: 1.0
 gpus: 1
-distributed_backend: dp
+# distributed_backend: ddp
 batch_size: 4
 accumulate_grad_batches: 4
 loader_workers: 4

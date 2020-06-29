@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
+import pickle
+import sys
 
 import click
 import pandas as pd
 
+import wget
 from torchnlp.download import download_file_maybe_extract
 
 from .estimators import CometEstimator, MetricEstimator
@@ -18,36 +21,58 @@ str2model = {
     "MetricRanker": MetricRanker,
 }
 
-model2download = {
-    "da-ranker-v1.0": "https://unbabel-experimental-models.s3.amazonaws.com/comet/share/da-ranker-v1.0.zip",
-    "hter-estimator-v1.0": "https://unbabel-experimental-models.s3.amazonaws.com/comet/share/hter-estimator-v1.0.zip",
-}
+MODELS_URL = "https://unbabel-experimental-models.s3.amazonaws.com/comet/share/model2download.pkl" 
+
+
+def get_cache_folder():
+    if "HOME" in os.environ:
+        return os.environ["HOME"] + "/.cache/torch/unbabel_comet/"
+    else:
+        raise Exception("HOME environment variable is not defined.")
+
+
+def model2download(saving_directory: str = get_cache_folder(), verbose: bool = False) -> dict:
+    """ Download a dictionary with the mapping between models and downloading urls.
+    :param saving_directory: RELATIVE path to the saving folder (must end with /).
+    Return:
+        - dictionary with the mapping between models and downloading urls.
+    """
+    if os.path.exists(saving_directory + "model2download.pkl"):
+        os.remove(saving_directory + "model2download.pkl")
+    
+    if verbose:
+        wget.download(MODELS_URL, saving_directory + "model2download.pkl")
+    else:
+        sys.stdout = open(os.devnull, 'w') # Disable prints
+        wget.download(MODELS_URL, saving_directory + "model2download.pkl")
+        sys.stdout.close()
+        sys.stdout = sys.__stdout__ # Restore prints
+
+    with open(saving_directory + "model2download.pkl", "rb") as handle:
+        return pickle.load(handle)
 
 
 def download_model(comet_model: str, saving_directory: str = None) -> ModelBase:
     """ Function that loads pretrained models from AWS.
     :param comet_model: Name of the model to be loaded.
-    :param saving_directory: RELATIVE path to the saving folder.
+    :param saving_directory: RELATIVE path to the saving folder (must end with /).
     
     Return:
         - Pretrained model.
     """
     if saving_directory is None:
-        if "HOME" in os.environ:
-            saving_directory = os.environ["HOME"] + "/.cache/torch/unbabel_comet/"
-        else:
-            raise Exception("HOME environment variable is not defined.")
-
+        saving_directory = get_cache_folder()
+    
     if not os.path.exists(saving_directory):
         os.makedirs(saving_directory)
+
+    models = model2download(saving_directory, verbose=True)
 
     if os.path.isdir(saving_directory + comet_model):
         click.secho(f"{comet_model} is already in cache.", fg="yellow")
 
-    elif comet_model in model2download:
-        download_file_maybe_extract(
-            model2download[comet_model], directory=saving_directory,
-        )
+    elif comet_model in models:
+        download_file_maybe_extract(models[comet_model], directory=saving_directory)
 
     else:
         raise Exception(f"{comet_model} is not a valid COMET model!")
@@ -83,7 +108,7 @@ def load_checkpoint(checkpoint: str) -> ModelBase:
 
     tags = pd.read_csv(tags_csv_file, header=None, index_col=0, squeeze=True).to_dict()
     model = str2model[tags["model"]].load_from_checkpoint(
-        checkpoint, tags_csv=tags_csv_file
+        checkpoint, 
     )
     model.eval()
     model.freeze()

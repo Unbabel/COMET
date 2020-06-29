@@ -1,4 +1,9 @@
 # -*- coding: utf-8 -*-
+r"""
+Activation Functions 
+==============
+    Provides an easy to use interface to initialize different activation functions.
+"""
 import torch
 from torch import nn
 

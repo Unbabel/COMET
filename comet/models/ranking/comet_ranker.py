@@ -12,7 +12,6 @@ from typing import Dict, List, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from torch.nn.functional import pairwise_distance
 from tqdm import tqdm
 
 from comet.models.ranking.ranking_base import RankingBase
@@ -31,9 +30,9 @@ class CometRanker(RankingBase):
     def __init__(self, hparams: Namespace) -> None:
         super().__init__(hparams)
 
-    def _compute_metrics(self, outputs: List[Dict[str, torch.Tensor]]) -> dict:
+    def compute_metrics(self, outputs: List[Dict[str, torch.Tensor]]) -> dict:
         """  Computes WMT19 shared task kendall tau like metric. """
-        concordance, discordance = 0, 0
+        distance_pos, distance_neg = [], []
         for minibatch in outputs:
             minibatch = minibatch["val_prediction"]
             src_embedding = minibatch["src_sentemb"]
@@ -46,26 +45,18 @@ class CometRanker(RankingBase):
             harmonic_distance_pos = (2 * distance_src_pos * distance_ref_pos) / (
                 distance_src_pos + distance_ref_pos
             )
+            distance_pos.append(harmonic_distance_pos)
 
             distance_src_neg = F.pairwise_distance(neg_embedding, src_embedding)
             distance_ref_neg = F.pairwise_distance(neg_embedding, ref_embedding)
             harmonic_distance_neg = (2 * distance_src_neg * distance_ref_neg) / (
                 distance_src_neg + distance_ref_neg
             )
+            distance_neg.append(harmonic_distance_neg)
 
-            concordance += torch.sum(
-                (harmonic_distance_pos < harmonic_distance_neg).float()
-            )
-            discordance += torch.sum(
-                (harmonic_distance_pos >= harmonic_distance_neg).float()
-            )
+        return {"kendall": self.metrics(torch.cat(distance_pos), torch.cat(distance_neg))}
 
-        return {
-            "kendall": torch.abs(concordance - discordance)
-            / torch.abs(concordance + discordance)
-        }
-
-    def _compute_loss(self, model_out: Dict[str, torch.Tensor], *args) -> torch.Tensor:
+    def compute_loss(self, model_out: Dict[str, torch.Tensor], *args) -> torch.Tensor:
         """
         Computes Triplet Margin Loss for both the reference and the source.
         :param model_out: model specific output with src_anchor, ref_anchor, pos and neg
@@ -131,10 +122,10 @@ class CometRanker(RankingBase):
                     ref_embeddings = self.get_sentence_embedding(
                         **move_to_cuda(ref_input)
                     )
-                    ref_distances = pairwise_distance(
+                    ref_distances = F.pairwise_distance(
                         mt_embeddings, ref_embeddings
                     ).cpu()
-                    src_distances = pairwise_distance(
+                    src_distances = F.pairwise_distance(
                         mt_embeddings, src_embeddings
                     ).cpu()
 
@@ -142,8 +133,8 @@ class CometRanker(RankingBase):
                     src_embeddings = self.get_sentence_embedding(**src_input)
                     mt_embeddings = self.get_sentence_embedding(**mt_input)
                     ref_embeddings = self.get_sentence_embedding(**ref_input)
-                    ref_distances = pairwise_distance(mt_embeddings, ref_embeddings)
-                    src_distances = pairwise_distance(mt_embeddings, src_embeddings)
+                    ref_distances = F.pairwise_distance(mt_embeddings, ref_embeddings)
+                    src_distances = F.pairwise_distance(mt_embeddings, src_embeddings)
 
                 # Combine distances:
                 ref_weights = src_distances / (ref_distances + src_distances)

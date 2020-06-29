@@ -4,7 +4,7 @@ Model Base
 ==============
     Abstract base class used to build new modules inside COMET.
 """
-import logging
+from abc import ABCMeta, abstractmethod
 from argparse import Namespace
 from typing import Dict, Generator, Iterable, List, Tuple, Union
 
@@ -18,10 +18,8 @@ import pytorch_lightning as ptl
 from comet.models.encoders import Encoder, str2encoder
 from comet.schedulers import str2scheduler
 
-log = logging.getLogger(__name__)
 
-
-class ModelBase(ptl.LightningModule):
+class ModelBase(ABCMeta, ptl.LightningModule):
     """
     Extends PyTorch Lightning with a common structure and interface
     that will be shared across all architectures.
@@ -82,12 +80,12 @@ class ModelBase(ptl.LightningModule):
 
         :param val_path: Path to the validation data.
 
+        :param test_path: Path to the test data.
+
         :param loader_workers: Number of workers used to load and tokenize data during training.
 
-        :param train_val_percent_check: Percentage of the training that, in the end of each epoch, is
-            used to check performance and control overfit.
         """
-
+        
         model: str = None
 
         # Training details
@@ -114,8 +112,8 @@ class ModelBase(ptl.LightningModule):
         # Data
         train_path: str = None
         val_path: str = None
+        test_path: str = None   
         loader_workers: int = 8
-        train_val_percent_check: float = 0.01
 
         def __init__(self, initial_data: dict) -> None:
             for key in initial_data:
@@ -151,19 +149,19 @@ class ModelBase(ptl.LightningModule):
 
         self.nr_frozen_epochs = hparams.nr_frozen_epochs
 
-        # Used to report all metrics after training ends.
-        self.validation_metrics = []
-
+    @abstractmethod
     def _build_loss(self):
         """ Initializes the loss function/s. """
-        raise NotImplementedError
-
+        pass
+    
+    @abstractmethod
     def _build_model(self) -> ptl.LightningModule:
         """
         Initializes the estimator architecture.
         """
-        raise NotImplementedError
+        pass
 
+    @abstractmethod
     def _build_encoder(self) -> Encoder:
         """
         Initializes the encoder.
@@ -201,15 +199,16 @@ class ModelBase(ptl.LightningModule):
         except KeyError:
             Exception(f"{self.hparams.scheduler} invalid scheduler!")
 
-    def _retrieve_dataset(
-        self,
-        hparams: Namespace,
-        train: bool = True,
-        val: bool = True,
-        test: bool = True,
-    ) -> Iterable:
-        """ Retrieves task specific dataset """
-        raise NotImplementedError
+    def read_csv(self, path: str) -> List[dict]:
+        """ Reads a comma separated value file.
+        
+        :param path: path to a csv file.
+        
+        Return:
+            - List of records as dictionaries
+        """
+        df = pd.read_csv(path)
+        return df.to_dict("records")
 
     def freeze_encoder(self) -> None:
         """ Freezes the encoder layer. """
@@ -222,6 +221,13 @@ class ModelBase(ptl.LightningModule):
             self.encoder.unfreeze()
             self._frozen = False
 
+    def on_epoch_end(self):
+        """ Hook used to unfreeze encoder during training. """
+        if self.current_epoch + 1 >= self.nr_frozen_epochs and self._frozen:
+            self.unfreeze_encoder()
+            self._frozen = False
+
+    @abstractmethod
     def predict(
         self, samples: Dict[str, str]
     ) -> (Dict[str, Union[str, float]], List[float]):
@@ -231,16 +237,18 @@ class ModelBase(ptl.LightningModule):
         
         Return: Dictionary with input samples + scores and list just the scores.
         """
-        raise NotImplementedError
-
+        pass
+    
+    @abstractmethod
     def forward(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
         """
         PyTorch Forward.
         Return: Dictionary with model outputs to be passed to the loss function.
         """
-        raise NotImplementedError
-
-    def _compute_loss(
+        pass
+    
+    @abstractmethod
+    def compute_loss(
         self, model_out: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]
     ) -> torch.Tensor:
         """
@@ -248,8 +256,9 @@ class ModelBase(ptl.LightningModule):
         :param model_out: model specific output.
         :param targets: Target score values [batch_size]
         """
-        raise NotImplementedError
-
+        pass
+    
+    @abstractmethod
     def prepare_sample(
         self, sample: List[Dict[str, Union[str, float]]], inference: bool = False
     ) -> Union[
@@ -265,7 +274,7 @@ class ModelBase(ptl.LightningModule):
         or
             - Dictionary with model inputs
         """
-        raise NotImplementedError
+        pass
 
     def configure_optimizers(
         self,
@@ -281,7 +290,7 @@ class ModelBase(ptl.LightningModule):
         scheduler = self._build_scheduler(optimizer)
         return [optimizer], [scheduler]
 
-    def _compute_metrics(
+    def compute_metrics(
         self, outputs: List[Dict[str, torch.Tensor]]
     ) -> Dict[str, torch.Tensor]:
         """ 
@@ -309,7 +318,7 @@ class ModelBase(ptl.LightningModule):
         """
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
-        loss_value = self._compute_loss(batch_prediction, batch_target)
+        loss_value = self.compute_loss(batch_prediction, batch_target)
 
         # in DP mode (default) make sure if result is scalar, there's another dim in the beginning
         if self.trainer.use_dp or self.trainer.use_ddp2:
@@ -335,7 +344,7 @@ class ModelBase(ptl.LightningModule):
         """
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
-        loss_value = self._compute_loss(batch_prediction, batch_target)
+        loss_value = self.compute_loss(batch_prediction, batch_target)
 
         # in DP mode (default) make sure if result is scalar, there's another dim in the beginning
         if self.trainer.use_dp or self.trainer.use_ddp2:
@@ -363,20 +372,16 @@ class ModelBase(ptl.LightningModule):
         val_loss = torch.stack([x["val_loss"] for x in val_outs]).mean()
 
         # Store Metrics for Reporting...
-        train_metrics = self._compute_metrics(train_outs)
-        metrics = self._compute_metrics(val_outs)
-        train_metrics = {"Train " + k: v for k, v in train_metrics.items()}
-        val_metrics = {"Dev " + k: v for k, v in metrics.items()}
-        self.validation_metrics.append(
-            {
-                "Train loss": train_loss.item(),
-                "Dev loss": val_loss.item(),
-                **{k: v.item() for k, v in train_metrics.items()},
-                **{k: v.item() for k, v in val_metrics.items()},
-            }
-        )
-        return {"log": {**metrics, "val_loss": val_loss, "train_loss": train_loss}}
-
+        train_metrics = self.compute_metrics(train_outs)
+        val_metrics = self.compute_metrics(val_outs)
+        
+        logging_metrics = {
+            "train": train_metrics, 
+            **val_metrics
+        }
+        
+        return {"log": {"val_loss": val_loss, "train_loss": train_loss, **logging_metrics}}
+        
     def test_step(
         self,
         batch: Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]],
@@ -389,24 +394,27 @@ class ModelBase(ptl.LightningModule):
     def test_epoch_end(
         self, outputs: List[Dict[str, torch.Tensor]]
     ) -> Dict[str, Dict[str, torch.Tensor]]:
-        return self._compute_metrics(outputs)
+        return self.compute_metrics(outputs)
 
-    def prepare_data(self) -> None:
-        """Data preparation function called before training by Lightning"""
-        self._train_dataset, self._val_dataset = self._retrieve_dataset(
-            self.hparams, test=False
-        )
-        train_subset = np.random.choice(
-            a=len(self._train_dataset),
-            size=int(len(self._train_dataset) * self.hparams.train_val_percent_check),
-        )
-        self._train_subset = Subset(self._train_dataset, train_subset)
+    def setup(self, stage) -> None:
+        """ Data preparation function called before training by Lightning.
+            Equivalent to the prepare_data in previous Lightning Versions """
+        self.train_dataset = self.read_csv(self.hparams.train_path)
+        self.val_dataset = self.read_csv(self.hparams.val_path)
+        
+        # Always validate the model with 2k examples from training to control overfit.
+        train_dataset = self.read_csv(self.hparams.train_path)
+        train_subset = np.random.choice(a=len(train_dataset), size=2000) 
+        self.train_subset = Subset(train_dataset, train_subset)
+        
+        if self.hparams.test_path:
+            self.test_dataset = self.read_csv(self.hparams.test_path)
 
     def train_dataloader(self) -> DataLoader:
         """ Function that loads the train set. """
         return DataLoader(
-            dataset=self._train_dataset,
-            sampler=RandomSampler(self._train_dataset),
+            dataset=self.train_dataset,
+            sampler=RandomSampler(self.train_dataset),
             batch_size=self.hparams.batch_size,
             collate_fn=self.prepare_sample,
             num_workers=self.hparams.loader_workers,
@@ -416,47 +424,24 @@ class ModelBase(ptl.LightningModule):
         """ Function that loads the validation set. """
         return [
             DataLoader(
-                dataset=self._train_subset,
+                dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
                 num_workers=self.hparams.loader_workers,
             ),
             DataLoader(
-                dataset=self._val_dataset,
+                dataset=self.val_dataset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
                 num_workers=self.hparams.loader_workers,
-            ),
+            )
         ]
 
     def test_dataloader(self) -> DataLoader:
         """ Function that loads the validation set. """
         return DataLoader(
-            dataset=self._test_dataset,
+            dataset=self.test_dataset,
             batch_size=self.hparams.batch_size,
             collate_fn=self.prepare_sample,
             num_workers=self.hparams.loader_workers,
         )
-
-    def on_epoch_end(self):
-        """ Pytorch lightning hook: Reports epoch metrics """
-        if self.current_epoch + 1 >= self.nr_frozen_epochs and self._frozen:
-            self.unfreeze_encoder()
-            self._frozen = False
-
-        click.secho(
-            "\n{}".format(
-                pd.DataFrame(
-                    data=[self.validation_metrics[-1]],
-                    index=["Epoch " + str(self.current_epoch + 1)],
-                )
-            ),
-            fg="yellow",
-        )
-
-    def on_train_end(self):
-        """ Pytorch lightning hook: Report train metrics """
-        click.secho(f"Training Report Experiment: {self.logger.version}", fg="yellow")
-        index_column = ["Epoch " + str(i) for i in range(len(self.validation_metrics))]
-        df = pd.DataFrame(self.validation_metrics, index=index_column)
-        click.secho("{}".format(df), fg="yellow")

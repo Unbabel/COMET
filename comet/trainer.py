@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
+r"""
+Lightning Trainer Setup
+==============
+   Setup logic for the lightning trainer.
+"""
 import os
 from argparse import Namespace
-from datetime import datetime
+from typing import Union
 
+from comet.logging import CliLoggingCallback, setup_testube_logger
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import (
-    EarlyStopping,
-    LearningRateLogger,
-    ModelCheckpoint,
-)
-from pytorch_lightning.logging import TestTubeLogger
+from pytorch_lightning.callbacks import (EarlyStopping, LearningRateLogger,
+                                         ModelCheckpoint)
 
 
 class TrainerConfig:
@@ -28,6 +30,10 @@ class TrainerConfig:
     :param model: Model class we want to train.
 
     :param verbode: verbosity mode.
+
+    :param overfit_batches: Uses this much data of the training set. If nonzero, will use 
+        the same training set for validation and testing. If the training dataloaders 
+        have shuffle=True, Lightning will automatically disable it.
     
     -------------------- Model Checkpoint & Early Stopping -------------------------
 
@@ -55,13 +61,13 @@ class TrainerConfig:
     deterministic: bool = True
     model: str = None
     verbose: bool = False
+    overfit_batches: Union[int, float] = 0.0
 
     # Model Checkpoint & Early Stopping
     early_stopping: bool = True
     save_top_k: int = 1
     monitor: str = "kendall"
     save_weights_only: bool = False
-    period: int = 1
     metric_mode: str = "max"
     min_delta: float = 0.0
     patience: int = 1
@@ -92,43 +98,53 @@ def build_trainer(hparams: Namespace) -> Trainer:
     Returns:
         - pytorch_lightning Trainer
     """
+    # Early Stopping Callback
+    early_stop_callback = EarlyStopping(
+        monitor=hparams.monitor,
+        min_delta=hparams.min_delta,
+        patience=hparams.patience,
+        verbose=hparams.verbose,
+        mode=hparams.metric_mode,
+    )
 
-    def setup_testube_logger():
-        """ Function that sets the TestTubeLogger to be used. """
-        now = datetime.now()
-        dt_string = now.strftime("%d-%m-%Y--%H-%M-%S")
-        return TestTubeLogger(
-            save_dir="experiments/", version=dt_string, name="lightning_logs",
-        )
+    # TestTube Logger Callback
+    testube_logger = setup_testube_logger()
 
-    if hparams.early_stopping:
-        # Enable Early stopping
-        early_stop_callback = EarlyStopping(
-            monitor=hparams.monitor,
-            min_delta=hparams.min_delta,
-            patience=hparams.patience,
-            verbose=hparams.verbose,
-            mode=hparams.metric_mode,
-        )
-    else:
-        early_stop_callback = None
-
+    # Model Checkpoint Callback
+    ckpt_path = os.path.join(
+        "experiments/",
+        testube_logger.name,
+        f"version_{testube_logger.version}",
+        "checkpoints",
+    )
+    checkpoint_callback = ModelCheckpoint(
+        filepath=ckpt_path,
+        save_top_k=hparams.save_top_k,
+        verbose=hparams.verbose,
+        monitor=hparams.monitor,
+        save_weights_only=hparams.save_weights_only,
+        period=0, # Always allow saving checkpoint even within the same epoch
+        mode=hparams.metric_mode,
+    )
+    other_callbacks = [LearningRateLogger(), CliLoggingCallback()]
+    
     trainer = Trainer(
-        logger=setup_testube_logger(),
-        deterministic=hparams.deterministic,
-        checkpoint_callback=True,
+        logger=testube_logger,
+        checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stop_callback,
-        default_save_path="experiments/",
+        callbacks=other_callbacks,
         gradient_clip_val=hparams.gradient_clip_val,
         gpus=hparams.gpus,
-        overfit_pct=hparams.overfit_pct,
-        check_val_every_n_epoch=hparams.check_val_every_n_epoch,
+        log_gpu_memory="all",
+        deterministic=hparams.deterministic,
+        overfit_batches=hparams.overfit_batches,
+        check_val_every_n_epoch=1,
         fast_dev_run=False,
         accumulate_grad_batches=hparams.accumulate_grad_batches,
         max_epochs=hparams.max_epochs,
         min_epochs=hparams.min_epochs,
-        train_percent_check=hparams.train_percent_check,
-        val_percent_check=hparams.val_percent_check,
+        limit_train_batches=hparams.limit_train_batches,
+        limit_val_batches=hparams.limit_val_batches,
         val_check_interval=hparams.val_check_interval,
         log_save_interval=hparams.log_save_interval,
         row_log_interval=hparams.row_log_interval,
@@ -136,26 +152,5 @@ def build_trainer(hparams: Namespace) -> Trainer:
         precision=hparams.precision,
         weights_summary="top",
         profiler=hparams.profiler,
-        log_gpu_memory="all",
-        callbacks=[LearningRateLogger()],
     )
-
-    ckpt_path = os.path.join(
-        trainer.default_save_path,
-        trainer.logger.name,
-        f"version_{trainer.logger.version}",
-        "checkpoints",
-    )
-
-    # initialize Model Checkpoint Saver
-    checkpoint_callback = ModelCheckpoint(
-        filepath=ckpt_path,
-        save_top_k=hparams.save_top_k,
-        verbose=hparams.verbose,
-        monitor=hparams.monitor,
-        save_weights_only=hparams.save_weights_only,
-        period=hparams.period,
-        mode=hparams.metric_mode,
-    )
-    trainer.checkpoint_callback = checkpoint_callback
     return trainer

@@ -58,6 +58,11 @@ Instead of using pretrained models your can train your own model with the follow
 comet train -f {config_file_path}.yaml
 ```
 
+### GPU 16-bit:
+Save some memory by using mixed precision training:
+1. [Install apex](https://github.com/NVIDIA/apex)
+2. Set ``amp_level: 'O1'`` and ``precision: 16`` in your config file.
+
 ### Tensorboard:
 
 Launch tensorboard with:

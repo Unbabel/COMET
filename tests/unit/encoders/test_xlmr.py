@@ -5,10 +5,10 @@ from argparse import Namespace
 import torch
 from transformers import AutoTokenizer
 
-from comet.models.encoders import BERTEncoder
+from comet.models.encoders import XLMREncoder
 
 
-class TestBERTEncoder(unittest.TestCase):
+class TestXLMREncoder(unittest.TestCase):
     """ 
     There is not much we can test in our encoders... 
     
@@ -16,9 +16,8 @@ class TestBERTEncoder(unittest.TestCase):
     between all encoders.
     """
 
-    hparams = Namespace(pretrained_model="bert-base-cased")
-    model_base = BERTEncoder.from_pretrained(hparams)
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+    hparams = Namespace(pretrained_model="xlmr.base")
+    model_base = XLMREncoder.from_pretrained(hparams)
 
     def test_num_layers(self):
         self.assertEqual(self.model_base.num_layers, 13)
@@ -37,8 +36,8 @@ class TestBERTEncoder(unittest.TestCase):
         self.assertIn("lengths", model_input)
 
         # Sanity Check: This is already checked when testing the tokenizer.
-        expected = self.tokenizer.encode(sample[0])
-        self.assertTrue(torch.equal(torch.tensor(expected), model_input["tokens"][0]))
+        expected = self.model_base.model.encode(sample[0])
+        self.assertTrue(torch.equal(expected, model_input["tokens"][0]))
         self.assertEqual(len(expected), model_input["lengths"][0])
 
     def test_forward(self):

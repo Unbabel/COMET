@@ -32,6 +32,7 @@ class MetricEstimator(CometEstimator):
         """
         Initializes the estimator architecture.
         """
+        super()._build_model()
         if self.hparams.encoder_model != "LASER":
             self.layer = (
                 int(self.hparams.layer)
