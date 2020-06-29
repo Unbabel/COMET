@@ -108,7 +108,7 @@ def load_checkpoint(checkpoint: str) -> ModelBase:
 
     tags = pd.read_csv(tags_csv_file, header=None, index_col=0, squeeze=True).to_dict()
     model = str2model[tags["model"]].load_from_checkpoint(
-        checkpoint, 
+        checkpoint, tags_csv=tags_csv_file
     )
     model.eval()
     model.freeze()
