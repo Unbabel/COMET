@@ -41,6 +41,7 @@ pip install -e .
 
 ## Scoring MT outputs:
 
+### Via Bash:
 ```bash
 comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model da-ranker-v1.0
 ```
@@ -49,6 +50,39 @@ You can export your results to a JSON file using the `--to_json` flag.
 
 ```bash
 comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model da-ranker-v1.0 --to_json output.json
+```
+
+### Via Python:
+
+```python
+from comet.models import download_model
+model = download_model("da-ranker-v1.0", "path/where/to/save/models")
+data = [
+    {
+        "src": "Hello world!",
+        "mt": "Oi mundo!",
+        "ref": "Olá mundo!"
+    },
+    {
+        "src": "This is a sample",
+        "mt": "este é um exemplo",
+        "ref": "isto é um exemplo!"
+    }
+]
+model.predict(data)
+```
+
+### Simple Pythonic way to convert list or segments to model inputs:
+
+```python
+source = ["Hello world!", "This is a sample"]
+hypothesis = ["Oi mundo!", "este é um exemplo"]
+reference = ["Olá mundo!", "isto é um exemplo!"]
+
+data = {"src": source, "mt": hypothesis, "ref": reference}
+data = [dict(zip(data, t)) for t in zip(*data.values())]
+
+model.predict(data)
 ```
 
 ## Train Command: 
