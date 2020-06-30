@@ -56,4 +56,4 @@ class MetricRanker(RankingBase):
         pos_inputs = {"pos_" + k: v for k, v in pos_inputs.items()}
         neg_inputs = {"neg_" + k: v for k, v in neg_inputs.items()}
 
-        return {**ref_inputs, **pos_inputs, **neg_inputs}, None
+        return {**ref_inputs, **pos_inputs, **neg_inputs}, torch.empty(0)
