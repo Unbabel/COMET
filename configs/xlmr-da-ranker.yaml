@@ -31,9 +31,6 @@ data_type: csv
 train_path: data/wmt/train1718.csv
 val_path: data/wmt/val1718.csv
 
-# percentage of training to be used after one epoch to control overfit (default is 1%)
-train_val_percent_check: 0.01
-
 # ----------------------- Model args --------------------------
 model: CometRanker
 nr_frozen_epochs: 0

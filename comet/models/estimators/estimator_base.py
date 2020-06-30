@@ -100,7 +100,7 @@ class Estimator(ModelBase):
                     leave=None,
                 )
             for batch in batches:
-                batch, _ = self.prepare_sample(batch, inference=True)
+                batch = self.prepare_sample(batch, inference=True)
                 model_inputs.append(batch)
                 if show_progress:
                     pbar.update(1)

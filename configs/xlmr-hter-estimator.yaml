@@ -31,18 +31,18 @@ scheduler: constant
 
 # -------------------------- Data --------------------------
 data_type: csv
-train_path: data/qt21/train.csv
-val_path: data/qt21/test.csv
+train_path: data/apequest/train.csv
+val_path: data/apequest/test.csv
 
 # ----------------------- Model args --------------------------
 model: CometEstimator
 nr_frozen_epochs: 1
 loss: mse
-encoder_model: LASER
-#pretrained_model: xlmr.base
+encoder_model: XLMR
+pretrained_model: xlmr.base
 
-#pool: avg
-#layer: mix
+pool: avg
+layer: mix
 
 # Feed Forward definition:
 dropout: 0.1

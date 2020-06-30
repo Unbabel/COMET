@@ -136,9 +136,7 @@ def score(model, source, hypothesis, reference, cuda, to_json):
 
     model = load_checkpoint(model) if os.path.exists(model) else download_model(model)
     data, scores = model.predict(data, cuda, show_progress=True)
-    print (data)
-    print (scores)
-    return
+    
     if isinstance(to_json, str):
         with open(to_json, "w") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)

@@ -19,8 +19,8 @@ class HFTextEncoder(TextEncoderBase):
         super().__init__()
         self.tokenizer = AutoTokenizer.from_pretrained(model)
         # Properties from the base class
-        self.stoi = self.tokenizer.vocab
-        self.itos = self.tokenizer.ids_to_tokens
+        self.stoi = self.tokenizer.get_vocab()
+        self.itos = {v: k for k, v in self.stoi.items()}
         self._bos_index = self.tokenizer.cls_token_id
         self._pad_index = self.tokenizer.pad_token_id
         self._eos_index = self.tokenizer.sep_token_id

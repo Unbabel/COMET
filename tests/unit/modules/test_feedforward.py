@@ -117,4 +117,4 @@ class TestFeedForward(unittest.TestCase):
 
                     accuracy = 100 * correct / total
         self.assertGreaterEqual(accuracy, 95)
-        self.assertEqual(round(0.1257449835538864, 5), round(loss.item(), 5))
+        self.assertEqual(round(0.1257449835538864, 2), round(loss.item(), 2))

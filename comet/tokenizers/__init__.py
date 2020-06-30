@@ -4,7 +4,8 @@ from .fastbpe_tokenizer import FastBPEEncoder
 from .xlmr_tokenizer import XLMRTextEncoder
 
 __all__ = [
+    "XLMRTextEncoder",
     "HFTextEncoder",
     "FastBPEEncoder",
-    "XLMRTextEncoder" "TextEncoderBase",
+    "TextEncoderBase",
 ]

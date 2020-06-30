@@ -4,7 +4,6 @@ Model Base
 ==============
     Abstract base class used to build new modules inside COMET.
 """
-from abc import ABCMeta, abstractmethod
 from argparse import Namespace
 from typing import Dict, Generator, Iterable, List, Tuple, Union
 
@@ -19,7 +18,7 @@ from comet.models.encoders import Encoder, str2encoder
 from comet.schedulers import str2scheduler
 
 
-class ModelBase(ABCMeta, ptl.LightningModule):
+class ModelBase(ptl.LightningModule):
     """
     Extends PyTorch Lightning with a common structure and interface
     that will be shared across all architectures.
@@ -149,19 +148,16 @@ class ModelBase(ABCMeta, ptl.LightningModule):
 
         self.nr_frozen_epochs = hparams.nr_frozen_epochs
 
-    @abstractmethod
     def _build_loss(self):
         """ Initializes the loss function/s. """
         pass
     
-    @abstractmethod
     def _build_model(self) -> ptl.LightningModule:
         """
         Initializes the estimator architecture.
         """
         pass
 
-    @abstractmethod
     def _build_encoder(self) -> Encoder:
         """
         Initializes the encoder.
@@ -227,7 +223,6 @@ class ModelBase(ABCMeta, ptl.LightningModule):
             self.unfreeze_encoder()
             self._frozen = False
 
-    @abstractmethod
     def predict(
         self, samples: Dict[str, str]
     ) -> (Dict[str, Union[str, float]], List[float]):
@@ -239,7 +234,6 @@ class ModelBase(ABCMeta, ptl.LightningModule):
         """
         pass
     
-    @abstractmethod
     def forward(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
         """
         PyTorch Forward.
@@ -247,7 +241,6 @@ class ModelBase(ABCMeta, ptl.LightningModule):
         """
         pass
     
-    @abstractmethod
     def compute_loss(
         self, model_out: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]
     ) -> torch.Tensor:
@@ -258,7 +251,6 @@ class ModelBase(ABCMeta, ptl.LightningModule):
         """
         pass
     
-    @abstractmethod
     def prepare_sample(
         self, sample: List[Dict[str, Union[str, float]]], inference: bool = False
     ) -> Union[
@@ -297,7 +289,7 @@ class ModelBase(ABCMeta, ptl.LightningModule):
         Private function that computes metrics of interest based on the list of outputs 
         you defined in validation_step.
         """
-        raise NotImplementedError
+        pass
 
     def training_step(
         self,
