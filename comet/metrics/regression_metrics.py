@@ -9,11 +9,10 @@ import warnings
 import numpy as np
 from scipy.stats import kendalltau, pearsonr, spearmanr
 
-from pytorch_lightning.metrics import Metric, NumpyMetric
+from pytorch_lightning.metrics import Metric
 
 
 class RegressionReport(Metric):
-
     def __init__(self):
         super().__init__(name="regression_report")
         self.metrics = [Pearson(), Kendall(), Spearman()]
@@ -33,7 +32,6 @@ class RegressionReport(Metric):
 
 
 class Kendall(Metric):
-    
     def __init__(self):
         super().__init__(name="kendall")
 
@@ -48,8 +46,8 @@ class Kendall(Metric):
         """
         return kendalltau(x, y)[0]
 
-class Pearson(Metric):
 
+class Pearson(Metric):
     def __init__(self):
         super().__init__(name="pearson")
 
@@ -64,8 +62,8 @@ class Pearson(Metric):
         """
         return pearsonr(x, y)[0]
 
-class Spearman(Metric):
 
+class Spearman(Metric):
     def __init__(self):
         super().__init__(name="spearman")
 

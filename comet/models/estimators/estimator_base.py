@@ -6,7 +6,7 @@ Estimator Base Model
     inside COMET.
 """
 from argparse import Namespace
-from typing import Dict, Iterable, List, Union
+from typing import Dict, List, Union
 
 import pandas as pd
 import torch
@@ -35,7 +35,6 @@ class Estimator(ModelBase):
     def __init__(self, hparams: Namespace) -> None:
         super().__init__(hparams)
 
-
     def _build_model(self) -> ModelBase:
         """
         Initializes the estimator architecture.
@@ -52,7 +51,7 @@ class Estimator(ModelBase):
             self.loss = nn.BCELoss(reduction="sum")
         else:
             raise Exception("{} is not a valid loss option.".format(self.hparams.loss))
-    
+
     def read_csv(self, path: str) -> List[dict]:
         """ Reads a comma separated value file.
         

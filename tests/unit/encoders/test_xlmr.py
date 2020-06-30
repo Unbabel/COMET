@@ -3,7 +3,6 @@ import unittest
 from argparse import Namespace
 
 import torch
-from transformers import AutoTokenizer
 
 from comet.models.encoders import XLMREncoder
 

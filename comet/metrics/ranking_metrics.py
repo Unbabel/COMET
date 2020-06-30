@@ -7,17 +7,17 @@ Ranking Metrics
 from typing import Tuple
 
 import torch
-import torch.nn.functional as F
 
 from pytorch_lightning.metrics import Metric
 
 
 class WMTKendall(Metric):
-
     def __init__(self):
         super().__init__(name="kendall")
 
-    def forward(self, distance_pos: torch.Tensor, distance_neg: torch.Tensor) -> Tuple[torch.Tensor]:
+    def forward(
+        self, distance_pos: torch.Tensor, distance_neg: torch.Tensor
+    ) -> Tuple[torch.Tensor]:
         """ Computes the level of concordance, discordance and the WMT kendall tau metric
         
         :param distance_pos: distance between the positive samples and the anchor (aka reference)

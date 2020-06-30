@@ -10,8 +10,11 @@ from typing import Union
 
 from comet.logging import CliLoggingCallback, setup_testube_logger
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import (EarlyStopping, LearningRateLogger,
-                                         ModelCheckpoint)
+from pytorch_lightning.callbacks import (
+    EarlyStopping,
+    LearningRateLogger,
+    ModelCheckpoint,
+)
 
 
 class TrainerConfig:
@@ -123,11 +126,11 @@ def build_trainer(hparams: Namespace) -> Trainer:
         verbose=hparams.verbose,
         monitor=hparams.monitor,
         save_weights_only=hparams.save_weights_only,
-        period=0, # Always allow saving checkpoint even within the same epoch
+        period=0,  # Always allow saving checkpoint even within the same epoch
         mode=hparams.metric_mode,
     )
     other_callbacks = [LearningRateLogger(), CliLoggingCallback()]
-    
+
     trainer = Trainer(
         logger=testube_logger,
         checkpoint_callback=checkpoint_callback,

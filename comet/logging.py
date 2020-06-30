@@ -27,20 +27,21 @@ def setup_testube_logger():
 class CliLoggingCallback(pl.Callback):
     """ Logger Callback that echos results during training. """
 
-    _stack: list = [] # stack to keep metrics from all epochs
+    _stack: list = []  # stack to keep metrics from all epochs
 
     @rank_zero_only
-    def on_validation_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
+    def on_validation_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ) -> None:
         metrics = trainer.callback_metrics
-        metrics = LightningLoggerBase._flatten_dict(metrics, '_')
+        metrics = LightningLoggerBase._flatten_dict(metrics, "_")
         metrics = apply_to_sample(lambda x: x.item(), metrics)
         self._stack.append(metrics)
-        
+
         click.secho(
             "\n{}".format(
                 pd.DataFrame(
-                    data=[metrics],
-                    index=["Epoch " + str(pl_module.current_epoch + 1)],
+                    data=[metrics], index=["Epoch " + str(pl_module.current_epoch + 1)],
                 )
             ),
             fg="yellow",
@@ -48,7 +49,9 @@ class CliLoggingCallback(pl.Callback):
 
     @rank_zero_only
     def on_train_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
-        click.secho(f"Training Report Experiment: {pl_module.logger.version}", fg="yellow")
-        index_column = ["Epoch " + str(i+1) for i in range(len(self._stack))]
+        click.secho(
+            f"Training Report Experiment: {pl_module.logger.version}", fg="yellow"
+        )
+        index_column = ["Epoch " + str(i + 1) for i in range(len(self._stack))]
         df = pd.DataFrame(self._stack, index=index_column)
         click.secho("{}".format(df), fg="yellow")

@@ -54,7 +54,9 @@ class CometRanker(RankingBase):
             )
             distance_neg.append(harmonic_distance_neg)
 
-        return {"kendall": self.metrics(torch.cat(distance_pos), torch.cat(distance_neg))}
+        return {
+            "kendall": self.metrics(torch.cat(distance_pos), torch.cat(distance_neg))
+        }
 
     def compute_loss(self, model_out: Dict[str, torch.Tensor], *args) -> torch.Tensor:
         """

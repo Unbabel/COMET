@@ -7,7 +7,7 @@ import unittest.mock
 
 from tests.data import DATA_PATH
 
-from comet.models import CometEstimator, download_model, load_checkpoint, model2download
+from comet.models import CometEstimator, download_model, model2download
 
 
 class TestDownload(unittest.TestCase):

@@ -21,7 +21,7 @@ str2model = {
     "MetricRanker": MetricRanker,
 }
 
-MODELS_URL = "https://unbabel-experimental-models.s3.amazonaws.com/comet/share/model2download.pkl" 
+MODELS_URL = "https://unbabel-experimental-models.s3.amazonaws.com/comet/share/model2download.pkl"
 
 
 def get_cache_folder():
@@ -31,7 +31,9 @@ def get_cache_folder():
         raise Exception("HOME environment variable is not defined.")
 
 
-def model2download(saving_directory: str = get_cache_folder(), verbose: bool = False) -> dict:
+def model2download(
+    saving_directory: str = get_cache_folder(), verbose: bool = False
+) -> dict:
     """ Download a dictionary with the mapping between models and downloading urls.
     :param saving_directory: RELATIVE path to the saving folder (must end with /).
     Return:
@@ -39,14 +41,14 @@ def model2download(saving_directory: str = get_cache_folder(), verbose: bool = F
     """
     if os.path.exists(saving_directory + "model2download.pkl"):
         os.remove(saving_directory + "model2download.pkl")
-    
+
     if verbose:
         wget.download(MODELS_URL, saving_directory + "model2download.pkl")
     else:
-        sys.stdout = open(os.devnull, 'w') # Disable prints
+        sys.stdout = open(os.devnull, "w")  # Disable prints
         wget.download(MODELS_URL, saving_directory + "model2download.pkl")
         sys.stdout.close()
-        sys.stdout = sys.__stdout__ # Restore prints
+        sys.stdout = sys.__stdout__  # Restore prints
 
     with open(saving_directory + "model2download.pkl", "rb") as handle:
         return pickle.load(handle)
@@ -62,7 +64,7 @@ def download_model(comet_model: str, saving_directory: str = None) -> ModelBase:
     """
     if saving_directory is None:
         saving_directory = get_cache_folder()
-    
+
     if not os.path.exists(saving_directory):
         os.makedirs(saving_directory)
 

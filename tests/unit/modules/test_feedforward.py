@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
-import shutil
-import subprocess
-import sys
 import unittest
 
 import torch
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
-from tests.data import DATA_PATH
 from torch import nn
 
 from comet.modules.feedforward import FeedForward
@@ -15,7 +11,6 @@ from pytorch_lightning import seed_everything
 
 
 class TestFeedForward(unittest.TestCase):
-
     def test_MNIST(self):
         seed_everything(3)
         """
@@ -25,8 +20,10 @@ class TestFeedForward(unittest.TestCase):
         images = [torch.Tensor(images[i, :]) for i in range(images.shape[0])]
         labels = torch.tensor(labels, dtype=torch.long)
 
-        train_images, test_images, train_labels, test_labels = train_test_split(images, labels, test_size=0.2, random_state=42)
-        
+        train_images, test_images, train_labels, test_labels = train_test_split(
+            images, labels, test_size=0.2, random_state=42
+        )
+
         train_dataset = list(zip(train_images, train_labels))
         test_dataset = list(zip(test_images, test_labels))
 

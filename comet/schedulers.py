@@ -8,12 +8,15 @@ from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR
 from argparse import Namespace
 
+
 class ConstantPolicy:
     """ Policy for updating the LR of the ConstantLR scheduler.
         With this class LambdaLR objects became picklable.
     """
+
     def __call__(self, *args, **kwargs):
         return 1
+
 
 class ConstantLR(LambdaLR):
     """
@@ -39,13 +42,15 @@ class WarmupPolicy:
     """ Policy for updating the LR of the WarmupConstant scheduler.
         With this class LambdaLR objects became picklable.
     """
+
     def __init__(self, warmup_steps):
         self.warmup_steps = warmup_steps
-    
+
     def __call__(self, current_step):
         if current_step < self.warmup_steps:
             return float(current_step) / float(max(1.0, self.warmup_steps))
         return 1.0
+
 
 class WarmupConstant(LambdaLR):
     """
@@ -62,7 +67,9 @@ class WarmupConstant(LambdaLR):
     def __init__(
         self, optimizer: Optimizer, warmup_steps: int, last_epoch: int = -1
     ) -> None:
-        super(WarmupConstant, self).__init__(optimizer, WarmupPolicy(warmup_steps), last_epoch)
+        super(WarmupConstant, self).__init__(
+            optimizer, WarmupPolicy(warmup_steps), last_epoch
+        )
 
     @classmethod
     def from_hparams(cls, optimizer: Optimizer, hparams: Namespace) -> LambdaLR:
@@ -74,10 +81,11 @@ class LinearWarmupPolicy:
     """ Policy for updating the LR of the LinearWarmup scheduler.
         With this class LambdaLR objects became picklable.
     """
+
     def __init__(self, warmup_steps, num_training_steps):
         self.num_training_steps = num_training_steps
         self.warmup_steps = warmup_steps
-    
+
     def __call__(self, current_step):
         if current_step < self.warmup_steps:
             return float(current_step) / float(max(1, self.warmup_steps))
@@ -86,6 +94,7 @@ class LinearWarmupPolicy:
             float(self.num_training_steps - current_step)
             / float(max(1, self.num_training_steps - self.warmup_steps)),
         )
+
 
 class LinearWarmup(LambdaLR):
     """

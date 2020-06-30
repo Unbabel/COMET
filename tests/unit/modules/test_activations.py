@@ -35,5 +35,7 @@ class TestActivations(unittest.TestCase):
                 3.0 * (1 / (1 + np.exp(-3))),
             ]
         )
-        expected = (torch.round(expected * 10 ** 4) / (10 ** 4)).float()  # round to 4 decimals
+        expected = (
+            torch.round(expected * 10 ** 4) / (10 ** 4)
+        ).float()  # round to 4 decimals
         self.assertTrue(torch.equal(expected, result))

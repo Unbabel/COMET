@@ -2,14 +2,7 @@ import unittest
 
 import torch
 
-from comet.models.utils import (
-    apply_to_sample,
-    average_pooling,
-    mask_fill,
-    max_pooling,
-    move_to_cpu,
-    move_to_cuda,
-)
+from comet.models.utils import apply_to_sample, average_pooling, mask_fill, max_pooling
 
 
 class TestUtils(unittest.TestCase):

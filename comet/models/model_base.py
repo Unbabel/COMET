@@ -5,7 +5,7 @@ Model Base
     Abstract base class used to build new modules inside COMET.
 """
 from argparse import Namespace
-from typing import Dict, Generator, Iterable, List, Tuple, Union
+from typing import Dict, Generator, List, Tuple, Union
 
 import click
 import numpy as np
@@ -84,7 +84,7 @@ class ModelBase(ptl.LightningModule):
         :param loader_workers: Number of workers used to load and tokenize data during training.
 
         """
-        
+
         model: str = None
 
         # Training details
@@ -111,7 +111,7 @@ class ModelBase(ptl.LightningModule):
         # Data
         train_path: str = None
         val_path: str = None
-        test_path: str = None   
+        test_path: str = None
         loader_workers: int = 8
 
         def __init__(self, initial_data: dict) -> None:
@@ -151,7 +151,7 @@ class ModelBase(ptl.LightningModule):
     def _build_loss(self):
         """ Initializes the loss function/s. """
         pass
-    
+
     def _build_model(self) -> ptl.LightningModule:
         """
         Initializes the estimator architecture.
@@ -233,14 +233,14 @@ class ModelBase(ptl.LightningModule):
         Return: Dictionary with input samples + scores and list just the scores.
         """
         pass
-    
+
     def forward(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
         """
         PyTorch Forward.
         Return: Dictionary with model outputs to be passed to the loss function.
         """
         pass
-    
+
     def compute_loss(
         self, model_out: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]
     ) -> torch.Tensor:
@@ -250,7 +250,7 @@ class ModelBase(ptl.LightningModule):
         :param targets: Target score values [batch_size]
         """
         pass
-    
+
     def prepare_sample(
         self, sample: List[Dict[str, Union[str, float]]], inference: bool = False
     ) -> Union[
@@ -366,14 +366,13 @@ class ModelBase(ptl.LightningModule):
         # Store Metrics for Reporting...
         train_metrics = self.compute_metrics(train_outs)
         val_metrics = self.compute_metrics(val_outs)
-        
-        logging_metrics = {
-            "train": train_metrics, 
-            **val_metrics
+
+        logging_metrics = {"train": train_metrics, **val_metrics}
+
+        return {
+            "log": {"val_loss": val_loss, "train_loss": train_loss, **logging_metrics}
         }
-        
-        return {"log": {"val_loss": val_loss, "train_loss": train_loss, **logging_metrics}}
-        
+
     def test_step(
         self,
         batch: Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]],
@@ -393,12 +392,12 @@ class ModelBase(ptl.LightningModule):
             Equivalent to the prepare_data in previous Lightning Versions """
         self.train_dataset = self.read_csv(self.hparams.train_path)
         self.val_dataset = self.read_csv(self.hparams.val_path)
-        
+
         # Always validate the model with 2k examples from training to control overfit.
         train_dataset = self.read_csv(self.hparams.train_path)
-        train_subset = np.random.choice(a=len(train_dataset), size=2000) 
+        train_subset = np.random.choice(a=len(train_dataset), size=2000)
         self.train_subset = Subset(train_dataset, train_subset)
-        
+
         if self.hparams.test_path:
             self.test_dataset = self.read_csv(self.hparams.test_path)
 
@@ -426,7 +425,7 @@ class ModelBase(ptl.LightningModule):
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
                 num_workers=self.hparams.loader_workers,
-            )
+            ),
         ]
 
     def test_dataloader(self) -> DataLoader:

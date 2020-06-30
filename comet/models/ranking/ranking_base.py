@@ -99,11 +99,9 @@ class RankingBase(ModelBase):
             distance_ref_neg = F.pairwise_distance(neg_embedding, ref_embedding)
             distance_pos.append(distance_pos)
             distance_neg.append(distance_neg)
-            
+
         kendall, _, _ = self.metrics(torch.cat(distance_pos), torch.cat(distance_neg))
-        return {
-            "kendall": kendall
-        }
+        return {"kendall": kendall}
 
     def predict(
         self, samples: Dict[str, str], cuda: bool = False, show_progress: bool = False

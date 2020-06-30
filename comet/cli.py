@@ -37,7 +37,7 @@ def comet():
 )
 def train(config):
     yaml_file = yaml.load(open(config).read(), Loader=yaml.FullLoader)
-    
+
     # Build Trainer
     train_configs = TrainerConfig(yaml_file)
     seed_everything(train_configs.seed)
@@ -55,7 +55,7 @@ def train(config):
         model = str2model[train_configs.model](model_config.namespace())
     except KeyError:
         raise Exception(f"Invalid model {train_configs.model}!")
-    
+
     result = ""
     for k, v in model_config.namespace().__dict__.items():
         result += "{0:30}| {1}\n".format(k, v)
@@ -136,7 +136,7 @@ def score(model, source, hypothesis, reference, cuda, to_json):
 
     model = load_checkpoint(model) if os.path.exists(model) else download_model(model)
     data, scores = model.predict(data, cuda, show_progress=True)
-    
+
     if isinstance(to_json, str):
         with open(to_json, "w") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)

@@ -37,10 +37,10 @@ class FeedForward(nn.Module):
 
         if isinstance(hidden_sizes, str):
             hidden_sizes = [int(x) for x in hidden_sizes.split(",")]
-        
+
         if isinstance(hidden_sizes, int):
             hidden_sizes = [hidden_sizes]
-        
+
         activation_func = build_activation(activations)
 
         self.ff = torch.nn.Sequential()
