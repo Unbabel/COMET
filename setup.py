@@ -5,7 +5,7 @@ setup(
     name="unbabel-comet",
     version="0.0",
     author="Ricardo Rei, Craig Stewart, Catarina Farinha, Alon Lavie",
-    download_url="https://gitlab.com/Unbabel/language-technologies/unbabel-comet",
+    download_url="https://github.com/Unbabel/COMET",
     author_email="ricardo.rei@unbabel.com, craig.stewart@unbabel.com, catarina.farinha@unbabel.com, alon.lavie@unbabel.com",
     packages=find_packages(exclude=["tests"]),
     description="Provides high-quality Machine Translation Evaluation",
