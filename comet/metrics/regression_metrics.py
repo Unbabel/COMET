@@ -9,6 +9,7 @@ import warnings
 import numpy as np
 from scipy.stats import kendalltau, pearsonr, spearmanr
 
+import torch
 from pytorch_lightning.metrics import Metric
 
 
@@ -44,14 +45,14 @@ class Kendall(Metric):
         Return: 
             - Kendall Tau correlation value.
         """
-        return kendalltau(x, y)[0]
+        return torch.tensor(kendalltau(x, y)[0], dtype=torch.float32)
 
 
 class Pearson(Metric):
     def __init__(self):
         super().__init__(name="pearson")
 
-    def forward(self, x: np.array, y: np.array) -> float:
+    def forward(self, x: np.array, y: np.array) -> torch.Tensor:
         """ Computes Pearson correlation.
 
         :param x: predicted scores.
@@ -60,7 +61,7 @@ class Pearson(Metric):
         Return: 
             - Pearson correlation value.
         """
-        return pearsonr(x, y)[0]
+        return torch.tensor(pearsonr(x, y)[0], dtype=torch.float32)
 
 
 class Spearman(Metric):
@@ -76,4 +77,4 @@ class Spearman(Metric):
         Return: 
             - Spearman correlation value.
         """
-        return spearmanr(x, y)[0]
+        return torch.tensor(spearmanr(x, y)[0], dtype=torch.float32)

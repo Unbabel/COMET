@@ -8,8 +8,9 @@ Metric Estimator Model
 from argparse import Namespace
 from typing import Dict, List, Tuple, Union
 
-import torch
+import pandas as pd
 
+import torch
 from comet.models.estimators import CometEstimator, Estimator
 from comet.models.utils import average_pooling, max_pooling
 from comet.modules.feedforward import FeedForward
@@ -56,6 +57,21 @@ class MetricEstimator(CometEstimator):
             activations=self.hparams.activations,
             dropout=self.hparams.dropout,
         )
+
+    def read_csv(self, path: str) -> List[dict]:
+        """ Reads a comma separated value file.
+        
+        :param path: path to a csv file.
+        
+        Return:
+            - List of records as dictionaries
+        """
+        df = pd.read_csv(path)
+        df = df[["mt", "ref", "score"]]
+        df["mt"] = df["mt"].astype(str)
+        df["ref"] = df["ref"].astype(str)
+        df["score"] = df["score"].astype(float)
+        return df.to_dict("records")
 
     def prepare_sample(
         self, sample: List[Dict[str, Union[str, float]]], inference: bool = False

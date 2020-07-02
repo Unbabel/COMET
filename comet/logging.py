@@ -20,7 +20,7 @@ def setup_testube_logger():
     now = datetime.now()
     dt_string = now.strftime("%d-%m-%Y--%H-%M-%S")
     return TestTubeLogger(
-        save_dir="experiments/", version=dt_string, name="lightning_logs",
+        save_dir="experiments/", version=dt_string, name="lightning",
     )
 
 

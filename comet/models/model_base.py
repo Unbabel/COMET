@@ -130,7 +130,10 @@ class ModelBase(ptl.LightningModule):
 
     def __init__(self, hparams: Namespace) -> None:
         super(ModelBase, self).__init__()
-        self.hparams = hparams
+        if isinstance(hparams, dict):
+            self.hparams = Namespace(**hparams)
+        else:
+            self.hparams = hparams
         self.encoder = self._build_encoder()
 
         # Model initialization
@@ -140,13 +143,13 @@ class ModelBase(ptl.LightningModule):
         self._build_loss()
 
         # The encoder always starts in a frozen state.
-        if hparams.nr_frozen_epochs > 0:
+        if self.hparams.nr_frozen_epochs > 0:
             self._frozen = True
             self.freeze_encoder()
         else:
             self._frozen = False
 
-        self.nr_frozen_epochs = hparams.nr_frozen_epochs
+        self.nr_frozen_epochs = self.hparams.nr_frozen_epochs
 
     def _build_loss(self):
         """ Initializes the loss function/s. """
