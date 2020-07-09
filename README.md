@@ -77,15 +77,13 @@ comet train -f {config_file_path}.yaml
 - [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/pdf/1810.04805.pdf)
 - [XLM-R: Unsupervised Cross-lingual Representation Learning at Scale](https://arxiv.org/pdf/1911.02116.pdf)
 
-### Model Architectures:
-
-#### Estimator Architectures:
+### Estimator Architectures:
 
 **CometEstimator:** Uses a pretrained encoder to independently encode the source, MT and Reference and then uses a feed-forward neural network to estimate a MT quality score such as HTER
 
 **MetricEstimator:** Uses a pretrained encoder to independently encode the reference and MT hypothesis and then uses a feed-forward neural network to estimate a MT quality score such as HTER
 
-#### Translation Ranking Architectures:
+### Translation Ranking Architectures:
 
 **CometRanker:** Uses a pretrained encoder to independently encode the source, a "good" MT hypothesis, a "bad" MT hypothesis and a Reference and then uses the triplet margin loss to minimize the distance between the "good" hypothesis and the anchors (reference/source).
 
