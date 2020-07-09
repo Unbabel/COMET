@@ -5,6 +5,7 @@
 experiments/
 data/
 apex/
+benchmarks/wmt
 
 .vscode
 # Byte-compiled / optimized / DLL files

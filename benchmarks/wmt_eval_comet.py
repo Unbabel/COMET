@@ -10,6 +10,20 @@ from tqdm import tqdm
 from comet.models import load_checkpoint
 
 
+def compute_kendall(
+    hyp1_scores: list, hyp2_scores: list, dataframe: pd.DataFrame
+) -> (int, list):
+    """ Computes the official WMT19 shared task Kendall correlation score. """
+    assert len(hyp1_scores) == len(hyp2_scores) == len(data)
+    conc, disc = 0, 0
+    for i, row in tqdm(data.iterrows(), total=len(data), desc="Kendall eval..."):
+        if hyp1_scores[i] > hyp2_scores[i]:
+            conc += 1
+        else:
+            disc += 1
+
+    return (conc - disc) / (conc + disc)
+
 def create_samples(dataframe: pd.DataFrame):
     """ Dataframe to dictionary. """
     hyp1_samples, hyp2_samples = [], []
