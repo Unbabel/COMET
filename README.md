@@ -79,15 +79,21 @@ comet train -f {config_file_path}.yaml
 
 ### Estimator Architectures:
 
-**CometEstimator:** Uses a pretrained encoder to independently encode the source, MT and Reference and then uses a feed-forward neural network to estimate a MT quality score such as HTER
+**CometEstimator:** 
+Uses a pretrained encoder to independently encode the source, MT and Reference and then uses a feed-forward neural network to estimate a MT quality score such as HTER
 
-**MetricEstimator:** Uses a pretrained encoder to independently encode the reference and MT hypothesis and then uses a feed-forward neural network to estimate a MT quality score such as HTER
+**MetricEstimator:** 
+Uses a pretrained encoder to independently encode the reference and MT hypothesis and then uses a feed-forward neural network to estimate a MT quality score such as HTER
 
 ### Translation Ranking Architectures:
 
-**CometRanker:** Uses a pretrained encoder to independently encode the source, a "good" MT hypothesis, a "bad" MT hypothesis and a Reference and then uses the triplet margin loss to minimize the distance between the "good" hypothesis and the anchors (reference/source).
+**CometRanker:** 
 
-**MetricRanker:** Uses a pretrained encoder to independently encode the a "good" MT hypothesis, a "bad" MT hypothesis and a Reference and then uses the triplet margin loss to minimize the distance between the "good" hypothesis and the reference.
+Uses a pretrained encoder to independently encode the source, a "good" MT hypothesis, a "bad" MT hypothesis and a Reference and then uses the triplet margin loss to minimize the distance between the "good" hypothesis and the anchors (reference/source).
+
+**MetricRanker:** 
+
+Uses a pretrained encoder to independently encode the a "good" MT hypothesis, a "bad" MT hypothesis and a Reference and then uses the triplet margin loss to minimize the distance between the "good" hypothesis and the reference.
 
 ### GPU 16-bit:
 Save some memory by using mixed precision training:
