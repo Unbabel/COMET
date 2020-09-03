@@ -94,7 +94,7 @@ tensorboard --logdir="experiments/lightning_logs/"
 
 ## Download Command: 
 
-To download public available corpora to train your new models you can use the `download` command. For example to download the WMT17 relative ranks just run the following command:
+To download public available corpora to train your new models you can use the `download` command. For example to download the APEQUEST HTER corpus just run the following command:
 
 ```bash
 comet download -d apequest --saving_path data/
