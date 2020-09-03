@@ -1,15 +1,12 @@
 <div style="text-align:center"><img src="resources/LOGO.png" alt="comet_logo"></div>
 
-## Requirements:
+## Quick Installation
 
-This project uses Python >3.6
+To install COMET as a package, simply run
 
-If you wish to make changes into the code run:
 ```bash
-pip install -r requirements.txt
-pip install -e .
+pip install unbabel-comet
 ```
-
 
 ## Scoring MT outputs:
 
