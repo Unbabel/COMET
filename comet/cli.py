@@ -107,13 +107,25 @@ def test(checkpoint, test_path, cuda, to):
     type=str,
 )
 @click.option(
-    "--source", "-s", required=True, help="Source segments.", type=click.File(),
+    "--source",
+    "-s",
+    required=True,
+    help="Source segments.",
+    type=click.File(),
 )
 @click.option(
-    "--hypothesis", "-h", required=True, help="MT outputs.", type=click.File(),
+    "--hypothesis",
+    "-h",
+    required=True,
+    help="MT outputs.",
+    type=click.File(),
 )
 @click.option(
-    "--reference", "-r", required=True, help="Reference segments.", type=click.File(),
+    "--reference",
+    "-r",
+    required=True,
+    help="Reference segments.",
+    type=click.File(),
 )
 @click.option(
     "--cuda/--cpu",

@@ -21,7 +21,7 @@ from torchnlp.utils import collate_tensors
 
 class CometRanker(RankingBase):
     """
-    Comet Ranker class that uses a pretrained encoder to extract features 
+    Comet Ranker class that uses a pretrained encoder to extract features
     from the sequences and then passes those features through a Triplet Margin Loss.
 
     :param hparams: Namespace containing the hyperparameters.
@@ -75,7 +75,7 @@ class CometRanker(RankingBase):
     def predict(
         self, samples: Dict[str, str], cuda: bool = False, show_progress: bool = False
     ) -> (Dict[str, Union[str, float]], List[float]):
-        """ Function that runs a model prediction,
+        """Function that runs a model prediction,
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
@@ -166,7 +166,7 @@ class CometRanker(RankingBase):
         """
         Function that prepares a sample to input the model.
         :param sample: list of dictionaries.
-        :param inference: If set to to False, then the model expects 
+        :param inference: If set to to False, then the model expects
             a MT and reference instead of anchor, pos, and neg segments.
 
         Returns:
@@ -206,7 +206,7 @@ class CometRanker(RankingBase):
         **kwargs
     ) -> Dict[str, torch.Tensor]:
         """
-        Function that encodes the anchor, positive samples and negative samples 
+        Function that encodes the anchor, positive samples and negative samples
         and returns embeddings for the triplet.
 
         :param src_tokens: anchor sequences [batch_size x anchor_seq_len]

@@ -16,15 +16,19 @@ from torchnlp.utils import lengths_to_mask
 
 
 class BERTEncoder(Encoder):
-    """ BERT encoder.
+    """BERT encoder.
     :param tokenizer: BERT text encoder.
     :param hparams: ArgumentParser.
 
-    Check the available models here: 
+    Check the available models here:
         https://huggingface.co/transformers/pretrained_models.html
     """
 
-    def __init__(self, tokenizer: HFTextEncoder, hparams: Namespace,) -> None:
+    def __init__(
+        self,
+        tokenizer: HFTextEncoder,
+        hparams: Namespace,
+    ) -> None:
         super().__init__(tokenizer)
         self.model = AutoModel.from_pretrained(hparams.pretrained_model)
         self.model.encoder.output_hidden_states = True
@@ -34,7 +38,7 @@ class BERTEncoder(Encoder):
 
     @classmethod
     def from_pretrained(cls, hparams: Namespace) -> Encoder:
-        """ Function that loads a pretrained encoder from Hugging Face.
+        """Function that loads a pretrained encoder from Hugging Face.
         :param hparams: Namespace.
 
         Returns:
@@ -76,15 +80,15 @@ class BERTEncoder(Encoder):
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the length of each sequence [seq_len].
 
-        Returns: 
+        Returns:
             - 'sentemb': tensor [batch_size x 1024] with the sentence encoding.
             - 'wordemb': tensor [batch_size x seq_len x 1024] with the word level embeddings.
-            - 'mask': torch.Tensor [seq_len x batch_size] 
+            - 'mask': torch.Tensor [seq_len x batch_size]
             - 'all_layers': List with the word_embeddings returned by each layer.
             - 'extra': tuple with the last_hidden_state [batch_size x seq_len x hidden_size],
-                the pooler_output representing the entire sentence and the word embeddings for 
+                the pooler_output representing the entire sentence and the word embeddings for
                 all BERT layers (list of tensors [batch_size x seq_len x hidden_size])
-            
+
         """
         mask = lengths_to_mask(lengths, device=tokens.device)
         last_hidden_states, pooler_output, all_layers = self.model(tokens, mask)

@@ -9,11 +9,11 @@ from torch import nn
 
 
 def build_activation(activation: str) -> nn.Module:
-    """ Builder function that returns a nn.module activation function.
+    """Builder function that returns a nn.module activation function.
 
     :param activation: string defining the name of the activation function.
-        
-    Activations available: 
+
+    Activations available:
         Swish + every native pytorch activation function.
     """
     if hasattr(nn, activation):
@@ -26,7 +26,7 @@ def build_activation(activation: str) -> nn.Module:
 
 def swish(input: torch.Tensor) -> torch.Tensor:
     """
-    Applies Swish element-wise: A self-gated activation function 
+    Applies Swish element-wise: A self-gated activation function
         swish(x) = x * sigmoid(x)
     """
     return input * torch.sigmoid(input)
@@ -35,7 +35,7 @@ def swish(input: torch.Tensor) -> torch.Tensor:
 class Swish(nn.Module):
     """
     Applies the Swish function element-wise:
-    
+
         Swish(x) = x * sigmoid(x)
 
     Shape:

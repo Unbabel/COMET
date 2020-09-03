@@ -64,16 +64,16 @@ class TextEncoderBase(TextEncoder):
         return len(self.itos)
 
     def tokenize(self, sequence: str) -> List[str]:
-        """ 
-        Function that tokenizes a string. 
-        - To be extended by subclasses. 
+        """
+        Function that tokenizes a string.
+        - To be extended by subclasses.
         """
         raise NotImplementedError
 
     def encode(self, sequence: str) -> torch.Tensor:
-        """ Encodes a 'sequence'.
+        """Encodes a 'sequence'.
         :param sequence: String 'sequence' to encode.
-        
+
         Returns:
             - torch.Tensor: Encoding of the 'sequence'.
         """
@@ -89,7 +89,7 @@ class TextEncoderBase(TextEncoder):
         :param iterator (iterator): Batch of text to encode.
         :param dim (int, optional): Dimension along which to concatenate tensors.
         :param **kwargs: Keyword arguments passed to 'encode'.
-            
+
         Returns
             torch.Tensor, torch.Tensor: Encoded and padded batch of sequences; Original lengths of
                 sequences.

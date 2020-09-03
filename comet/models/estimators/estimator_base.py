@@ -26,18 +26,18 @@ class Estimator(ModelBase):
     """
 
     class ModelConfig(ModelBase.ModelConfig):
-        """ 
+        """
         Estimator ModelConfig:
 
         --------------------------- Encoder -----------------------------------------
         :param encoder_learning_rate: Learning rate used for the encoder model.
-        
+
         :param layerwise_decay: Decay for the layer wise learning rates. If 1.0 no decay is applied.
-        
+
         :param layer: Layer that will be used to extract embeddings. If 'mix' embeddings
             from all layers are combined with a layer-wise attention mechanism
 
-        :param scalar_mix_dropout: If layer='mix' we can regularize layer's importance by 
+        :param scalar_mix_dropout: If layer='mix' we can regularize layer's importance by
             with a given probability setting that weight to - inf before softmax.
 
         ------------------------- Feed Forward ---------------------------------------
@@ -50,7 +50,7 @@ class Estimator(ModelBase):
 
         :param dropout: Dropout probability to be applied to the feedforward
 
-        :param final_activation: Activation function to be applied after getting the 
+        :param final_activation: Activation function to be applied after getting the
             final regression score. Set to False if you wish to perform an 'unbounded' regression.
         """
 
@@ -86,10 +86,10 @@ class Estimator(ModelBase):
             raise Exception("{} is not a valid loss option.".format(self.hparams.loss))
 
     def read_csv(self, path: str) -> List[dict]:
-        """ Reads a comma separated value file.
-        
+        """Reads a comma separated value file.
+
         :param path: path to a csv file.
-        
+
         Return:
             - List of records as dictionaries
         """
@@ -106,15 +106,15 @@ class Estimator(ModelBase):
     ) -> torch.Tensor:
         """
         Computes Loss value according to a loss function.
-        :param model_out: model specific output. Must contain a key 'score' with 
+        :param model_out: model specific output. Must contain a key 'score' with
             a tensor [batch_size x 1] with model predictions
         :param targets: Target score values [batch_size]
         """
         return self.loss(model_out["score"].view(-1), targets["score"])
 
     def compute_metrics(self, outputs: List[Dict[str, torch.Tensor]]) -> dict:
-        """ 
-        Private function that computes metrics of interest based on model predictions and 
+        """
+        Private function that computes metrics of interest based on model predictions and
         respective targets.
         """
         predictions = (
@@ -130,10 +130,10 @@ class Estimator(ModelBase):
     def get_sentence_embedding(
         self, tokens: torch.Tensor, lengths: torch.Tensor
     ) -> torch.Tensor:
-        """ Auxiliar function that extracts sentence embeddings for
+        """Auxiliar function that extracts sentence embeddings for
             a single sentence.
         :param tokens: sequences [batch_size x seq_len]
-        :param lengths: lengths [batch_size] 
+        :param lengths: lengths [batch_size]
         Return:
             - torch.Tensor [batch_size x hidden_size]
         """
@@ -148,13 +148,13 @@ class Estimator(ModelBase):
         # for LASER we dont care about the word embeddings
         if self.hparams.pool == "default" or self.hparams.encoder_model == "LASER":
             sentemb = encoder_out["sentemb"]
-        
+
         elif self.scalar_mix:
             embeddings = self.scalar_mix(encoder_out["all_layers"], encoder_out["mask"])
-        
+
         elif self.layer > 0 and self.layer < self.encoder.num_layers:
             embeddings = encoder_out["all_layers"][self.layer]
-        
+
         else:
             raise Exception("Invalid model layer {}.".format(self.layer))
 
@@ -190,19 +190,19 @@ class Estimator(ModelBase):
             raise Exception("Invalid pooling technique.")
 
         return sentemb
-        
+
     def predict(
         self,
         samples: List[Dict[str, str]],
         cuda: bool = False,
         show_progress: bool = False,
     ) -> (Dict[str, Union[str, float]], List[float]):
-        """ Function that runs a model prediction,
+        """Function that runs a model prediction,
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
-        
-        Return: 
+
+        Return:
             - Dictionary with original samples, predicted scores and langid results for SRC and MT.
             - list of predicted scores
         """
@@ -276,14 +276,14 @@ class Estimator(ModelBase):
         cuda: bool = False,
         show_progress: bool = False,
     ) -> (Dict[str, Union[str, float]], List[float]):
-        """ Function that scores entire documents by processing all segments in parallel.
-        
-        :param documents: List of dictionaries with 'mt', 'src' and 'ref' keys where each key is 
+        """Function that scores entire documents by processing all segments in parallel.
+
+        :param documents: List of dictionaries with 'mt', 'src' and 'ref' keys where each key is
             a list of segments.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
-        
-        Return: 
+
+        Return:
             - Dictionary with original samples and predicted document score.
             - Micro Average scores.
             - Macro Average scores.
@@ -300,10 +300,10 @@ class Estimator(ModelBase):
                 d = {"src": d["src"], "mt": d["mt"], "ref": d["ref"], "alt": d["alt"]}
             else:
                 d = {"src": d["src"], "mt": d["mt"], "ref": d["ref"]}
-            
+
             d = [dict(zip(d, t)) for t in zip(*d.values())]
 
-            # For very long documents we need to create chunks. 
+            # For very long documents we need to create chunks.
             # (64 sentences per chunk)
             if len(d) > 64:
                 document_chunks, document_lengths = [], []
@@ -334,13 +334,13 @@ class Estimator(ModelBase):
                 for chunk in doc:
                     model_output = self.forward(**move_to_cuda(chunk))
                     seg_scores.append(move_to_cpu(model_output)["score"].view(1, -1)[0])
-                seg_scores =  torch.cat(seg_scores, dim=0)
+                seg_scores = torch.cat(seg_scores, dim=0)
             else:
                 model_output = self.forward(**move_to_cuda(doc))
                 seg_scores = move_to_cpu(model_output)["score"].view(1, -1)[0]
-                
+
             # Invert segment-level scores for HTER
-            #seg_scores = torch.ones_like(seg_scores) -  seg_scores
+            # seg_scores = torch.ones_like(seg_scores) -  seg_scores
             micro = (seg_scores * seg_lengths).sum() / seg_lengths.sum()
             macro = seg_scores.sum() / seg_scores.size()[0]
             micro_average.append(micro.item())
@@ -351,4 +351,3 @@ class Estimator(ModelBase):
             documents[i]["predicted_score"] = micro_average[i]
 
         return documents, micro_average, average
-        

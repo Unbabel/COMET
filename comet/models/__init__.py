@@ -18,7 +18,7 @@ str2model = {
     "CometEstimator": CometEstimator,
     "CometRanker": CometRanker,
     # Model that use source only:
-    "QualityEstimator": QualityEstimator
+    "QualityEstimator": QualityEstimator,
 }
 
 MODELS_URL = "https://unbabel-experimental-models.s3.amazonaws.com/comet/share/public-models.yaml"
@@ -35,9 +35,10 @@ def get_cache_folder():
 
 
 def model2download(
-    saving_directory: str = get_cache_folder(), url: str = MODELS_URL,
+    saving_directory: str = get_cache_folder(),
+    url: str = MODELS_URL,
 ) -> dict:
-    """ Download a dictionary with the mapping between models and downloading urls.
+    """Download a dictionary with the mapping between models and downloading urls.
     :param saving_directory: RELATIVE path to the saving folder (must end with /).
     Return:
         - dictionary with the mapping between models and downloading urls.
@@ -49,17 +50,19 @@ def model2download(
         os.remove(saving_directory + "available_models.yaml")
 
     file_path = download_file_maybe_extract(
-        url=url, directory=saving_directory, extension="yaml",
+        url=url,
+        directory=saving_directory,
+        extension="yaml",
     )
     with open(file_path) as fp:
         return yaml.load(fp.read(), Loader=yaml.FullLoader)
 
 
 def download_model(model: str, saving_directory: str = None) -> ModelBase:
-    """ Function that loads pretrained models from AWS.
+    """Function that loads pretrained models from AWS.
     :param model: Name of the model to be loaded.
     :param saving_directory: RELATIVE path to the saving folder (must end with /).
-    
+
     Return:
         - Pretrained model.
     """
@@ -82,10 +85,10 @@ def download_model(model: str, saving_directory: str = None) -> ModelBase:
 
     else:
         raise Exception("Something went wrong while dowloading the model!")
-    
+
     if os.path.exists(saving_directory + model + ".zip"):
         os.remove(saving_directory + model + ".zip")
-    
+
     click.secho("Download succeeded. Loading model...", fg="yellow")
     experiment_folder = saving_directory + model
     checkpoints = [
@@ -97,9 +100,9 @@ def download_model(model: str, saving_directory: str = None) -> ModelBase:
 
 
 def load_checkpoint(checkpoint: str) -> ModelBase:
-    """ Function that loads a model from a checkpoint file.
+    """Function that loads a model from a checkpoint file.
     :param checkpoint: Path to the checkpoint file.
-    
+
     Returns:
         - COMET Model
     """

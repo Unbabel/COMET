@@ -28,7 +28,10 @@ class CometEstimator(Estimator):
     class ModelConfig(Estimator.ModelConfig):
         switch_prob: float = 0.0
 
-    def __init__(self, hparams: Namespace,) -> None:
+    def __init__(
+        self,
+        hparams: Namespace,
+    ) -> None:
         super().__init__(hparams)
 
     def _build_model(self) -> Estimator:
@@ -187,17 +190,18 @@ class CometEstimator(Estimator):
             score = self.ff(embedded_sequences)
 
             if (alt_tokens is not None) and (alt_lengths is not None):
-                
+
                 alt_sentemb = self.get_sentence_embedding(alt_tokens, alt_lengths)
-                
+
                 diff_alt = torch.abs(mt_sentemb - alt_sentemb)
                 prod_alt = mt_sentemb * alt_sentemb
-                
+
                 embedded_sequences = torch.cat(
-                    (mt_sentemb, alt_sentemb, prod_alt, diff_alt, prod_src, diff_src), dim=1
+                    (mt_sentemb, alt_sentemb, prod_alt, diff_alt, prod_src, diff_src),
+                    dim=1,
                 )
                 score = (score + self.ff(embedded_sequences)) / 2
-            
+
             return {"score": score}
 
         if self.training:

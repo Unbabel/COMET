@@ -19,7 +19,7 @@ corpus2download = {
 
 
 def download_corpus(corpus: str, saving_directory: str = None) -> None:
-    """ Function that downloads a corpus from AWS.
+    """Function that downloads a corpus from AWS.
     :param corpus: Name of the corpus to be loaded.
     :param saving_directory: RELATIVE path to the saving folder.
     """
@@ -36,7 +36,8 @@ def download_corpus(corpus: str, saving_directory: str = None) -> None:
 
     elif corpus in corpus2download:
         download_file_maybe_extract(
-            corpus2download[corpus], directory=saving_directory,
+            corpus2download[corpus],
+            directory=saving_directory,
         )
 
     else:

@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
+from os import path
+
 from setuptools import find_packages, setup
+
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name="unbabel-comet",
@@ -8,7 +14,9 @@ setup(
     download_url="https://github.com/Unbabel/COMET",
     author_email="ricardo.rei@unbabel.com, craig.stewart@unbabel.com, catarina.farinha@unbabel.com, alon.lavie@unbabel.com",
     packages=find_packages(exclude=["tests"]),
-    description="Provides high-quality Machine Translation Evaluation",
+    description="High-quality Machine Translation Evaluation",
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     keywords=[
         "Deep Learning",
         "PyTorch",

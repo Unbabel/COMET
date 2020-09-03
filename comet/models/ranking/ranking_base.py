@@ -28,14 +28,17 @@ class RankingBase(ModelBase):
     :param hparams: Namespace containing the hyperparameters.
     """
 
-    def __init__(self, hparams: Namespace,) -> None:
+    def __init__(
+        self,
+        hparams: Namespace,
+    ) -> None:
         super().__init__(hparams)
 
     def read_csv(self, path: str) -> List[dict]:
-        """ Reads a comma separated value file.
-        
+        """Reads a comma separated value file.
+
         :param path: path to a csv file.
-        
+
         Return:
             - List of records as dictionaries
         """
@@ -107,12 +110,12 @@ class RankingBase(ModelBase):
     def predict(
         self, samples: Dict[str, str], cuda: bool = False, show_progress: bool = False
     ) -> (Dict[str, Union[str, float]], List[float]):
-        """ Function that runs a model prediction,
+        """Function that runs a model prediction,
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
-        
-        Return: 
+
+        Return:
             - Dictionary with original samples + predicted scores and list of predicted scores
         """
         if self.training:
@@ -183,10 +186,10 @@ class RankingBase(ModelBase):
     def get_sentence_embedding(
         self, tokens: torch.Tensor, lengths: torch.Tensor
     ) -> torch.Tensor:
-        """ Auxiliar function that extracts sentence embeddings for
+        """Auxiliar function that extracts sentence embeddings for
             a single sentence.
         :param tokens: sequences [batch_size x seq_len]
-        :param lengths: lengths [batch_size] 
+        :param lengths: lengths [batch_size]
         Return:
             - torch.Tensor [batch_size x hidden_size]
         """
@@ -242,7 +245,7 @@ class RankingBase(ModelBase):
         **kwargs
     ) -> Dict[str, torch.Tensor]:
         """
-        Function that encodes the reference, positive samples and negative samples 
+        Function that encodes the reference, positive samples and negative samples
         and returns embeddings for the triplet.
 
         :param ref_tokens: reference sequences [batch_size x ref_seq_len]

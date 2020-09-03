@@ -16,7 +16,7 @@ class FeedForward(nn.Module):
 
     :param in_dim: Number input features.
     :param out_dim: Number of output features. Default is just a score.
-    :param hidden_sizes: list with the size of the hidden layers. 
+    :param hidden_sizes: list with the size of the hidden layers.
         This parameter can also be a string with the sizes splited by a comma.
     :param activations: Name of the activation function to be used in the hidden layers.
     :param final_activation: Name of the final activation function or False if we dont

@@ -38,7 +38,7 @@ else:
 class XLMREncoder(Encoder):
     """
     XLM-RoBERTa encoder from Fairseq.
-    
+
     :param xlmr: XLM-R model to be used.
     :param tokenizer: XLM-R model tokenizer to be used.
     :param hparams: Namespace.
@@ -171,12 +171,12 @@ class XLMREncoder(Encoder):
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the length of each sequence [seq_len].
 
-        Returns: 
+        Returns:
             - 'sentemb': tensor [batch_size x 1024] with the sentence encoding.
             - 'wordemb': tensor [batch_size x seq_len x 1024] with the word level embeddings.
             - 'all_layers': List with the word_embeddings returned by each layer.
-            - 'mask': torch.Tensor [seq_len x batch_size] 
-            - 'extra': tuple with all XLM-R layers (list of tensors [batch_size x seq_len x hidden_size]) 
+            - 'mask': torch.Tensor [seq_len x batch_size]
+            - 'extra': tuple with all XLM-R layers (list of tensors [batch_size x seq_len x hidden_size])
         """
         mask = lengths_to_mask(lengths, device=tokens.device)
         all_layers = self.model.extract_features(tokens, return_all_hiddens=True)

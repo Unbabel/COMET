@@ -22,7 +22,7 @@ else:
 class FastBPEEncoder(TextEncoderBase):
     """
     FastBPE LASER tokenizer.
-    
+
     :param dictionary: LASER vocabulary
     """
 

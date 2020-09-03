@@ -19,12 +19,12 @@ class RegressionReport(Metric):
         self.metrics = [Pearson(), Kendall(), Spearman()]
 
     def forward(self, x: np.array, y: np.array) -> float:
-        """ Computes Kendall correlation.
+        """Computes Kendall correlation.
 
         :param x: predicted scores.
         :param x: ground truth scores.
-        
-        Return: 
+
+        Return:
             - Kendall Tau correlation value.
         """
         with warnings.catch_warnings():
@@ -37,12 +37,12 @@ class Kendall(Metric):
         super().__init__(name="kendall")
 
     def forward(self, x: np.array, y: np.array) -> float:
-        """ Computes Kendall correlation.
+        """Computes Kendall correlation.
 
         :param x: predicted scores.
         :param x: ground truth scores.
-        
-        Return: 
+
+        Return:
             - Kendall Tau correlation value.
         """
         return torch.tensor(kendalltau(x, y)[0], dtype=torch.float32)
@@ -53,12 +53,12 @@ class Pearson(Metric):
         super().__init__(name="pearson")
 
     def forward(self, x: np.array, y: np.array) -> torch.Tensor:
-        """ Computes Pearson correlation.
+        """Computes Pearson correlation.
 
         :param x: predicted scores.
         :param x: ground truth scores.
-        
-        Return: 
+
+        Return:
             - Pearson correlation value.
         """
         return torch.tensor(pearsonr(x, y)[0], dtype=torch.float32)
@@ -69,12 +69,12 @@ class Spearman(Metric):
         super().__init__(name="spearman")
 
     def forward(self, x: np.array, y: np.array) -> float:
-        """ Computes Spearman correlation.
+        """Computes Spearman correlation.
 
         :param x: predicted scores.
         :param x: ground truth scores.
-        
-        Return: 
+
+        Return:
             - Spearman correlation value.
         """
         return torch.tensor(spearmanr(x, y)[0], dtype=torch.float32)

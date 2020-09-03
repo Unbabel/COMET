@@ -28,7 +28,7 @@ class HFTextEncoder(TextEncoderBase):
         self._mask_index = self.tokenizer.mask_token_id
 
     def encode(self, sequence: str) -> torch.Tensor:
-        """ Encodes a 'sequence'.
+        """Encodes a 'sequence'.
         :param sequence: String 'sequence' to encode.
 
         Returns:

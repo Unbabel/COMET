@@ -9,8 +9,8 @@ from argparse import Namespace
 from typing import Dict, List, Tuple, Union
 
 import pandas as pd
-
 import torch
+
 from comet.models.estimators import CometEstimator, Estimator
 from comet.models.utils import average_pooling, max_pooling
 from comet.modules.feedforward import FeedForward
@@ -26,7 +26,10 @@ class QualityEstimator(CometEstimator):
     :param hparams: Namespace containing the hyperparameters.
     """
 
-    def __init__(self, hparams: Namespace,) -> None:
+    def __init__(
+        self,
+        hparams: Namespace,
+    ) -> None:
         super().__init__(hparams)
 
     def _build_model(self) -> Estimator:
@@ -59,10 +62,10 @@ class QualityEstimator(CometEstimator):
         )
 
     def read_csv(self, path: str) -> List[dict]:
-        """ Reads a comma separated value file.
-        
+        """Reads a comma separated value file.
+
         :param path: path to a csv file.
-        
+
         Return:
             - List of records as dictionaries
         """

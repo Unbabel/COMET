@@ -29,31 +29,31 @@ class ModelBase(ptl.LightningModule):
     """
 
     class ModelConfig:
-        """ 
+        """
         The ModelConfig class is used to define model hyper-parameters that
-        are used to initialize our Lightning Modules. These parameters are 
-        then overwritted with the values defined in the YAML file and coverted 
+        are used to initialize our Lightning Modules. These parameters are
+        then overwritted with the values defined in the YAML file and coverted
         to a Namespace to initialize the model.
 
         :param model: Model class namae (to be replaced with the model specified in the YAML)
-         
+
         -------------------- Training Parameters -------------------------
 
         :param batch_size: Batch size used during training.
-        
+
         :param nr_frozen_epochs: Number of epochs we keep the encoder model frozen.
 
         :param keep_embeddings_frozen: Keeping the embeddings frozen is a usefull way to save some GPU memory usage.
             This is critical to fine-tune large models in GPUs with less than 32GB memory.
-        
+
         -------------------- Optimizer Parameters -------------------------
 
         :param optimizer: Optimizer class to be used.
-        
+
         :param learning_rate: Overall learning rate.
-        
+
         -------------------- Scheduler Parameters -------------------------
-        
+
         :param scheduler: Scheduler class to be used.
 
         :param warmup_steps: Warmup steps (only used for schedulers with warmup period).
@@ -64,13 +64,13 @@ class ModelBase(ptl.LightningModule):
 
         :param pretrained_model: Encoder checkpoint (e.g. xlmr.base vs xlmr.large)
 
-        :param pool: Pooling technique to extract the sentence embeddings. 
+        :param pool: Pooling technique to extract the sentence embeddings.
             Options: {max, avg, default, cls} where default uses the 'default' sentence embedding
-            returned by the encoder (e.g. BERT pooler_output) and 'cls' is the first token of the 
+            returned by the encoder (e.g. BERT pooler_output) and 'cls' is the first token of the
             sequence and depends on the selected layer.
 
         :param load_weights: Loads weights from a checkpoint file that match the architecture.
-        
+
         -------------------- Data Parameters -------------------------
 
         :param train_path: Path to the training data.
@@ -183,7 +183,7 @@ class ModelBase(ptl.LightningModule):
             raise Exception(f"{self.hparams.encoder_model} invalid encoder model!")
 
     def _build_optimizer(self, parameters: Generator) -> torch.optim.Optimizer:
-        """ 
+        """
         Initializes the Optimizer.
 
         :param parameters: Module.parameters.
@@ -218,10 +218,10 @@ class ModelBase(ptl.LightningModule):
             raise Exception(f"{self.hparams.scheduler} invalid scheduler!")
 
     def read_csv(self, path: str) -> List[dict]:
-        """ Reads a comma separated value file.
-        
+        """Reads a comma separated value file.
+
         :param path: path to a csv file.
-        
+
         Return:
             - List of records as dictionaries
         """
@@ -255,10 +255,10 @@ class ModelBase(ptl.LightningModule):
     def predict(
         self, samples: Dict[str, str]
     ) -> (Dict[str, Union[str, float]], List[float]):
-        """ Function that runs a model prediction,
-        :param samples: dictionary with expected model sequences. 
+        """Function that runs a model prediction,
+        :param samples: dictionary with expected model sequences.
             You can also pass a list of dictionaries to predict an entire batch.
-        
+
         Return: Dictionary with input samples + scores and list just the scores.
         """
         pass
@@ -300,9 +300,9 @@ class ModelBase(ptl.LightningModule):
     def configure_optimizers(
         self,
     ) -> Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
-        """ 
+        """
         Function for setting up the optimizers and the schedulers to be used during training.
-        
+
         Returns:
             - List with as many optimizers as we need
             - List with the respective schedulers.
@@ -314,8 +314,8 @@ class ModelBase(ptl.LightningModule):
     def compute_metrics(
         self, outputs: List[Dict[str, torch.Tensor]]
     ) -> Dict[str, torch.Tensor]:
-        """ 
-        Private function that computes metrics of interest based on the list of outputs 
+        """
+        Private function that computes metrics of interest based on the list of outputs
         you defined in validation_step.
         """
         pass
@@ -327,11 +327,11 @@ class ModelBase(ptl.LightningModule):
         *args,
         **kwargs,
     ) -> Dict[str, torch.Tensor]:
-        """ 
-        Runs one training step. 
+        """
+        Runs one training step.
         This usually consists in the forward function followed by the loss function.
 
-        :param batch: The output of your prepare_sample function. 
+        :param batch: The output of your prepare_sample function.
         :param batch_nb: Integer displaying which batch this is.
 
         Returns:
@@ -361,10 +361,10 @@ class ModelBase(ptl.LightningModule):
         batch_nb: int,
         dataloader_idx: int,
     ) -> Dict[str, torch.Tensor]:
-        """ 
+        """
         Similar to the training step but with the model in eval mode.
 
-        :param batch: The output of your prepare_sample function. 
+        :param batch: The output of your prepare_sample function.
         :param batch_nb: Integer displaying which batch this is.
         :param dataloader_idx: Integer displaying which dataloader this is.
 
@@ -388,13 +388,13 @@ class ModelBase(ptl.LightningModule):
     def validation_epoch_end(
         self, outputs: List[Dict[str, torch.Tensor]]
     ) -> Dict[str, Dict[str, torch.Tensor]]:
-        """ 
-        Function that takes as input a list of dictionaries returned by the validation_step 
+        """
+        Function that takes as input a list of dictionaries returned by the validation_step
             and measures the model performance accross the entire validation set.
-        
-        :param outputs: 
+
+        :param outputs:
         Returns:
-            - Dictionary with metrics to be added to the lightning logger.  
+            - Dictionary with metrics to be added to the lightning logger.
         """
         train_outs, val_outs = outputs
         train_loss = torch.stack([x["val_loss"] for x in train_outs]).mean()
@@ -427,8 +427,8 @@ class ModelBase(ptl.LightningModule):
         return self.compute_metrics(outputs)
 
     def setup(self, stage) -> None:
-        """ Data preparation function called before training by Lightning.
-            Equivalent to the prepare_data in previous Lightning Versions """
+        """Data preparation function called before training by Lightning.
+        Equivalent to the prepare_data in previous Lightning Versions"""
         self.train_dataset = self.read_csv(self.hparams.train_path)
         self.val_dataset = self.read_csv(self.hparams.val_path)
 
@@ -476,9 +476,9 @@ class ModelBase(ptl.LightningModule):
         )
 
     def langid(self, segment: str) -> str:
-        """ Auxiliar function to identify the language of a specific segment. 
+        """Auxiliar function to identify the language of a specific segment.
         :param segment: String with the text we wish to identify the langauge.
-        
+
         Return:
             - Language code (un for 'unknown' languages)
         """

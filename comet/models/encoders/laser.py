@@ -6,6 +6,7 @@ Facebook AI LASER Encoder Model
     https://github.com/facebookresearch/LASER
 """
 import os
+from argparse import Namespace
 from typing import Dict
 
 import torch
@@ -14,7 +15,6 @@ import torch.nn as nn
 from comet.models.encoders.encoder_base import Encoder
 from comet.models.utils import convert_padding_direction, sort_sequences
 from comet.tokenizers import FastBPEEncoder
-from argparse import Namespace
 from torchnlp.download import download_file_maybe_extract
 from torchnlp.utils import lengths_to_mask
 
@@ -40,11 +40,11 @@ else:
 class LASEREncoder(Encoder):
     """
     Bidirectional LASER Encoder
-        Check the original papers: 
+        Check the original papers:
             - https://arxiv.org/abs/1704.04154
             - https://arxiv.org/abs/1812.10464
         and the original implementation: https://github.com/facebookresearch/LASER
-    
+
     :param num_embeddings: Size of the vocabulary (73640 BPE tokens).
     :param padding_idx: Index of the padding token in the vocabulary.
     :param embed_dim: Size of the embeddings.
@@ -105,7 +105,7 @@ class LASEREncoder(Encoder):
 
     @classmethod
     def from_pretrained(cls, hparams: Namespace) -> Encoder:
-        """ Function that loads a pretrained LASER encoder and the respective tokenizer.
+        """Function that loads a pretrained LASER encoder and the respective tokenizer.
         :param hparams: Namespace.
 
         Returns:
@@ -134,13 +134,13 @@ class LASEREncoder(Encoder):
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the lenght of each sequence [seq_len].
 
-        Returns: 
+        Returns:
             - 'sentemb': tensor [batch_size x 1024] with the sentence encoding.
             - 'wordemb': tensor [batch_size x seq_len x 1024] with the word level embeddings.
             - 'all_layers': For LASER we only return the last layer.
             - 'mask': torch.Tensor [seq_len x batch_size]
             - 'extra': tuple with the LSTM outputs [seq_len x batch_size x hidden_size]
-                the hidden states [num_layers x batch_size x hidden_size] and the 
+                the hidden states [num_layers x batch_size x hidden_size] and the
                 cell states [num_layers x batch_size x hidden_size]
         """
         self.lstm.flatten_parameters()  # Is it required? should this be in the __init__?
@@ -149,7 +149,9 @@ class LASEREncoder(Encoder):
         if self.left_pad:
             # convert left-padding to right-padding
             tokens = convert_padding_direction(
-                tokens, self.padding_idx, left_to_right=True,
+                tokens,
+                self.padding_idx,
+                left_to_right=True,
             )
 
         bsz, seqlen = tokens.size()

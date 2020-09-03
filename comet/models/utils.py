@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import torch
+
 from comet.tokenizers import TextEncoderBase
 
 
@@ -9,7 +10,7 @@ def average_pooling(
     mask: torch.Tensor,
     padding_index: int,
 ) -> torch.Tensor:
-    """ Average pooling function. 
+    """Average pooling function.
     :param tokens: Word ids [batch_size x seq_length]
     :param embeddings: Word embeddings [batch_size x seq_length x hidden_size]
     :param mask: Padding mask [batch_size x seq_length]
@@ -24,7 +25,7 @@ def average_pooling(
 def max_pooling(
     tokens: torch.Tensor, embeddings: torch.Tensor, padding_index: int
 ) -> torch.Tensor:
-    """ Max pooling function.
+    """Max pooling function.
     :param tokens: Word ids [batch_size x seq_length]
     :param embeddings: Word embeddings [batch_size x seq_length x hidden_size]
     :param padding_index: Padding value.
@@ -56,15 +57,15 @@ def mask_tokens(
     ignore_index: int = -100,
     mask_only: bool = False,
 ):
-    """ Mask tokens function from Hugging Face that prepares masked tokens inputs/labels for 
+    """Mask tokens function from Hugging Face that prepares masked tokens inputs/labels for
     masked language modeling.
 
     :param inputs: Input tensor to be masked.
     :param tokenizer: COMET text encoder.
     :param mlm_probability: Probability of masking a token (default: 15%).
-    :param ignore_index: Specifies a target value that is ignored and does not contribute to 
+    :param ignore_index: Specifies a target value that is ignored and does not contribute to
         the input gradient (default: -100).
-    :param mask_only: By default 80% time we place masks, 10% we replace masked inputs with 
+    :param mask_only: By default 80% time we place masks, 10% we replace masked inputs with
         random words and the other 10% we keep the original input unchanged.
     Returns:
         - Tuple with input to the model and the target.

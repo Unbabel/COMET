@@ -9,9 +9,9 @@ class ScalarMixWithDropout(torch.nn.Module):
     """
     Computes a parameterised scalar mixture of N tensors, 'mixture = gamma * sum(s_k * tensor_k)'
     where 's = softmax(w)', with 'w' and 'gamma' scalar parameters.
-    
+
     If 'do_layer_norm=True' then apply layer normalization to each tensor before weighting.
-    
+
     If 'dropout > 0', then for each scalar weight, adjust its softmax weight mass to 0 with
     the dropout probability (i.e., setting the unnormalized weight to -inf). This effectively
     should redistribute dropped probability mass to all other weights.

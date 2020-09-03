@@ -4,14 +4,15 @@ Schedulers
 ==============
     Leraning Rate schedulers used to train COMET models.
 """
+from argparse import Namespace
+
 from torch.optim import Optimizer
 from torch.optim.lr_scheduler import LambdaLR
-from argparse import Namespace
 
 
 class ConstantPolicy:
-    """ Policy for updating the LR of the ConstantLR scheduler.
-        With this class LambdaLR objects became picklable.
+    """Policy for updating the LR of the ConstantLR scheduler.
+    With this class LambdaLR objects became picklable.
     """
 
     def __call__(self, *args, **kwargs):
@@ -21,7 +22,7 @@ class ConstantPolicy:
 class ConstantLR(LambdaLR):
     """
     Constant learning rate schedule
-    
+
     Wrapper for the huggingface Constant LR Scheduler.
         https://huggingface.co/transformers/v2.1.1/main_classes/optimizer_schedules.html
 
@@ -41,8 +42,8 @@ class ConstantLR(LambdaLR):
 
 
 class WarmupPolicy:
-    """ Policy for updating the LR of the WarmupConstant scheduler.
-        With this class LambdaLR objects became picklable.
+    """Policy for updating the LR of the WarmupConstant scheduler.
+    With this class LambdaLR objects became picklable.
     """
 
     def __init__(self, warmup_steps):
@@ -56,14 +57,14 @@ class WarmupPolicy:
 
 class WarmupConstant(LambdaLR):
     """
-    Warmup Linear scheduler. 
+    Warmup Linear scheduler.
     1) Linearly increases learning rate from 0 to 1 over warmup_steps
-        training steps. 
+        training steps.
     2) Keeps the learning rate constant afterwards.
-    
+
     :param optimizer: torch.optim.Optimizer
     :param warmup_steps: Linearly increases learning rate from 0 to 1 over warmup_steps.
-    :param last_epoch: 
+    :param last_epoch:
     """
 
     def __init__(
@@ -82,8 +83,8 @@ class WarmupConstant(LambdaLR):
 
 
 class LinearWarmupPolicy:
-    """ Policy for updating the LR of the LinearWarmup scheduler.
-        With this class LambdaLR objects became picklable.
+    """Policy for updating the LR of the LinearWarmup scheduler.
+    With this class LambdaLR objects became picklable.
     """
 
     def __init__(self, warmup_steps, num_training_steps):
@@ -104,12 +105,12 @@ class LinearWarmup(LambdaLR):
     """
     Create a schedule with a learning rate that decreases linearly after
     linearly increasing during a warmup period.
-    
+
     :param optimizer: torch.optim.Optimizer
     :param warmup_steps: Linearly increases learning rate from 0 to 1*learning_rate over warmup_steps.
-    :param num_training_steps: Linearly decreases learning rate from 1*learning_rate to 0. over remaining 
+    :param num_training_steps: Linearly decreases learning rate from 1*learning_rate to 0. over remaining
         t_total - warmup_steps steps.
-    :param last_epoch: 
+    :param last_epoch:
     """
 
     def __init__(

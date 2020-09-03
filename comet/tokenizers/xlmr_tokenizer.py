@@ -14,8 +14,8 @@ class XLMRTextEncoder(TextEncoderBase):
 
     :param tokenizer_func: XLM tokenization function.
         This can be easily obtain from the fairseq model (e.g: xlmr.encode callable)
-    :param vocabulary: the dictionary containing the XLM-R vocabulary. 
-        This can be easily obtain from the fairseq model 
+    :param vocabulary: the dictionary containing the XLM-R vocabulary.
+        This can be easily obtain from the fairseq model
         (e.g: xlmr.task.source_dictionary.__dict__['indices'])
     """
 
@@ -33,9 +33,9 @@ class XLMRTextEncoder(TextEncoderBase):
         self._mask_index = self.stoi["<mask>"]
 
     def encode(self, sequence: str) -> torch.Tensor:
-        """ Encodes a 'sequence'.
+        """Encodes a 'sequence'.
         :param sequence: String 'sequence' to encode.
-        
+
         Returns:
             - torch.Tensor: Encoding of the 'sequence'.
         """

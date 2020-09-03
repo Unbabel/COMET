@@ -15,12 +15,15 @@ from comet.tokenizers import TextEncoderBase
 
 
 class Encoder(nn.Module):
-    """ Base class for an encoder model.
-    
+    """Base class for an encoder model.
+
     :param output_units: Number of output features that will be passed to the Estimator.
     """
 
-    def __init__(self, tokenizer: TextEncoderBase,) -> None:
+    def __init__(
+        self,
+        tokenizer: TextEncoderBase,
+    ) -> None:
         super().__init__()
         self.tokenizer = tokenizer
 
@@ -46,8 +49,8 @@ class Encoder(nn.Module):
 
     @classmethod
     def from_pretrained(cls, hparams: Namespace):
-        """ Function that loads a pretrained encoder and the respective tokenizer.
-        
+        """Function that loads a pretrained encoder and the respective tokenizer.
+
         Returns:
             - Encoder model
         """
@@ -102,7 +105,7 @@ class Encoder(nn.Module):
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the lenght of each sequence [seq_len].
 
-        Returns: 
+        Returns:
             - 'sentemb': tensor [batch_size x output_units] with the sentence encoding.
             - 'wordemb': tensor [batch_size x seq_len x output_units] with the word level embeddings.
             - 'mask': input mask.

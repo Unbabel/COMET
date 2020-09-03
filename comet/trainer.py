@@ -25,47 +25,47 @@ from pytorch_lightning.utilities import rank_zero_only
 
 
 class TrainerConfig:
-    """ 
+    """
     The TrainerConfig class is used to define default hyper-parameters that
-    are used to initialize our Lightning Trainer. These parameters are then overwritted 
+    are used to initialize our Lightning Trainer. These parameters are then overwritted
     with the values defined in the YAML file.
 
     -------------------- General Parameters -------------------------
 
     :param seed: Training seed.
 
-    :param deterministic: If true enables cudnn.deterministic. Might make your system 
+    :param deterministic: If true enables cudnn.deterministic. Might make your system
         slower, but ensures reproducibility.
 
     :param model: Model class we want to train.
 
     :param verbode: verbosity mode.
 
-    :param overfit_batches: Uses this much data of the training set. If nonzero, will use 
-        the same training set for validation and testing. If the training dataloaders 
+    :param overfit_batches: Uses this much data of the training set. If nonzero, will use
+        the same training set for validation and testing. If the training dataloaders
         have shuffle=True, Lightning will automatically disable it.
-    
-    :param lr_finder: Runs a small portion of the training where the learning rate is increased 
-        after each processed batch and the corresponding loss is logged. The result of this is 
+
+    :param lr_finder: Runs a small portion of the training where the learning rate is increased
+        after each processed batch and the corresponding loss is logged. The result of this is
         a lr vs. loss plot that can be used as guidance for choosing a optimal initial lr.
-        
+
     -------------------- Model Checkpoint & Early Stopping -------------------------
 
     :param early_stopping: If true enables EarlyStopping.
-    
-    :param save_top_k: If save_top_k == k, the best k models according to the metric 
+
+    :param save_top_k: If save_top_k == k, the best k models according to the metric
         monitored will be saved.
-    
+
     :param monitor: Metric to be monitored.
-    
+
     :param save_weights_only: Saves only the weights of the model.
-    
+
     :param period: Interval (number of epochs) between checkpoints.
-    
-    :param metric_mode: One of {min, max}. In min mode, training will stop when the 
-        metric monitored has stopped decreasing; in max mode it will stop when the 
+
+    :param metric_mode: One of {min, max}. In min mode, training will stop when the
+        metric monitored has stopped decreasing; in max mode it will stop when the
         metric monitored has stopped increasing.
-    
+
     :param min_delta: Minimum change in the monitored metric to qualify as an improvement.
 
     :param patience: Number of epochs with no improvement after which training will be stopped.
@@ -156,7 +156,9 @@ def build_trainer(hparams: Namespace) -> pl.Trainer:
 
     # Model Checkpoint Callback
     ckpt_path = os.path.join(
-        "experiments/lightning/", tb_logger.version, "checkpoints",
+        "experiments/lightning/",
+        tb_logger.version,
+        "checkpoints",
     )
 
     checkpoint_callback = ModelCheckpoint(
