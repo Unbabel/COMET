@@ -28,7 +28,14 @@ class TestDownloadCorpus(unittest.TestCase):
 
     @unittest.mock.patch("sys.stdout", new_callable=io.StringIO)
     def test_download_wmt(self, mock_stdout):
-        download_corpus("wmt", DATA_PATH)
-        self.assertTrue(os.path.isdir(DATA_PATH + "wmt"))
+        download_corpus("wmt-metrics", DATA_PATH)
+        self.assertTrue(os.path.isdir(DATA_PATH + "wmt-metrics"))
         self.assertIn("Download succeeded.", mock_stdout.getvalue())
-        shutil.rmtree(DATA_PATH + "wmt")
+        shutil.rmtree(DATA_PATH + "wmt-metrics")
+
+    @unittest.mock.patch("sys.stdout", new_callable=io.StringIO)
+    def test_download_docwmt19(self, mock_stdout):
+        download_corpus("doc-wmt19", DATA_PATH)
+        self.assertTrue(os.path.isdir(DATA_PATH + "doc-wmt19"))
+        self.assertIn("Download succeeded.", mock_stdout.getvalue())
+        shutil.rmtree(DATA_PATH + "doc-wmt19")

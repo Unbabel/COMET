@@ -13,10 +13,8 @@ from torchnlp.download import download_file_maybe_extract
 corpus2download = {
     "apequest": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/hter/apequest.zip",
     "qt21": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/hter/qt21.zip",
-    "wmt17": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/relative-ranks/wmt17.zip",
-    "wmt18": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/relative-ranks/wmt18.zip",
-    "wmt19": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/relative-ranks/wmt19.zip",
-    "wmt": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/relative-ranks/wmt.zip",
+    "wmt-metrics": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/da/wmt-metrics.zip",
+    "doc-wmt19": "https://unbabel-experimental-data-sets.s3-eu-west-1.amazonaws.com/comet/da/doc-wmt19.zip",
 }
 
 

@@ -39,6 +39,11 @@ class Encoder(nn.Module):
         """ Number of model layers available. """
         return self._n_layers
 
+    @property
+    def lm_head(self):
+        """ Language modeling head. """
+        raise NotImplementedError
+
     @classmethod
     def from_pretrained(cls, hparams: Namespace):
         """ Function that loads a pretrained encoder and the respective tokenizer.
@@ -77,6 +82,16 @@ class Encoder(nn.Module):
         """ Unfrezees the entire encoder network. """
         for param in self.parameters():
             param.requires_grad = True
+
+    def freeze_embeddings(self) -> None:
+        """ Frezees the embedding layer of the network to save some memory while training. """
+        raise NotImplementedError
+
+    def layerwise_lr(self, lr: float, decay: float):
+        """
+        returns grouped model parameters with layer-wise decaying learning rate
+        """
+        raise NotImplementedError
 
     def forward(
         self, tokens: torch.Tensor, lengths: torch.Tensor

@@ -10,32 +10,36 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## Pretrained Models:
+## Model Zoo:
 
 | Model              |               Description                        |
 | --------------------- | ------------------------------------------------ |
-| `da-ranker-v1.0`      | Translation ranking model that uses XLM-R to encode sentences. This model was trained with WMT17 and WMT18 Direct Assessments Relative Ranks (DARR). |
-| `hter-estimator-v1.0` | Estimator model that uses XLM-R to encode sentences. This model was trained to regress on HTER with the QT21 corpus. **Note:** For this model, since it regresses on HTER, 0 means a perfect translation a 1 is a very bad one.  |
-
+| `wmt-large-da-estimator-1719` | **RECOMMENDED:** Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19 |
+| `wmt-base-da-estimator-1719` | Estimator model build on top of XLM-R (base) trained on DA from WMT17, WMT18 and WMT19 |
+| `wmt-large-da-estimator-1718` | Estimator model build on top of XLM-R (large) trained on DA from WMT17 and WMT18 |
+| `wmt-base-da-estimator-1718` | Estimator model build on top of XLM-R (base) trained on DA from WMT17 and WMT18 |
+| `wmt-large-hter-estimator` | Estimator model build on top of XLM-R (large) trained to regress on HTER. |
+| `wmt-base-hter-estimator` | Estimator model build on top of XLM-R (base) trained to regress on HTER. |
+| `emnlp-base-da-ranker`      | Translation ranking model that uses XLM-R to encode sentences. This model was trained with WMT17 and WMT18 Direct Assessments Relative Ranks (DARR). |
 
 ## Scoring MT outputs:
 
 ### Via Bash:
 ```bash
-comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model da-ranker-v1.0
+comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model wmt-large-da-estimator-1719
 ```
 
 You can export your results to a JSON file using the `--to_json` flag.
 
 ```bash
-comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model da-ranker-v1.0 --to_json output.json
+comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model wmt-large-da-estimator-1719 --to_json output.json
 ```
 
 ### Via Python:
 
 ```python
 from comet.models import download_model
-model = download_model("da-ranker-v1.0", "path/where/to/save/models")
+model = download_model("wmt-large-da-estimator-1719", "path/where/to/save/models")
 data = [
     {
         "src": "Hello world!",
@@ -77,28 +81,6 @@ comet train -f {config_file_path}.yaml
 - [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/pdf/1810.04805.pdf)
 - [XLM-R: Unsupervised Cross-lingual Representation Learning at Scale](https://arxiv.org/pdf/1911.02116.pdf)
 
-### Estimator Architectures:
-
-**CometEstimator:** 
-Uses a pretrained encoder to independently encode the source, MT and Reference and then uses a feed-forward neural network to estimate a MT quality score such as HTER
-
-**MetricEstimator:** 
-Uses a pretrained encoder to independently encode the reference and MT hypothesis and then uses a feed-forward neural network to estimate a MT quality score such as HTER
-
-### Translation Ranking Architectures:
-
-**CometRanker:** 
-
-Uses a pretrained encoder to independently encode the source, a "good" MT hypothesis, a "bad" MT hypothesis and a Reference and then uses the triplet margin loss to minimize the distance between the "good" hypothesis and the anchors (reference/source).
-
-**MetricRanker:** 
-
-Uses a pretrained encoder to independently encode the a "good" MT hypothesis, a "bad" MT hypothesis and a Reference and then uses the triplet margin loss to minimize the distance between the "good" hypothesis and the reference.
-
-### GPU 16-bit:
-Save some memory by using mixed precision training:
-1. [Install apex](https://github.com/NVIDIA/apex)
-2. Set ``amp_level: 'O1'`` and ``precision: 16`` in your config file.
 
 ### Tensorboard:
 

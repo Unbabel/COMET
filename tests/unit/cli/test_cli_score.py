@@ -12,17 +12,17 @@ from comet.models import download_model
 class TestScoreCli(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(DATA_PATH + "da-ranker-v1.0")
-        shutil.rmtree(DATA_PATH + "hter-estimator-v1.0")
+        shutil.rmtree(DATA_PATH + "emnlp-base-da-ranker")
+        shutil.rmtree(DATA_PATH + "wmt-large-da-estimator-1719")
 
     def setUp(self):
         self.runner = CliRunner()
 
     def test_score_ranker_cpu(self):
-        download_model("da-ranker-v1.0", DATA_PATH)
+        download_model("emnlp-base-da-ranker", DATA_PATH)
         args = [
             "--model",
-            DATA_PATH + "da-ranker-v1.0/_ckpt_epoch_0.ckpt",
+            DATA_PATH + "emnlp-base-da-ranker/_ckpt_epoch_0.ckpt",
             "-s",
             DATA_PATH + "src.en",
             "-h",
@@ -36,10 +36,10 @@ class TestScoreCli(unittest.TestCase):
         self.assertIn("COMET system score: ", result.stdout)
 
     def test_score_estimator_cpu(self):
-        download_model("hter-estimator-v1.0", DATA_PATH)
+        download_model("wmt-large-da-estimator-1719", DATA_PATH)
         args = [
             "--model",
-            DATA_PATH + "hter-estimator-v1.0/_ckpt_epoch_1.ckpt",
+            DATA_PATH + "wmt-large-da-estimator-1719/_ckpt_epoch_1.ckpt",
             "-s",
             DATA_PATH + "src.en",
             "-h",

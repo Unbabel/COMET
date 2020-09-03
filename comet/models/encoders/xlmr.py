@@ -51,7 +51,73 @@ class XLMREncoder(Encoder):
         self._output_units = 768 if "base" in hparams.pretrained_model else 1024
         self._n_layers = 13 if "base" in hparams.pretrained_model else 25
         self._max_pos = 512
+        # Save some meory by removing the LM and classification heads
+        # xlmr.model.decoder.lm_head.dense = None
+        # xlmr.model.decoder.classification_heads = None
         self.model = xlmr
+
+    def freeze_embeddings(self) -> None:
+        """ Frezees the embedding layer of the network to save some memory while training. """
+        for (
+            param
+        ) in self.model.model.decoder.sentence_encoder.embed_tokens.parameters():
+            param.requires_grad = False
+
+        for (
+            param
+        ) in self.model.model.decoder.sentence_encoder.embed_positions.parameters():
+            param.requires_grad = False
+
+        for (
+            param
+        ) in self.model.model.decoder.sentence_encoder.emb_layer_norm.parameters():
+            param.requires_grad = False
+
+    def layerwise_lr(self, lr: float, decay: float):
+        """
+        returns grouped model parameters with layer-wise decaying learning rate
+        """
+        # Embedding layer
+        opt_parameters = [
+            {
+                "params": self.model.model.decoder.sentence_encoder.embed_tokens.parameters(),
+                "lr": lr * decay ** (self.num_layers),
+            },
+            {
+                "params": self.model.model.decoder.sentence_encoder.embed_positions.parameters(),
+                "lr": lr * decay ** (self.num_layers),
+            },
+            {
+                "params": self.model.model.decoder.sentence_encoder.emb_layer_norm.parameters(),
+                "lr": lr * decay ** (self.num_layers),
+            },
+        ]
+
+        # Layer wise parameters
+        opt_parameters += [
+            {
+                "params": self.model.model.decoder.sentence_encoder.layers[
+                    l
+                ].parameters(),
+                "lr": lr * decay ** (self.num_layers - 1 - l),
+            }
+            for l in range(self.num_layers - 1)
+        ]
+
+        # Language Model Head parameters
+        opt_parameters += [
+            {
+                "params": self.model.model.decoder.lm_head.layer_norm.parameters(),
+                "lr": lr,
+            },
+            {"params": self.model.model.decoder.lm_head.dense.parameters(), "lr": lr},
+        ]
+        return opt_parameters
+
+    @property
+    def lm_head(self):
+        """ Language modeling head. """
+        return self.model.model.decoder.lm_head
 
     @classmethod
     def from_pretrained(cls, hparams: Namespace):
@@ -91,7 +157,7 @@ class XLMREncoder(Encoder):
         xlmr = XLMRModel.from_pretrained(
             saving_directory + pretrained_model, checkpoint_file="model.pt"
         )
-        xlmr.eval()
+        # xlmr.eval()
         tokenizer = XLMRTextEncoder(
             xlmr.encode, xlmr.task.source_dictionary.__dict__["indices"]
         )

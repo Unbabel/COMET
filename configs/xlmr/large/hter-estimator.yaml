@@ -1,8 +1,8 @@
 seed: 12
 monitor: pearson
-metric_mode: max
+metric_mode: min
 early_stopping: True
-patience: 3
+patience: 1
 min_delta: 0.0
 save_top_k: 2
 save_weights_only: True 
@@ -10,25 +10,26 @@ min_epochs: 1
 max_epochs: 3
 gradient_clip_val: 1.0
 gpus: 1
-#precision: 16
-#amp_level: O2
-batch_size: 4
-accumulate_grad_batches: 4
+
+batch_size: 2
+accumulate_grad_batches: 8
 loader_workers: 4
 
 optimizer: Adam
-learning_rate: 0.00002
-encoder_learning_rate: 0.00001
+learning_rate: 3.0e-05
+encoder_learning_rate: 1.0e-05
+layerwise_decay: 0.95
+nr_frozen_epochs: 1
+keep_embeddings_frozen: True
 scheduler: constant
 
-train_path: data/qt21/train.csv
-val_path: data/qt21/test.csv
+train_path: data/apequest/train.csv
+val_path: data/apequest/train.csv
 
 model: CometEstimator
-nr_frozen_epochs: 1
 loss: mse
 encoder_model: XLMR
-pretrained_model: xlmr.base
+pretrained_model: xlmr.large
 
 layer: mix
 scalar_mix_dropout: 0.1
@@ -36,4 +37,4 @@ pool: avg
 
 dropout: 0.1
 activations: Tanh
-hidden_sizes: "1536,768"
+hidden_sizes: "3072,1536"

@@ -98,6 +98,11 @@ class LASEREncoder(Encoder):
     def num_layers(self):
         return 1  # In LASER we can only use the last layer
 
+    def freeze_embeddings(self) -> None:
+        """ Frezees the embedding layer of the network to save some memory while training. """
+        for param in self.embed_tokens.parameters():
+            param.requires_grad = False
+
     @classmethod
     def from_pretrained(cls, hparams: Namespace) -> Encoder:
         """ Function that loads a pretrained LASER encoder and the respective tokenizer.

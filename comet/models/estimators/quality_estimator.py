@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 r"""
-Metric Estimator Model
+Quality Estimator Model
 ==============
-    Metric Estimator Model estimates a quality score for the hyphotesis (e.g: the MT text)
-    by looking only at reference and MT.
+    Quality Estimator Model estimates a quality score for the hyphotesis (e.g: the MT text)
+    by looking only at source and MT.
 """
 from argparse import Namespace
 from typing import Dict, List, Tuple, Union
@@ -18,7 +18,7 @@ from comet.modules.scalar_mix import ScalarMixWithDropout
 from torchnlp.utils import collate_tensors
 
 
-class MetricEstimator(CometEstimator):
+class QualityEstimator(CometEstimator):
     """
     Estimator class that uses a pretrained encoder to extract features from
     the sequences and then passes those features to a feed forward estimator.
@@ -67,9 +67,9 @@ class MetricEstimator(CometEstimator):
             - List of records as dictionaries
         """
         df = pd.read_csv(path)
-        df = df[["mt", "ref", "score"]]
+        df = df[["mt", "src", "score"]]
         df["mt"] = df["mt"].astype(str)
-        df["ref"] = df["ref"].astype(str)
+        df["src"] = df["src"].astype(str)
         df["score"] = df["score"].astype(float)
         return df.to_dict("records")
 
@@ -90,12 +90,12 @@ class MetricEstimator(CometEstimator):
         """
         sample = collate_tensors(sample)
         mt_inputs = self.encoder.prepare_sample(sample["mt"])
-        ref_inputs = self.encoder.prepare_sample(sample["ref"])
+        src_inputs = self.encoder.prepare_sample(sample["src"])
 
         mt_inputs = {"mt_" + k: v for k, v in mt_inputs.items()}
-        ref_inputs = {"ref_" + k: v for k, v in ref_inputs.items()}
+        src_inputs = {"src_" + k: v for k, v in src_inputs.items()}
 
-        inputs = {**mt_inputs, **ref_inputs}
+        inputs = {**mt_inputs, **src_inputs}
 
         if inference:
             return inputs
@@ -106,84 +106,28 @@ class MetricEstimator(CometEstimator):
     def forward(
         self,
         mt_tokens: torch.tensor,
-        ref_tokens: torch.tensor,
+        src_tokens: torch.tensor,
         mt_lengths: torch.tensor,
-        ref_lengths: torch.tensor,
+        src_lengths: torch.tensor,
         **kwargs
     ) -> Dict[str, torch.Tensor]:
         """
-        Function that encodes both Source, MT and Reference and returns a quality score.
+        Function that encodes both Source, MT and returns a quality score.
 
         :param mt_tokens: MT sequences [batch_size x mt_seq_len]
-        :param ref_tokens: REF sequences [batch_size x ref_seq_len]
+        :param src_tokens: REF sequences [batch_size x src_seq_len]
         :param mt_lengths: MT lengths [batch_size]
-        :param ref_lengths: REF lengths [batch_size]
+        :param src_lengths: REF lengths [batch_size]
 
         Return: Dictionary with model outputs to be passed to the loss function.
         """
-        # When using just one GPU this should not change behavior
-        # but when splitting batches across GPU the tokens have padding
-        # from the entire original batch
-        if self.trainer and self.trainer.use_dp and self.trainer.num_gpus > 1:
-            mt_tokens = mt_tokens[:, : mt_lengths.max()]
-            ref_tokens = ref_tokens[:, : ref_lengths.max()]
+        mt_sentemb = self.get_sentence_embedding(mt_tokens, mt_lengths)
+        src_sentemb = self.get_sentence_embedding(src_tokens, src_lengths)
 
-        encoder_out_mt = self.encoder(mt_tokens, mt_lengths)
-        encoder_out_ref = self.encoder(ref_tokens, ref_lengths)
-
-        # for LASER we dont care about the word embeddings
-        if self.hparams.encoder_model == "LASER":
-            pass
-        elif self.scalar_mix:
-            mt_embeddings = self.scalar_mix(
-                encoder_out_mt["all_layers"], encoder_out_mt["mask"]
-            )
-            ref_embeddings = self.scalar_mix(
-                encoder_out_ref["all_layers"], encoder_out_ref["mask"]
-            )
-        elif self.layer > 0 and self.layer < self.encoder.num_layers:
-            mt_embeddings = encoder_out_mt["all_layers"][self.layer]
-            ref_embeddings = encoder_out_ref["all_layers"][self.layer]
-        else:
-            raise Exception("Invalid model layer {}.".format(self.layer))
-
-        if self.hparams.pool == "default" or self.hparams.encoder_model == "LASER":
-            mt_sentemb = encoder_out_mt["sentemb"]
-            ref_sentemb = encoder_out_ref["sentemb"]
-
-        elif self.hparams.pool == "max":
-            mt_sentemb = max_pooling(
-                mt_tokens, mt_embeddings, self.encoder.tokenizer.padding_index
-            )
-            ref_sentemb = max_pooling(
-                ref_tokens, ref_embeddings, self.encoder.tokenizer.padding_index
-            )
-
-        elif self.hparams.pool == "avg":
-            mt_sentemb = average_pooling(
-                mt_tokens,
-                mt_embeddings,
-                encoder_out_mt["mask"],
-                self.encoder.tokenizer.padding_index,
-            )
-            ref_sentemb = average_pooling(
-                ref_tokens,
-                ref_embeddings,
-                encoder_out_ref["mask"],
-                self.encoder.tokenizer.padding_index,
-            )
-
-        elif self.hparams.pool == "cls":
-            mt_sentemb = mt_embeddings[:, 0, :]
-            ref_sentemb = ref_embeddings[:, 0, :]
-
-        else:
-            raise Exception("Invalid pooling technique.")
-
-        diff_ref = torch.abs(mt_sentemb - ref_sentemb)
-        prod_ref = mt_sentemb * ref_sentemb
+        diff_src = torch.abs(mt_sentemb - src_sentemb)
+        prod_src = mt_sentemb * src_sentemb
 
         embedded_sequences = torch.cat(
-            (mt_sentemb, ref_sentemb, prod_ref, diff_ref), dim=1
+            (mt_sentemb, src_sentemb, prod_src, diff_src), dim=1
         )
         return {"score": self.ff(embedded_sequences)}

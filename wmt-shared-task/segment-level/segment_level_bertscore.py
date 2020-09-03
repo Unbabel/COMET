@@ -5,10 +5,7 @@ import argparse
 
 import bert_score
 import pandas as pd
-import torch
 from tqdm import tqdm
-
-import logging
 
 
 def compute_kendall(
@@ -27,11 +24,7 @@ def compute_kendall(
 
 
 def run_bertscore(
-    mt: list, 
-    ref: list, 
-    model_type="xlm-roberta-base", 
-    language=False, 
-    idf=False
+    mt: list, ref: list, model_type="xlm-roberta-base", language=False, idf=False
 ) -> (list, list, list):
     """ Runs BERTScores and returns precision, recall and F1 BERTScores ."""
     if language:
@@ -65,7 +58,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--test_path",
-        default="wmt/wmt19/de-en/relative-ranks.csv",
+        default="wmt-metrics/wmt19/de-en/relative-ranks.csv",
         help="Path to the test dataframe with relative preferences.",
         type=str,
     )
@@ -100,11 +93,24 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.run_wmt18:
         lps = [
-            "en-cs", "en-de", "en-et", "en-fi", "en-ru", "en-tr", "en-zh", 
-            "cs-en", "de-en", "et-en", "fi-en", "ru-en", "tr-en", "zh-en"
+            "en-cs",
+            "en-de",
+            "en-et",
+            "en-fi",
+            "en-ru",
+            "en-tr",
+            "en-zh",
+            "cs-en",
+            "de-en",
+            "et-en",
+            "fi-en",
+            "ru-en",
+            "tr-en",
+            "zh-en",
         ]
+        kendall_scores = {}
         for lp in lps:
-            data = pd.read_csv(f"wmt/wmt18/{lp}/relative-ranks.csv")
+            data = pd.read_csv(f"wmt-metrics/wmt18/{lp}/relative-ranks.csv")
             if args.model_type:
                 hyp1_precision, hyp1_recall, hyp1_f1 = run_bertscore(
                     [str(s) for s in data.hyp1],
@@ -141,15 +147,33 @@ if __name__ == "__main__":
 
             f1_kendall = compute_kendall(hyp1_f1, hyp2_f1, data)
             print(f"BERTScore F1 Kendall: {f1_kendall}\n")
+            kendall_scores[lp] = [precision_kendall, recall_kendall, f1_kendall]
+        print(kendall_scores)
 
     elif args.run_wmt19:
         lps = [
-            'en-cs','en-de','en-fi','en-gu','en-kk','en-lt','en-ru','en-zh',
-            'de-en','fi-en','gu-en','kk-en','lt-en','ru-en','zh-en',
-            'de-cs','de-fr','fr-de',
+            "en-cs",
+            "en-de",
+            "en-fi",
+            "en-gu",
+            "en-kk",
+            "en-lt",
+            "en-ru",
+            "en-zh",
+            "de-en",
+            "fi-en",
+            "gu-en",
+            "kk-en",
+            "lt-en",
+            "ru-en",
+            "zh-en",
+            "de-cs",
+            "de-fr",
+            "fr-de",
         ]
+        kendall_scores = {}
         for lp in lps:
-            data = pd.read_csv(f"wmt/wmt19/{lp}/relative-ranks.csv")
+            data = pd.read_csv(f"wmt-metrics/wmt19/{lp}/relative-ranks.csv")
             if args.model_type:
                 hyp1_precision, hyp1_recall, hyp1_f1 = run_bertscore(
                     [str(s) for s in data.hyp1],
@@ -186,6 +210,9 @@ if __name__ == "__main__":
 
             f1_kendall = compute_kendall(hyp1_f1, hyp2_f1, data)
             print(f"BERTScore F1 Kendall: {f1_kendall}\n")
+            kendall_scores[lp] = [precision_kendall, recall_kendall, f1_kendall]
+        print(kendall_scores)
+
     else:
         data = pd.read_csv(args.test_path)
 

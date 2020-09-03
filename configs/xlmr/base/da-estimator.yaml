@@ -1,0 +1,40 @@
+seed: 12
+monitor: pearson
+metric_mode: max
+early_stopping: True
+patience: 1
+min_delta: 0.0
+save_top_k: 2
+save_weights_only: True 
+min_epochs: 1
+max_epochs: 3
+gradient_clip_val: 1.0
+gpus: 1
+
+batch_size: 4
+accumulate_grad_batches: 4
+loader_workers: 4
+
+optimizer: Adam
+learning_rate: 3.0e-05
+encoder_learning_rate: 1.0e-05
+layerwise_decay: 0.95
+nr_frozen_epochs: 0.4
+scheduler: constant
+
+train_path: data/wmt-metrics/scores-17-19.csv
+val_path: data/wmt-metrics/dev-19.csv
+
+model: CometEstimator
+loss: mse
+encoder_model: XLMR
+pretrained_model: xlmr.base
+
+layer: mix
+scalar_mix_dropout: 0.1
+pool: avg
+
+dropout: 0.1
+activations: Tanh
+hidden_sizes: "2304,1152"
+final_activation: False

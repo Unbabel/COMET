@@ -6,15 +6,22 @@ Lightning Trainer Setup
 """
 import os
 from argparse import Namespace
+from datetime import datetime
 from typing import Union
 
-from comet.logging import CliLoggingCallback, setup_testube_logger
-from pytorch_lightning import Trainer
+import click
+import pandas as pd
+
+import pytorch_lightning as pl
+from comet.models.utils import apply_to_sample
 from pytorch_lightning.callbacks import (
+    Callback,
     EarlyStopping,
     LearningRateLogger,
     ModelCheckpoint,
 )
+from pytorch_lightning.loggers import LightningLoggerBase, TensorBoardLogger
+from pytorch_lightning.utilities import rank_zero_only
 
 
 class TrainerConfig:
@@ -38,6 +45,10 @@ class TrainerConfig:
         the same training set for validation and testing. If the training dataloaders 
         have shuffle=True, Lightning will automatically disable it.
     
+    :param lr_finder: Runs a small portion of the training where the learning rate is increased 
+        after each processed batch and the corresponding loss is logged. The result of this is 
+        a lr vs. loss plot that can be used as guidance for choosing a optimal initial lr.
+        
     -------------------- Model Checkpoint & Early Stopping -------------------------
 
     :param early_stopping: If true enables EarlyStopping.
@@ -74,9 +85,11 @@ class TrainerConfig:
     metric_mode: str = "max"
     min_delta: float = 0.0
     patience: int = 1
+    accumulate_grad_batches: int = 1
+    lr_finder: bool = False
 
     def __init__(self, initial_data: dict) -> None:
-        trainer_attr = Trainer.default_attributes()
+        trainer_attr = pl.Trainer.default_attributes()
         for key in trainer_attr:
             setattr(self, key, trainer_attr[key])
 
@@ -94,7 +107,31 @@ class TrainerConfig:
         )
 
 
-def build_trainer(hparams: Namespace) -> Trainer:
+class TrainReport(Callback):
+    """ Logger Callback that echos results during training. """
+
+    _stack: list = []  # stack to keep metrics from all epochs
+
+    @rank_zero_only
+    def on_validation_end(
+        self, trainer: pl.Trainer, pl_module: pl.LightningModule
+    ) -> None:
+        metrics = trainer.callback_metrics
+        metrics = LightningLoggerBase._flatten_dict(metrics, "_")
+        del metrics["loss"]
+        metrics = apply_to_sample(lambda x: x.item(), metrics)
+        self._stack.append(metrics)
+        # pl_module.print() # Print newline
+
+    @rank_zero_only
+    def on_fit_end(self, trainer: pl.Trainer) -> None:
+        click.secho("\nTraining Report Experiment:", fg="yellow")
+        index_column = ["Epoch " + str(i + 1) for i in range(len(self._stack))]
+        df = pd.DataFrame(self._stack, index=index_column)
+        click.secho("{}".format(df), fg="yellow")
+
+
+def build_trainer(hparams: Namespace) -> pl.Trainer:
     """
     :param hparams: Namespace
 
@@ -111,15 +148,17 @@ def build_trainer(hparams: Namespace) -> Trainer:
     )
 
     # TestTube Logger Callback
-    testube_logger = setup_testube_logger()
+    tb_logger = TensorBoardLogger(
+        save_dir="experiments/",
+        version="version_" + datetime.now().strftime("%d-%m-%Y--%H-%M-%S"),
+        name="lightning",
+    )
 
     # Model Checkpoint Callback
     ckpt_path = os.path.join(
-        "experiments/",
-        testube_logger.name,
-        f"version_{testube_logger.version}",
-        "checkpoints",
+        "experiments/lightning/", tb_logger.version, "checkpoints",
     )
+
     checkpoint_callback = ModelCheckpoint(
         filepath=ckpt_path,
         save_top_k=hparams.save_top_k,
@@ -129,10 +168,10 @@ def build_trainer(hparams: Namespace) -> Trainer:
         period=0,  # Always allow saving checkpoint even within the same epoch
         mode=hparams.metric_mode,
     )
-    other_callbacks = [LearningRateLogger(), CliLoggingCallback()]
+    other_callbacks = [LearningRateLogger(), TrainReport()]
 
-    trainer = Trainer(
-        logger=testube_logger,
+    trainer = pl.Trainer(
+        logger=tb_logger,
         checkpoint_callback=checkpoint_callback,
         early_stop_callback=early_stop_callback,
         callbacks=other_callbacks,

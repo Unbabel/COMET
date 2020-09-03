@@ -46,7 +46,9 @@ class TestSchedulers(unittest.TestCase):
 
     def test_linear_warmup(self):
         hparams = Namespace(**{"warmup_steps": 2, "num_training_steps": 10})
-        scheduler = LinearWarmup.from_hparams(self.optimizer, hparams)
+        scheduler = LinearWarmup.from_hparams(
+            self.optimizer, hparams, num_training_steps=10
+        )
         lrs = unwrap_schedule(self.optimizer, scheduler, self.num_steps)
         expected = [
             0.0005,

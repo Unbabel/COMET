@@ -44,6 +44,30 @@ class BERTEncoder(Encoder):
         model = BERTEncoder(tokenizer=tokenizer, hparams=hparams)
         return model
 
+    def freeze_embeddings(self) -> None:
+        """ Frezees the embedding layer of the network to save some memory while training. """
+        for param in self.model.embeddings.parameters():
+            param.requires_grad = False
+
+    def layerwise_lr(self, lr: float, decay: float):
+        """
+        returns grouped model parameters with layer-wise decaying learning rate
+        """
+        opt_parameters = [
+            {
+                "params": self.model.embeddings.parameters(),
+                "lr": lr * decay ** (self.num_layers),
+            }
+        ]
+        opt_parameters += [
+            {
+                "params": self.model.encoder.layer[l].parameters(),
+                "lr": lr * decay ** (self.num_layers - 1 - l),
+            }
+            for l in range(self.num_layers - 1)
+        ]
+        return opt_parameters
+
     def forward(
         self, tokens: torch.Tensor, lengths: torch.Tensor
     ) -> Dict[str, torch.Tensor]:

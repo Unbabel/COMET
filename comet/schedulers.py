@@ -33,7 +33,9 @@ class ConstantLR(LambdaLR):
         super(ConstantLR, self).__init__(optimizer, ConstantPolicy(), last_epoch)
 
     @classmethod
-    def from_hparams(cls, optimizer: Optimizer, hparams: Namespace) -> LambdaLR:
+    def from_hparams(
+        cls, optimizer: Optimizer, hparams: Namespace, **kwargs
+    ) -> LambdaLR:
         """ Initializes a constant learning rate scheduler. """
         return ConstantLR(optimizer)
 
@@ -72,7 +74,9 @@ class WarmupConstant(LambdaLR):
         )
 
     @classmethod
-    def from_hparams(cls, optimizer: Optimizer, hparams: Namespace) -> LambdaLR:
+    def from_hparams(
+        cls, optimizer: Optimizer, hparams: Namespace, **kwargs
+    ) -> LambdaLR:
         """ Initializes a constant learning rate scheduler with warmup period. """
         return WarmupConstant(optimizer, hparams.warmup_steps)
 
@@ -120,9 +124,11 @@ class LinearWarmup(LambdaLR):
         )
 
     @classmethod
-    def from_hparams(cls, optimizer: Optimizer, hparams: Namespace) -> LambdaLR:
+    def from_hparams(
+        cls, optimizer: Optimizer, hparams: Namespace, num_training_steps: int
+    ) -> LambdaLR:
         """ Initializes a learning rate scheduler with warmup period and decreasing period. """
-        return LinearWarmup(optimizer, hparams.warmup_steps, hparams.num_training_steps)
+        return LinearWarmup(optimizer, hparams.warmup_steps, num_training_steps)
 
 
 str2scheduler = {

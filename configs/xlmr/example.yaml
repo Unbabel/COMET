@@ -1,0 +1,58 @@
+# ------------------- PyTorch Lightning Configurations --------------------------
+    seed: 12                           # Training seed set everywhere
+    monitor: pearson                   # Metric to monitor during training
+    metric_mode: max                   # 'min' or 'max' depending if we wish to maximize or minimize the metric
+    
+    early_stopping: True               # Enables early stopping
+    patience: 3                        # Number of epochs without improvement before stopping training
+    min_delta: 0.0                     # Sensitivity to the metric.
+    save_top_k: 3                      # How many checkpoints we want to save.
+    save_weights_only: True            # Saves the model weights only
+    min_epochs: 1                      # Min number of epochs
+    max_epochs: 8                      # Max number of epochs
+    gradient_clip_val: 1.0             # Clips gradients when the norm value exceeds 1.0
+    gpus: 1                            # Number of GPUs to use. (1 is recommended)
+    batch_size: 4                      # Batch size (in terms of samples per batch)
+    accumulate_grad_batches: 4         # Gradient accumulation steps
+    loader_workers: 4                  # Number of workers to use when loading and preparing data for models
+    # precision: 16                    # Train with 16 bit precision
+    # amp_level: O2                    # Apex amp level [O1,O2,O3]
+    
+    # --------------------- Optimizer Configurations --------------------------
+    optimizer: Adam                    # Optimizer name 
+    learning_rate: 0.00002             # Learning rate for the model
+    # lr_finder: True                  # Run a learning rate finder algorithm and runs experiment with a suggested LR.
+    encoder_learning_rate: 0.00001     # Optionally, you can define a specific learning rate for the encoder model.
+    
+    # --------------------- Scheduler Configurations --------------------------
+    scheduler: constant                # Type of Learning rate scheduler
+    # warmup_steps: 2000               # Number of warmup_steps
+    # num_training_steps: 20000        # Number of steps until LR goes to zero
+    
+    # -------------------- Data Path --------------------------
+    train_path: data/hter_train.csv    # Path to the training csv
+    val_path: data/apequest/test.csv   # Path to the test csv
+    # limit_train_batches: 0.5         # To train with a lower percentage of the training data you can use this flag
+    # limit_val_batches: 500           # Same as the previous flag but for validation. 
+    #                                    Both flags accept the number of batches to use instead of the %
+    # val_check_interval: 0.25         # How often within one training epoch to check the validation set. Can specify as float or int.
+    #                                    Check validation set 4 times during a training epoch
+    
+    # ---------------------- Model Configurations --------------------------
+    model: MetricEstimator             # Type of model architecture we want to train
+    nr_frozen_epochs: 1                # Number of epochs that the encoder stays frozen
+    #keep_embeddings_frozen: True       # Keeps the embedding layer frozen to save some GPU memory.
+    loss: mse                          # Loss type: 'mse' or 'binary_xent' for estimators, ignored for ranking models 
+    encoder_model: XLMR                # The encoder to be used: XLMR, BERT, DistilBERT or LASER
+    pretrained_model: xlmr.base        # pretrained model to be used e.g: xlmr.base vs xlmr.large (for LASER this is ignored)
+    
+    # NOTE: 'layer' and 'pool' configurations are ignored when using LASER 
+    layer: mix                         # Layer from where we want to extract the word embeddings. 'mix' combines all layers layer-wise attention 
+    scalar_mix_dropout: 0.1            # If 'layer' = 'mix' you can set a value for the layer-wise dropout.
+    pool: avg                          # Type of pooling technique used to create sentence embeddings
+    
+    # Feed Forward definition:
+    dropout: 0.1                       # Dropout used in the Feed Forward on top.
+    activations: Tanh                  # Activations used in the Feed Forward on top.
+    hidden_sizes: "1536,768"           # Sizes for the hidden layer.
+    
