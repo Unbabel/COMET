@@ -10,17 +10,6 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## Model Zoo:
-
-| Model              |               Description                        |
-| --------------------- | ------------------------------------------------ |
-| `wmt-large-da-estimator-1719` | **RECOMMENDED:** Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19 |
-| `wmt-base-da-estimator-1719` | Estimator model build on top of XLM-R (base) trained on DA from WMT17, WMT18 and WMT19 |
-| `wmt-large-da-estimator-1718` | Estimator model build on top of XLM-R (large) trained on DA from WMT17 and WMT18 |
-| `wmt-base-da-estimator-1718` | Estimator model build on top of XLM-R (base) trained on DA from WMT17 and WMT18 |
-| `wmt-large-hter-estimator` | Estimator model build on top of XLM-R (large) trained to regress on HTER. |
-| `wmt-base-hter-estimator` | Estimator model build on top of XLM-R (base) trained to regress on HTER. |
-| `emnlp-base-da-ranker`      | Translation ranking model that uses XLM-R to encode sentences. This model was trained with WMT17 and WMT18 Direct Assessments Relative Ranks (DARR). |
 
 ## Scoring MT outputs:
 
@@ -67,6 +56,20 @@ data = [dict(zip(data, t)) for t in zip(*data.values())]
 
 model.predict(data)
 ```
+
+
+## Model Zoo:
+
+| Model              |               Description                        |
+| --------------------- | ------------------------------------------------ |
+| `wmt-large-da-estimator-1719` | **RECOMMENDED:** Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19 |
+| `wmt-base-da-estimator-1719` | Estimator model build on top of XLM-R (base) trained on DA from WMT17, WMT18 and WMT19 |
+| `wmt-large-da-estimator-1718` | Estimator model build on top of XLM-R (large) trained on DA from WMT17 and WMT18 |
+| `wmt-base-da-estimator-1718` | Estimator model build on top of XLM-R (base) trained on DA from WMT17 and WMT18 |
+| `wmt-large-hter-estimator` | Estimator model build on top of XLM-R (large) trained to regress on HTER. |
+| `wmt-base-hter-estimator` | Estimator model build on top of XLM-R (base) trained to regress on HTER. |
+| `emnlp-base-da-ranker`      | Translation ranking model that uses XLM-R to encode sentences. This model was trained with WMT17 and WMT18 Direct Assessments Relative Ranks (DARR). |
+
 
 ## Train your own Metric: 
 
