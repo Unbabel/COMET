@@ -35,7 +35,7 @@ class ModelBase(ptl.LightningModule):
         then overwritted with the values defined in the YAML file and coverted
         to a Namespace to initialize the model.
 
-        :param model: Model class namae (to be replaced with the model specified in the YAML)
+        :param model: Model class name (to be replaced with the model specified in the YAML)
 
         -------------------- Training Parameters -------------------------
 
@@ -100,8 +100,8 @@ class ModelBase(ptl.LightningModule):
         warmup_steps: int = None
 
         # Architecture Definition
-        encoder_model: str = "XLM-R"
-        pretrained_model: str = "xlm-roberta-base"
+        encoder_model: str = "XLMR"
+        pretrained_model: str = "xlmr.base"
         pool: str = "avg"
         load_weights: str = False
 
