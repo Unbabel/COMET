@@ -11,6 +11,7 @@ def average_pooling(
     padding_index: int,
 ) -> torch.Tensor:
     """Average pooling function.
+
     :param tokens: Word ids [batch_size x seq_length]
     :param embeddings: Word embeddings [batch_size x seq_length x hidden_size]
     :param mask: Padding mask [batch_size x seq_length]
@@ -26,6 +27,7 @@ def max_pooling(
     tokens: torch.Tensor, embeddings: torch.Tensor, padding_index: int
 ) -> torch.Tensor:
     """Max pooling function.
+
     :param tokens: Word ids [batch_size x seq_length]
     :param embeddings: Word embeddings [batch_size x seq_length x hidden_size]
     :param padding_index: Padding value.
@@ -41,6 +43,7 @@ def mask_fill(
 ) -> torch.Tensor:
     """
     Function that masks embeddings representing padded elements.
+    
     :param fill_value: the value to fill the embeddings belonging to padded tokens.
     :param tokens: The input sequences [bsz x seq_len].
     :param embeddings: word embeddings [bsz x seq_len x hiddens].
@@ -67,8 +70,8 @@ def mask_tokens(
         the input gradient (default: -100).
     :param mask_only: By default 80% time we place masks, 10% we replace masked inputs with
         random words and the other 10% we keep the original input unchanged.
-    Returns:
-        - Tuple with input to the model and the target.
+    
+    :returns: Tuple with input to the model and the target.
     """
     if tokenizer.mask_index is None:
         raise ValueError(
@@ -119,6 +122,7 @@ def mask_tokens(
 def sort_sequences(inputs: torch.Tensor, input_lengths: torch.Tensor):
     """
     Sort sequences according to lengths of the input sequence (descendingly).
+    
     :param inputs (Tensor): input sequences, size [B, T, D]
     :param input_lengths (Tensor): length of each sequence, size [B]
     """

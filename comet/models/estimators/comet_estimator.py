@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
 Comet Estimator Model
-==============
+================================
     Comet Estimator predicts a quality score for the 
     hyphotesis (e.g: the MT text) by looking at reference, source and MT.
 """
@@ -110,13 +110,12 @@ class CometEstimator(Estimator):
     ]:
         """
         Function that prepares a sample to input the model.
+
         :param sample: list of dictionaries.
         :param inference: If set to true prepares only the model inputs.
 
-        Returns:
-            - Tuple with 2 dictionaries: model inputs and targets
-        or
-            - Dictionary with model inputs
+        :returns: Tuple with 2 dictionaries (model inputs and targets). 
+            If `inference=True` returns only the model inputs.
         """
         sample = collate_tensors(sample)
         src_inputs = self.encoder.prepare_sample(sample["src"])
@@ -166,7 +165,7 @@ class CometEstimator(Estimator):
         :param alt_tokens: Alternative REF sequences [batch_size x alt_seq_len]
         :param alt_lengths: Alternative REF lengths [batch_size]
 
-        Return: Dictionary with model outputs to be passed to the loss function.
+        :return: Dictionary with model outputs to be passed to the loss function.
         """
         src_sentemb = self.get_sentence_embedding(src_tokens, src_lengths)
         mt_sentemb = self.get_sentence_embedding(mt_tokens, mt_lengths)
