@@ -19,9 +19,6 @@ class BERTEncoder(Encoder):
     """BERT encoder.
     :param tokenizer: BERT text encoder.
     :param hparams: ArgumentParser.
-
-    Check the available models here:
-        https://huggingface.co/transformers/pretrained_models.html
     """
 
     def __init__(
@@ -41,8 +38,7 @@ class BERTEncoder(Encoder):
         """Function that loads a pretrained encoder from Hugging Face.
         :param hparams: Namespace.
 
-        Returns:
-            - Encoder model
+        :return: Encoder model
         """
         tokenizer = HFTextEncoder(model=hparams.pretrained_model)
         model = BERTEncoder(tokenizer=tokenizer, hparams=hparams)
@@ -55,7 +51,7 @@ class BERTEncoder(Encoder):
 
     def layerwise_lr(self, lr: float, decay: float):
         """
-        returns grouped model parameters with layer-wise decaying learning rate
+        :return: List with grouped model parameters with layer-wise decaying learning rate
         """
         opt_parameters = [
             {
@@ -77,18 +73,15 @@ class BERTEncoder(Encoder):
     ) -> Dict[str, torch.Tensor]:
         """
         Encodes a batch of sequences.
+
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
-        :param lengths: Torch tensor with the length of each sequence [seq_len].
+        :param lengths: Torch tensor with the lenght of each sequence [seq_len].
 
-        Returns:
-            - 'sentemb': tensor [batch_size x 1024] with the sentence encoding.
-            - 'wordemb': tensor [batch_size x seq_len x 1024] with the word level embeddings.
-            - 'mask': torch.Tensor [seq_len x batch_size]
-            - 'all_layers': List with the word_embeddings returned by each layer.
-            - 'extra': tuple with the last_hidden_state [batch_size x seq_len x hidden_size],
-                the pooler_output representing the entire sentence and the word embeddings for
-                all BERT layers (list of tensors [batch_size x seq_len x hidden_size])
-
+        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` 
+            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), 
+            `all_layers` (List with word_embeddings from all layers), `extra` (tuple with the 
+            last_hidden_state, the pooler_output representing  the entire sentence and the word 
+            embeddings for all BERT layers).
         """
         mask = lengths_to_mask(lengths, device=tokens.device)
         last_hidden_states, pooler_output, all_layers = self.model(tokens, mask)

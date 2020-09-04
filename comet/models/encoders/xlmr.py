@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
-Fairseq XLM-R Encoder Model
-==============
+XLM-R Encoder Model
+====================
     Pretrained XLM-RoBERTa from Fairseq framework.
     https://github.com/pytorch/fairseq/tree/master/examples/xlmr
 """
@@ -57,7 +57,7 @@ class XLMREncoder(Encoder):
         self.model = xlmr
 
     def freeze_embeddings(self) -> None:
-        """ Frezees the embedding layer of the network to save some memory while training. """
+        """ Freezes the embedding layer of the network to save some memory while training. """
         for (
             param
         ) in self.model.model.decoder.sentence_encoder.embed_tokens.parameters():
@@ -75,7 +75,7 @@ class XLMREncoder(Encoder):
 
     def layerwise_lr(self, lr: float, decay: float):
         """
-        returns grouped model parameters with layer-wise decaying learning rate
+        :return: List with grouped model parameters with layer-wise decaying learning rate
         """
         # Embedding layer
         opt_parameters = [
@@ -168,15 +168,13 @@ class XLMREncoder(Encoder):
     ) -> Dict[str, torch.Tensor]:
         """
         Encodes a batch of sequences.
+        
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the length of each sequence [seq_len].
 
-        Returns:
-            - 'sentemb': tensor [batch_size x 1024] with the sentence encoding.
-            - 'wordemb': tensor [batch_size x seq_len x 1024] with the word level embeddings.
-            - 'all_layers': List with the word_embeddings returned by each layer.
-            - 'mask': torch.Tensor [seq_len x batch_size]
-            - 'extra': tuple with all XLM-R layers (list of tensors [batch_size x seq_len x hidden_size])
+        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` 
+            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), 
+            `all_layers` (List with word_embeddings from all layers), `extra` (tuple with all XLM-R layers).
         """
         mask = lengths_to_mask(lengths, device=tokens.device)
         all_layers = self.model.extract_features(tokens, return_all_hiddens=True)

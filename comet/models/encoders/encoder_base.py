@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
 Encoder Model base
-==============
+====================
     Module defining the common interface between all pretrained encoder models.
 """
 import warnings
@@ -51,8 +51,7 @@ class Encoder(nn.Module):
     def from_pretrained(cls, hparams: Namespace):
         """Function that loads a pretrained encoder and the respective tokenizer.
 
-        Returns:
-            - Encoder model
+        :return: Encoder model
         """
         raise NotImplementedError
 
@@ -92,7 +91,7 @@ class Encoder(nn.Module):
 
     def layerwise_lr(self, lr: float, decay: float):
         """
-        returns grouped model parameters with layer-wise decaying learning rate
+        :return: List with grouped model parameters with layer-wise decaying learning rate
         """
         raise NotImplementedError
 
@@ -105,11 +104,8 @@ class Encoder(nn.Module):
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the lenght of each sequence [seq_len].
 
-        Returns:
-            - 'sentemb': tensor [batch_size x output_units] with the sentence encoding.
-            - 'wordemb': tensor [batch_size x seq_len x output_units] with the word level embeddings.
-            - 'mask': input mask.
-            - 'all_layers': List with the word_embeddings returned by each layer.
-            - 'extra': model specific outputs.
+        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` 
+            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), 
+            `all_layers` (List with word_embeddings from all layers, `extra` (model specific outputs).
         """
         raise NotImplementedError
