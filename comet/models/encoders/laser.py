@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 r"""
-Facebook AI LASER Encoder Model
-==============
+LASER Encoder Model
+===================================
     Pretrained LASER Encoder model from Facebook.
     https://github.com/facebookresearch/LASER
+
+    Check the original papers:
+        - https://arxiv.org/abs/1704.04154
+        - https://arxiv.org/abs/1812.10464
+    
+    and the original implementation: https://github.com/facebookresearch/LASER
 """
 import os
 from argparse import Namespace
@@ -40,11 +46,7 @@ else:
 class LASEREncoder(Encoder):
     """
     Bidirectional LASER Encoder
-        Check the original papers:
-            - https://arxiv.org/abs/1704.04154
-            - https://arxiv.org/abs/1812.10464
-        and the original implementation: https://github.com/facebookresearch/LASER
-
+        
     :param num_embeddings: Size of the vocabulary (73640 BPE tokens).
     :param padding_idx: Index of the padding token in the vocabulary.
     :param embed_dim: Size of the embeddings.
@@ -98,18 +100,18 @@ class LASEREncoder(Encoder):
     def num_layers(self):
         return 1  # In LASER we can only use the last layer
 
-    def freeze_embeddings(self) -> None:
-        """ Frezees the embedding layer of the network to save some memory while training. """
+    def freeze_embeddings(self):
+        """ Freezes the embedding layer of the network to save some memory while training. """
         for param in self.embed_tokens.parameters():
             param.requires_grad = False
 
     @classmethod
-    def from_pretrained(cls, hparams: Namespace) -> Encoder:
+    def from_pretrained(cls, hparams: Namespace):
         """Function that loads a pretrained LASER encoder and the respective tokenizer.
+        
         :param hparams: Namespace.
 
-        Returns:
-            - LASER Encoder model
+        :returns: LASER Encoder model
         """
         if not os.path.exists(saving_directory):
             os.makedirs(saving_directory)
@@ -134,14 +136,10 @@ class LASEREncoder(Encoder):
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the lenght of each sequence [seq_len].
 
-        Returns:
-            - 'sentemb': tensor [batch_size x 1024] with the sentence encoding.
-            - 'wordemb': tensor [batch_size x seq_len x 1024] with the word level embeddings.
-            - 'all_layers': For LASER we only return the last layer.
-            - 'mask': torch.Tensor [seq_len x batch_size]
-            - 'extra': tuple with the LSTM outputs [seq_len x batch_size x hidden_size]
-                the hidden states [num_layers x batch_size x hidden_size] and the
-                cell states [num_layers x batch_size x hidden_size]
+        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` 
+            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), 
+            `all_layers` (List with word_embeddings from all layers, `extra` (tuple with the LSTM outputs, 
+            hidden states and cell states).
         """
         self.lstm.flatten_parameters()  # Is it required? should this be in the __init__?
         tokens, lengths, unsorted_idx = sort_sequences(tokens, lengths)
@@ -225,6 +223,7 @@ class LASEREncoder(Encoder):
     ) -> Dict[str, torch.Tensor]:
         """
         Function that reorders the LASER encoder outputs at the batch level.
+        
         :param encoder_out: the output of the forward function.
         :param new_order: the new order inside the batch.
         """

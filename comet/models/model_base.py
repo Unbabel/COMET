@@ -2,7 +2,9 @@
 r"""
 Model Base
 ==============
-    Abstract base class used to build new modules inside COMET.
+    Abstract base class used to build new modules inside COMET. 
+    This class is just an extention of PyTorch Lightning main module:
+    https://pytorch-lightning.readthedocs.io/en/0.8.4/lightning-module.html
 """
 from argparse import Namespace
 from os import path
@@ -35,7 +37,7 @@ class ModelBase(ptl.LightningModule):
         then overwritted with the values defined in the YAML file and coverted
         to a Namespace to initialize the model.
 
-        :param model: Model class namae (to be replaced with the model specified in the YAML)
+        :param model: Model class name (to be replaced with the model specified in the YAML)
 
         -------------------- Training Parameters -------------------------
 
@@ -65,8 +67,8 @@ class ModelBase(ptl.LightningModule):
         :param pretrained_model: Encoder checkpoint (e.g. xlmr.base vs xlmr.large)
 
         :param pool: Pooling technique to extract the sentence embeddings.
-            Options: {max, avg, default, cls} where default uses the 'default' sentence embedding
-            returned by the encoder (e.g. BERT pooler_output) and 'cls' is the first token of the
+            Options: {max, avg, default, cls} where default uses the `default` sentence embedding
+            returned by the encoder (e.g. BERT pooler_output) and `cls` is the first token of the
             sequence and depends on the selected layer.
 
         :param load_weights: Loads weights from a checkpoint file that match the architecture.
@@ -100,8 +102,8 @@ class ModelBase(ptl.LightningModule):
         warmup_steps: int = None
 
         # Architecture Definition
-        encoder_model: str = "XLM-R"
-        pretrained_model: str = "xlm-roberta-base"
+        encoder_model: str = "XLMR"
+        pretrained_model: str = "xlmr.base"
         pool: str = "avg"
         load_weights: str = False
 
@@ -222,8 +224,7 @@ class ModelBase(ptl.LightningModule):
 
         :param path: path to a csv file.
 
-        Return:
-            - List of records as dictionaries
+        :return: List of records as dictionaries
         """
         df = pd.read_csv(path)
         return df.to_dict("records")
@@ -256,17 +257,19 @@ class ModelBase(ptl.LightningModule):
         self, samples: Dict[str, str]
     ) -> (Dict[str, Union[str, float]], List[float]):
         """Function that runs a model prediction,
+        
         :param samples: dictionary with expected model sequences.
             You can also pass a list of dictionaries to predict an entire batch.
 
-        Return: Dictionary with input samples + scores and list just the scores.
+        :return: Dictionary with input samples + scores and list with just the scores.
         """
         pass
 
     def forward(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
         """
         PyTorch Forward.
-        Return: Dictionary with model outputs to be passed to the loss function.
+        
+        :return: Dictionary with model outputs to be passed to the loss function.
         """
         pass
 
@@ -275,6 +278,7 @@ class ModelBase(ptl.LightningModule):
     ) -> torch.Tensor:
         """
         Computes Loss value according to a loss function.
+        
         :param model_out: model specific output.
         :param targets: Target score values [batch_size]
         """
@@ -287,13 +291,12 @@ class ModelBase(ptl.LightningModule):
     ]:
         """
         Function that prepares a sample to input the model.
+        
         :param sample: List of dictionaries.
         :param inference: If set to true prepares only the model inputs.
 
-        Returns:
-            - Tuple with 2 dictionaries: model inputs and targets
-        or
-            - Dictionary with model inputs
+        :returns: Tuple with 2 dictionaries (model inputs and targets). If `inference=True`
+            returns only the model inputs.
         """
         pass
 
@@ -303,9 +306,7 @@ class ModelBase(ptl.LightningModule):
         """
         Function for setting up the optimizers and the schedulers to be used during training.
 
-        Returns:
-            - List with as many optimizers as we need
-            - List with the respective schedulers.
+        :returns: List with as many optimizers as we need and a list with the respective schedulers.
         """
         optimizer = self._build_optimizer(self.parameters())
         scheduler = self._build_scheduler(optimizer)
@@ -315,7 +316,7 @@ class ModelBase(ptl.LightningModule):
         self, outputs: List[Dict[str, torch.Tensor]]
     ) -> Dict[str, torch.Tensor]:
         """
-        Private function that computes metrics of interest based on the list of outputs
+        Function that computes metrics of interest based on the list of outputs
         you defined in validation_step.
         """
         pass
@@ -334,8 +335,7 @@ class ModelBase(ptl.LightningModule):
         :param batch: The output of your prepare_sample function.
         :param batch_nb: Integer displaying which batch this is.
 
-        Returns:
-            - dictionary containing the loss and the metrics to be added to the lightning logger.
+        :returns: dictionary containing the loss and the metrics to be added to the lightning logger.
         """
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
@@ -368,8 +368,7 @@ class ModelBase(ptl.LightningModule):
         :param batch_nb: Integer displaying which batch this is.
         :param dataloader_idx: Integer displaying which dataloader this is.
 
-        Returns:
-            - dictionary passed to the validation_end function.
+        :returns: dictionary passed to the validation_end function.
         """
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
@@ -393,8 +392,8 @@ class ModelBase(ptl.LightningModule):
             and measures the model performance accross the entire validation set.
 
         :param outputs:
-        Returns:
-            - Dictionary with metrics to be added to the lightning logger.
+        
+        :returns: Dictionary with metrics to be added to the lightning logger.
         """
         train_outs, val_outs = outputs
         train_loss = torch.stack([x["val_loss"] for x in train_outs]).mean()
@@ -419,11 +418,13 @@ class ModelBase(ptl.LightningModule):
         *args,
         **kwargs,
     ) -> Dict[str, torch.Tensor]:
+        """ Redirects to the validation_step function """
         return self.validation_step(batch, batch_nb, 0)
 
     def test_epoch_end(
         self, outputs: List[Dict[str, torch.Tensor]]
     ) -> Dict[str, Dict[str, torch.Tensor]]:
+        """ Computes metrics. """
         return self.compute_metrics(outputs)
 
     def setup(self, stage) -> None:
@@ -477,10 +478,10 @@ class ModelBase(ptl.LightningModule):
 
     def langid(self, segment: str) -> str:
         """Auxiliar function to identify the language of a specific segment.
+        
         :param segment: String with the text we wish to identify the langauge.
 
-        Return:
-            - Language code (un for 'unknown' languages)
+        :return: Language code (un for `unknown` languages)
         """
         try:
             return cld2.detect(segment, bestEffort=True)[2][0][1]

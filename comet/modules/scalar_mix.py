@@ -1,4 +1,19 @@
 # -*- coding: utf-8 -*-
+r"""
+Layer-Wise Attention Mechanism
+================================
+    Computes a parameterised scalar mixture of N tensors, `mixture = gamma * sum(s_k * tensor_k)`
+    where `s = softmax(w)`, with `w` and `gamma` scalar parameters.
+
+    If `do_layer_norm=True` then apply layer normalization to each tensor before weighting.
+
+    If `dropout > 0`, then for each scalar weight, adjust its softmax weight mass to 0 with
+    the dropout probability (i.e., setting the unnormalized weight to -inf). This effectively
+    should redistribute dropped probability mass to all other weights.
+
+    Original implementation:
+        - https://github.com/Hyperparticle/udify
+"""
 from typing import List
 
 import torch
@@ -6,19 +21,6 @@ from torch.nn import Parameter, ParameterList
 
 
 class ScalarMixWithDropout(torch.nn.Module):
-    """
-    Computes a parameterised scalar mixture of N tensors, 'mixture = gamma * sum(s_k * tensor_k)'
-    where 's = softmax(w)', with 'w' and 'gamma' scalar parameters.
-
-    If 'do_layer_norm=True' then apply layer normalization to each tensor before weighting.
-
-    If 'dropout > 0', then for each scalar weight, adjust its softmax weight mass to 0 with
-    the dropout probability (i.e., setting the unnormalized weight to -inf). This effectively
-    should redistribute dropped probability mass to all other weights.
-
-    Original implementation:
-        - https://github.com/Hyperparticle/udify
-    """
 
     def __init__(
         self,
@@ -68,13 +70,13 @@ class ScalarMixWithDropout(torch.nn.Module):
         mask: torch.Tensor = None,
     ) -> torch.Tensor:
         """
-        Compute a weighted average of the 'tensors'.  The input tensors an be any shape
+        Compute a weighted average of the `tensors`.  The input tensors an be any shape
         with at least two dimensions, but must all be the same shape.
-        When 'do_layer_norm=True', the 'mask' is required input.  If the 'tensors' are
-        dimensioned  '(dim_0, ..., dim_{n-1}, dim_n)', then the 'mask' is dimensioned
-        '(dim_0, ..., dim_{n-1})', as in the typical case with 'tensors' of shape
-        '(batch_size, timesteps, dim)' and 'mask' of shape '(batch_size, timesteps)'.
-        When 'do_layer_norm=False' the 'mask' is ignored.
+        When `do_layer_norm=True`, the `mask` is required input.  If the `tensors` are
+        dimensioned  `(dim_0, ..., dim_{n-1}, dim_n)`, then the `mask` is dimensioned
+        `(dim_0, ..., dim_{n-1})`, as in the typical case with `tensors` of shape
+        `(batch_size, timesteps, dim)` and `mask` of shape `(batch_size, timesteps)`.
+        When `do_layer_norm=False` the `mask` is ignored.
         """
         if len(tensors) != self.mixture_size:
             raise Exception(

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
 Estimator Base Model
-==============
+=======================
     Abstract base class used to build new estimator models
     inside COMET.
 """
@@ -30,6 +30,7 @@ class Estimator(ModelBase):
         Estimator ModelConfig:
 
         --------------------------- Encoder -----------------------------------------
+        
         :param encoder_learning_rate: Learning rate used for the encoder model.
 
         :param layerwise_decay: Decay for the layer wise learning rates. If 1.0 no decay is applied.
@@ -90,8 +91,7 @@ class Estimator(ModelBase):
 
         :param path: path to a csv file.
 
-        Return:
-            - List of records as dictionaries
+        :return: List of records as dictionaries
         """
         df = pd.read_csv(path)
         df = df[["src", "mt", "ref", "score"]]
@@ -106,6 +106,7 @@ class Estimator(ModelBase):
     ) -> torch.Tensor:
         """
         Computes Loss value according to a loss function.
+        
         :param model_out: model specific output. Must contain a key 'score' with
             a tensor [batch_size x 1] with model predictions
         :param targets: Target score values [batch_size]
@@ -132,10 +133,11 @@ class Estimator(ModelBase):
     ) -> torch.Tensor:
         """Auxiliar function that extracts sentence embeddings for
             a single sentence.
+        
         :param tokens: sequences [batch_size x seq_len]
         :param lengths: lengths [batch_size]
-        Return:
-            - torch.Tensor [batch_size x hidden_size]
+        
+        :return: torch.Tensor [batch_size x hidden_size]
         """
         # When using just one GPU this should not change behavior
         # but when splitting batches across GPU the tokens have padding
@@ -198,13 +200,13 @@ class Estimator(ModelBase):
         show_progress: bool = False,
     ) -> (Dict[str, Union[str, float]], List[float]):
         """Function that runs a model prediction,
+        
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
 
-        Return:
-            - Dictionary with original samples, predicted scores and langid results for SRC and MT.
-            - list of predicted scores
+        :return: Dictionary with original samples, predicted scores and langid results for SRC and MT 
+            + list of predicted scores
         """
         if self.training:
             self.eval()
@@ -283,10 +285,8 @@ class Estimator(ModelBase):
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
 
-        Return:
-            - Dictionary with original samples and predicted document score.
-            - Micro Average scores.
-            - Macro Average scores.
+        :return: tuple with Dictionary with original samples and predicted document score, micro 
+            average scores, macro average scores.
         """
         if self.training:
             self.eval()

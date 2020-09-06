@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
 Quality Estimator Model
-==============
+=======================
     Quality Estimator Model estimates a quality score for the hyphotesis (e.g: the MT text)
     by looking only at source and MT.
 """
@@ -66,8 +66,7 @@ class QualityEstimator(CometEstimator):
 
         :param path: path to a csv file.
 
-        Return:
-            - List of records as dictionaries
+        :return: List of records as dictionaries
         """
         df = pd.read_csv(path)
         df = df[["mt", "src", "score"]]
@@ -86,10 +85,8 @@ class QualityEstimator(CometEstimator):
         :param sample: list of dictionaries.
         :param inference: If set to true prepares only the model inputs.
 
-        Returns:
-            - Tuple with 2 dictionaries: model inputs and targets
-        or
-            - Dictionary with model inputs
+        :returns: Tuple with 2 dictionaries (model inputs and targets). 
+            If `inference=True` returns only the model inputs.
         """
         sample = collate_tensors(sample)
         mt_inputs = self.encoder.prepare_sample(sample["mt"])
@@ -122,7 +119,7 @@ class QualityEstimator(CometEstimator):
         :param mt_lengths: MT lengths [batch_size]
         :param src_lengths: REF lengths [batch_size]
 
-        Return: Dictionary with model outputs to be passed to the loss function.
+        :return: Dictionary with model outputs to be passed to the loss function.
         """
         mt_sentemb = self.get_sentence_embedding(mt_tokens, mt_lengths)
         src_sentemb = self.get_sentence_embedding(src_tokens, src_lengths)

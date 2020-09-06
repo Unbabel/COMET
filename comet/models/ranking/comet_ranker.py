@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
 Comet Ranker Model
-==============
+======================
     The goal of this model is to rank good translations closer to the reference and source text
     and bad translations further by a small margin.
 
@@ -61,6 +61,7 @@ class CometRanker(RankingBase):
     def compute_loss(self, model_out: Dict[str, torch.Tensor], *args) -> torch.Tensor:
         """
         Computes Triplet Margin Loss for both the reference and the source.
+        
         :param model_out: model specific output with src_anchor, ref_anchor, pos and neg
             sentence embeddings.
         """
@@ -76,10 +77,12 @@ class CometRanker(RankingBase):
         self, samples: Dict[str, str], cuda: bool = False, show_progress: bool = False
     ) -> (Dict[str, Union[str, float]], List[float]):
         """Function that runs a model prediction,
+        
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
-        Return: Dictionary with model outputs
+        
+        :return: Dictionary with model outputs
         """
         if self.training:
             self.eval()
@@ -165,14 +168,13 @@ class CometRanker(RankingBase):
     ) -> Union[Tuple[Dict[str, torch.Tensor], None], List[Dict[str, torch.Tensor]]]:
         """
         Function that prepares a sample to input the model.
+        
         :param sample: list of dictionaries.
         :param inference: If set to to False, then the model expects
             a MT and reference instead of anchor, pos, and neg segments.
 
-        Returns:
-            - Tuple with a dictionary containing the model inputs and None.
-        or
-            - List with source, MT and reference tokenized and vectorized.
+        :returns: Tuple with 2 dictionaries (model inputs and targets). 
+            If `inference=True` returns only the model inputs.
         """
         sample = collate_tensors(sample)
         if inference:
@@ -218,7 +220,7 @@ class CometRanker(RankingBase):
         :param pos_lengths: positive lengths [batch_size]
         :param neg_lengths: negative lengths [batch_size]
 
-        Return: Dictionary with model outputs to be passed to the loss function.
+        :return: Dictionary with model outputs to be passed to the loss function.
         """
         return {
             "src_sentemb": self.get_sentence_embedding(src_tokens, src_lengths),

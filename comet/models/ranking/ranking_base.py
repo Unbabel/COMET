@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
 Translation Ranking Base Model
-==============
+==============================
     Abstract base class used to build new ranking systems inside COMET.
     This task consists of ranking "good" translations above "worse" ones.
 """
@@ -39,8 +39,7 @@ class RankingBase(ModelBase):
 
         :param path: path to a csv file.
 
-        Return:
-            - List of records as dictionaries
+        :return: List of records as dictionaries
         """
         df = pd.read_csv(path)
         df = df[["src", "ref", "pos", "neg"]]
@@ -80,6 +79,7 @@ class RankingBase(ModelBase):
     def compute_loss(self, model_out: Dict[str, torch.Tensor], *args) -> torch.Tensor:
         """
         Computes Triplet Margin Loss.
+        
         :param model_out: model specific output with reference, pos and neg
             sentence embeddings.
         """
@@ -111,12 +111,12 @@ class RankingBase(ModelBase):
         self, samples: Dict[str, str], cuda: bool = False, show_progress: bool = False
     ) -> (Dict[str, Union[str, float]], List[float]):
         """Function that runs a model prediction,
+        
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
 
-        Return:
-            - Dictionary with original samples + predicted scores and list of predicted scores
+        :return: Dictionary with original samples + predicted scores and list of predicted scores
         """
         if self.training:
             self.eval()
@@ -188,10 +188,11 @@ class RankingBase(ModelBase):
     ) -> torch.Tensor:
         """Auxiliar function that extracts sentence embeddings for
             a single sentence.
+        
         :param tokens: sequences [batch_size x seq_len]
         :param lengths: lengths [batch_size]
-        Return:
-            - torch.Tensor [batch_size x hidden_size]
+        
+        :return: torch.Tensor [batch_size x hidden_size]
         """
         # When using just one GPU this should not change behavior
         # but when splitting batches across GPU the tokens have padding
@@ -255,7 +256,7 @@ class RankingBase(ModelBase):
         :param pos_lengths: positive lengths [batch_size]
         :param neg_lengths: negative lengths [batch_size]
 
-        Return: Dictionary with model outputs to be passed to the loss function.
+        :return: Dictionary with model outputs to be passed to the loss function.
         """
         return {
             "ref_sentemb": self.get_sentence_embedding(ref_tokens, ref_lengths),
