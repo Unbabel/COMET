@@ -37,5 +37,5 @@ pool: avg
 
 dropout: 0.1
 activations: Tanh
-hidden_sizes: "3072,1536"
+hidden_sizes: "2048,1024"
 final_activation: False
