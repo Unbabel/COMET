@@ -478,6 +478,8 @@ class ModelBase(ptl.LightningModule):
 
     def langid(self, segment: str) -> str:
         """Auxiliar function to identify the language of a specific segment.
+        Useful for detecting MT hypothesis that DO NOT TRANSLATE the source. These segments
+        will be scored high due to its similarity to the source. 
         
         :param segment: String with the text we wish to identify the langauge.
 

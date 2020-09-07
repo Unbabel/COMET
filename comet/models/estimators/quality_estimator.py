@@ -10,13 +10,14 @@ from typing import Dict, List, Tuple, Union
 
 import pandas as pd
 import torch
+from tqdm import tqdm
 
 from comet.models.estimators import CometEstimator, Estimator
 from comet.models.utils import average_pooling, max_pooling
 from comet.modules.feedforward import FeedForward
 from comet.modules.scalar_mix import ScalarMixWithDropout
 from torchnlp.utils import collate_tensors
-
+from comet.models.utils import move_to_cpu, move_to_cuda
 
 class QualityEstimator(CometEstimator):
     """
@@ -115,9 +116,9 @@ class QualityEstimator(CometEstimator):
         Function that encodes both Source, MT and returns a quality score.
 
         :param mt_tokens: MT sequences [batch_size x mt_seq_len]
-        :param src_tokens: REF sequences [batch_size x src_seq_len]
+        :param src_tokens: SRC sequences [batch_size x src_seq_len]
         :param mt_lengths: MT lengths [batch_size]
-        :param src_lengths: REF lengths [batch_size]
+        :param src_lengths: SRC lengths [batch_size]
 
         :return: Dictionary with model outputs to be passed to the loss function.
         """

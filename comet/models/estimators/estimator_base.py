@@ -263,13 +263,6 @@ class Estimator(ModelBase):
                 pbar.close()
 
         assert len(scores) == len(samples)
-        for i in range(len(scores)):
-            samples[i]["predicted_score"] = scores[i]
-            samples[i]["langid"] = {
-                "src": self.langid(samples[i]["src"]),
-                "mt": self.langid(samples[i]["mt"]),
-                "ref": self.langid(samples[i]["ref"]),
-            }
         return samples, scores
 
     def document_predict(
@@ -296,13 +289,7 @@ class Estimator(ModelBase):
 
         inputs, lengths = [], []
         for d in documents:
-            if "alt" in d:
-                d = {"src": d["src"], "mt": d["mt"], "ref": d["ref"], "alt": d["alt"]}
-            else:
-                d = {"src": d["src"], "mt": d["mt"], "ref": d["ref"]}
-
             d = [dict(zip(d, t)) for t in zip(*d.values())]
-
             # For very long documents we need to create chunks.
             # (64 sentences per chunk)
             if len(d) > 64:
