@@ -13,11 +13,12 @@ import torch
 from tqdm import tqdm
 
 from comet.models.estimators import CometEstimator, Estimator
-from comet.models.utils import average_pooling, max_pooling
+from comet.models.utils import (average_pooling, max_pooling, move_to_cpu,
+                                move_to_cuda)
 from comet.modules.feedforward import FeedForward
 from comet.modules.scalar_mix import ScalarMixWithDropout
 from torchnlp.utils import collate_tensors
-from comet.models.utils import move_to_cpu, move_to_cuda
+
 
 class QualityEstimator(CometEstimator):
     """

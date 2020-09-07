@@ -67,6 +67,11 @@ model.predict(data)
 | `wmt-base-hter-estimator` | Estimator model build on top of XLM-R (base) trained to regress on HTER. |
 | `emnlp-base-da-ranker`      | Translation ranking model that uses XLM-R to encode sentences. This model was trained with WMT17 and WMT18 Direct Assessments Relative Ranks (DARR). |
 
+#### QE-as-a-metric:
+
+| Model              |               Description                        |
+| -------------------- | -------------------------------- |
+| `wmt-large-qe-estimator-1719` | Quality Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19. |
 
 ## Train your own Metric: 
 

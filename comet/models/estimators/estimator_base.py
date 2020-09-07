@@ -15,7 +15,8 @@ from tqdm import tqdm
 
 from comet.metrics import RegressionReport
 from comet.models.model_base import ModelBase
-from comet.models.utils import average_pooling, max_pooling, move_to_cpu, move_to_cuda
+from comet.models.utils import (average_pooling, max_pooling, move_to_cpu,
+                                move_to_cuda)
 
 
 class Estimator(ModelBase):
