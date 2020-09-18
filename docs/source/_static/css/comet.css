@@ -1,0 +1,23 @@
+.wy-side-nav-search {
+    background-color: #C94A1F;
+}
+
+.wy-side-nav-search > div.version {
+    color: white;
+}
+
+.wy-menu-vertical p.caption {
+    color: #C94A1F;
+}
+
+.wy-side-nav-search input[type=text] {
+    border-color: #1a1a1a;
+}
+
+a {
+    color: #C94A1F;
+}
+
+a:hover {
+    color: #1a1a1a;
+}
