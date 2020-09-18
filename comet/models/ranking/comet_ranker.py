@@ -76,13 +76,11 @@ class CometRanker(RankingBase):
     def predict(
         self, samples: Dict[str, str], cuda: bool = False, show_progress: bool = False
     ) -> (Dict[str, Union[str, float]], List[float]):
-        """Function that runs a model prediction,
-        
+        """ Function that runs a model prediction,
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
-        
-        :return: Dictionary with model outputs
+        Return: Dictionary with model outputs
         """
         if self.training:
             self.eval()
@@ -95,7 +93,6 @@ class CometRanker(RankingBase):
                 samples[i : i + self.hparams.batch_size]
                 for i in range(0, len(samples), self.hparams.batch_size)
             ]
-
             model_inputs = []
             if show_progress:
                 pbar = tqdm(
@@ -114,9 +111,9 @@ class CometRanker(RankingBase):
                     total=len(batches), desc="Scoring hypothesis...", dynamic_ncols=True
                 )
 
-            scores = []
-            for model_input in model_inputs:
-                src_input, mt_input, ref_input = model_input
+            distance_weighted, distance_src, distance_ref = [], [], []
+            for k, model_input in enumerate(model_inputs):
+                src_input, mt_input, ref_input, alt_input = model_input
                 if cuda and torch.cuda.is_available():
                     src_embeddings = self.get_sentence_embedding(
                         **move_to_cuda(src_input)
@@ -134,6 +131,18 @@ class CometRanker(RankingBase):
                         mt_embeddings, src_embeddings
                     ).cpu()
 
+                    # When 2 references are given the distance to the reference is the Min between
+                    # both references.
+                    if alt_input is not None:
+                        alt_embeddings = self.get_sentence_embedding(
+                            **move_to_cuda(alt_input)
+                        )
+                        alt_distances = F.pairwise_distance(
+                            mt_embeddings, alt_embeddings
+                        ).cpu()
+                        ref_distances = torch.stack([ref_distances, alt_distances])
+                        ref_distances = ref_distances.min(dim=0).values
+
                 else:
                     src_embeddings = self.get_sentence_embedding(**src_input)
                     mt_embeddings = self.get_sentence_embedding(**mt_input)
@@ -141,16 +150,18 @@ class CometRanker(RankingBase):
                     ref_distances = F.pairwise_distance(mt_embeddings, ref_embeddings)
                     src_distances = F.pairwise_distance(mt_embeddings, src_embeddings)
 
-                # Combine distances:
-                ref_weights = src_distances / (ref_distances + src_distances)
-                ref_distances = ref_distances * ref_weights
-                src_weights = ref_distances / (src_distances + ref_distances)
-                src_distances = src_distances * src_weights
-                distances = ref_distances + src_distances
+                # Harmonic mean between the distances:
+                distances = (2 * ref_distances * src_distances) / (
+                    ref_distances + src_distances
+                )
+                src_distances = ref_distances.numpy().tolist()
+                ref_distances = ref_distances.numpy().tolist()
                 distances = distances.numpy().tolist()
 
                 for i in range(len(distances)):
-                    scores.append(1 / (1 + distances[i]))
+                    distance_weighted.append(1 / (1 + distances[i]))
+                    distance_src.append(1 / (1 + src_distances[i]))
+                    distance_ref.append(1 / (1 + ref_distances[i]))
 
                 if show_progress:
                     pbar.update(1)
@@ -158,9 +169,25 @@ class CometRanker(RankingBase):
             if show_progress:
                 pbar.close()
 
-        assert len(scores) == len(samples)
-        for i in range(len(scores)):
-            samples[i]["predicted_score"] = scores[i]
+        scores = []
+        for i in range(len(samples)):
+            samples[i]["langid"] = {
+                "src": self.langid(samples[i]["src"]),
+                "mt": self.langid(samples[i]["mt"]),
+                "ref": self.langid(samples[i]["ref"]),
+            }
+            if (
+                samples[i]["langid"]["src"] == samples[i]["langid"]["mt"]
+                and samples[i]["langid"]["mt"] != samples[i]["langid"]["ref"]
+            ):
+                scores.append(distance_ref[i])
+            else:
+                scores.append(distance_weighted[i])
+
+            samples[i]["predicted_score"] = scores[-1]
+            samples[i]["reference_distance"] = distance_ref[i]
+            samples[i]["source_distance"] = distance_src[i]
+
         return samples, scores
 
     def prepare_sample(
@@ -168,20 +195,24 @@ class CometRanker(RankingBase):
     ) -> Union[Tuple[Dict[str, torch.Tensor], None], List[Dict[str, torch.Tensor]]]:
         """
         Function that prepares a sample to input the model.
-        
         :param sample: list of dictionaries.
-        :param inference: If set to to False, then the model expects
+        :param inference: If set to to False, then the model expects 
             a MT and reference instead of anchor, pos, and neg segments.
 
-        :returns: Tuple with 2 dictionaries (model inputs and targets). 
-            If `inference=True` returns only the model inputs.
+        Returns:
+            - Tuple with a dictionary containing the model inputs and None.
+        or
+            - List with source, MT and reference tokenized and vectorized.
         """
         sample = collate_tensors(sample)
         if inference:
             src_inputs = self.encoder.prepare_sample(sample["src"])
             mt_inputs = self.encoder.prepare_sample(sample["mt"])
             ref_inputs = self.encoder.prepare_sample(sample["ref"])
-            return src_inputs, mt_inputs, ref_inputs
+            alt_inputs = (
+                self.encoder.prepare_sample(sample["alt"]) if "alt" in sample else None
+            )
+            return src_inputs, mt_inputs, ref_inputs, alt_inputs
 
         ref_inputs = self.encoder.prepare_sample(sample["ref"])
         src_inputs = self.encoder.prepare_sample(sample["src"])
