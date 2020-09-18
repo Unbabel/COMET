@@ -4,7 +4,6 @@ COMET command line interface (CLI)
 ==============
 Composed by 4 main commands:
     train       Used to train a machine translation metric.
-    test        Used to test a machine translation metric.
     score       Uses COMET to score a list of MT outputs.
     download    Used to download corpora or pretrained metric.
 """
@@ -68,38 +67,6 @@ def train(config):
 
 @comet.command()
 @click.option(
-    "--checkpoint",
-    required=True,
-    help="Model checkpoint path.",
-    type=click.Path(exists=True),
-)
-@click.option(
-    "--test_path",
-    required=True,
-    help="Testset data path.",
-    type=click.Path(exists=True),
-)
-@click.option(
-    "--cuda/--cpu",
-    default=True,
-    help="Flag that either runs inference on cuda or in cpu.",
-    show_default=True,
-)
-def test(checkpoint, test_path, cuda, to):
-    model = load_checkpoint(checkpoint)
-    click.secho(f"{checkpoint} reloaded for testing.", fg="yellow")
-    click.secho(f"Testing with {test_path} testset.", fg="yellow")
-    model.test_dataset = pd.read_csv(test_path).to_dict("records")
-    trainer = Trainer(
-        deterministic=True,
-        logger=False,
-        gpus=1 if torch.cuda.is_available() and cuda else None,
-    )
-    trainer.test(model)
-
-
-@comet.command()
-@click.option(
     "--model",
     default="da-ranker-v1.0",
     help="Name of the pretrained model OR path to a model checkpoint.",
@@ -137,6 +104,7 @@ def test(checkpoint, test_path, cuda, to):
     "--to_json",
     default=False,
     help="Creates and exports model predictions to a JSON file.",
+    type=str,
     show_default=True,
 )
 def score(model, source, hypothesis, reference, cuda, to_json):
