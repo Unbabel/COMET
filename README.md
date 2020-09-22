@@ -29,7 +29,7 @@ comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/referenc
 
 ```python
 from comet.models import download_model
-model = download_model("wmt-large-da-estimator-1719", "path/where/to/save/models")
+model = download_model("wmt-large-da-estimator-1719", "path/where/to/save/models/")
 data = [
     {
         "src": "Hello world!",
