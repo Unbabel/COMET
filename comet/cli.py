@@ -68,7 +68,7 @@ def train(config):
 @comet.command()
 @click.option(
     "--model",
-    default="da-ranker-v1.0",
+    default="wmt-large-da-estimator-1719",
     help="Name of the pretrained model OR path to a model checkpoint.",
     show_default=True,
     type=str,

@@ -9,7 +9,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="unbabel-comet",
-    version="0.0.2",
+    version="0.0.3",
     author="Ricardo Rei, Craig Stewart, Catarina Farinha, Alon Lavie",
     download_url="https://github.com/Unbabel/COMET",
     author_email="ricardo.rei@unbabel.com, craig.stewart@unbabel.com, catarina.farinha@unbabel.com, alon.lavie@unbabel.com",
