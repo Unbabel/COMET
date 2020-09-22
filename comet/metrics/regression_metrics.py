@@ -24,8 +24,7 @@ class RegressionReport(Metric):
         :param x: predicted scores.
         :param x: ground truth scores.
 
-        Return:
-            - Kendall Tau correlation value.
+        :return: Kendall Tau correlation value.
         """
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -42,8 +41,7 @@ class Kendall(Metric):
         :param x: predicted scores.
         :param x: ground truth scores.
 
-        Return:
-            - Kendall Tau correlation value.
+        :return: Kendall Tau correlation value.
         """
         return torch.tensor(kendalltau(x, y)[0], dtype=torch.float32)
 
@@ -58,8 +56,7 @@ class Pearson(Metric):
         :param x: predicted scores.
         :param x: ground truth scores.
 
-        Return:
-            - Pearson correlation value.
+        :return: Pearson correlation value.
         """
         return torch.tensor(pearsonr(x, y)[0], dtype=torch.float32)
 

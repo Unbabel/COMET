@@ -22,7 +22,7 @@ nr_frozen_epochs: 1
 scheduler: constant
 
 train_path: data/apequest/train.csv
-val_path: data/apequest/train.csv
+val_path: data/apequest/test.csv
 
 model: CometEstimator
 loss: mse

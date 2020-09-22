@@ -23,10 +23,8 @@ class WMTKendall(Metric):
         :param distance_pos: distance between the positive samples and the anchor (aka reference)
         :param distance_neg: distance between the negative samples and the anchor (aka reference)
 
-        Return:
-            - Level of agreement
-            - Number of times the positive sample is closer to the anchor.
-            - Number of times the negative sample is closer to the anchor.
+        :return: Tuple(Level of agreement, nº of positive sample closer to the anchor, 
+            nº of negative sample closer to the anchor).
         """
         concordance = torch.sum((distance_pos < distance_neg).float())
         discordance = torch.sum((distance_pos >= distance_neg).float())

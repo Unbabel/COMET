@@ -135,8 +135,7 @@ def build_trainer(hparams: Namespace) -> pl.Trainer:
     """
     :param hparams: Namespace
 
-    Returns:
-        - pytorch_lightning Trainer
+    :returns: Lightning Trainer (obj)
     """
     # Early Stopping Callback
     early_stop_callback = EarlyStopping(

@@ -77,10 +77,12 @@ class CometRanker(RankingBase):
         self, samples: Dict[str, str], cuda: bool = False, show_progress: bool = False
     ) -> (Dict[str, Union[str, float]], List[float]):
         """ Function that runs a model prediction,
+        
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
-        Return: Dictionary with model outputs
+        
+        :return: Dictionary with model outputs
         """
         if self.training:
             self.eval()
@@ -195,14 +197,13 @@ class CometRanker(RankingBase):
     ) -> Union[Tuple[Dict[str, torch.Tensor], None], List[Dict[str, torch.Tensor]]]:
         """
         Function that prepares a sample to input the model.
+        
         :param sample: list of dictionaries.
         :param inference: If set to to False, then the model expects 
             a MT and reference instead of anchor, pos, and neg segments.
 
-        Returns:
-            - Tuple with a dictionary containing the model inputs and None.
-        or
-            - List with source, MT and reference tokenized and vectorized.
+        :return: Tuple with a dictionary containing the model inputs and None OR List 
+            with source, MT and reference tokenized and vectorized.
         """
         sample = collate_tensors(sample)
         if inference:
