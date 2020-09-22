@@ -16,13 +16,13 @@ pip install unbabel-comet
 
 ### Via Bash:
 ```bash
-comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model wmt-large-da-estimator-1719
+comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt
 ```
 
-You can export your results to a JSON file using the `--to_json` flag.
+You can export your results to a JSON file using the `--to_json` flag and select another model/metric with `--model`.
 
 ```bash
-comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model wmt-large-da-estimator-1719 --to_json output.json
+comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model wmt-large-hter-estimator --to_json output.json
 ```
 
 ### Via Python:
