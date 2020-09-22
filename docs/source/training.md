@@ -1,6 +1,6 @@
 # Train your own Metric
 
-To train our models we rely on [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/0.8.4/) Library. This means that all our models are [Lightning Modules](https://pytorch-lightning.readthedocs.io/en/0.8.4/lightning-module.html).
+To train our models we rely on the [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/0.8.4/) Library. This means that all our models are [Lightning Modules](https://pytorch-lightning.readthedocs.io/en/0.8.4/lightning-module.html).
 
 To train a new metric we just need to run 1 command:
 
@@ -8,9 +8,9 @@ To train a new metric we just need to run 1 command:
 comet train -f {my_configs}.yaml
 ```
 
-This will setup a [Lightning Trainer](https://pytorch-lightning.readthedocs.io/en/0.8.4/trainer.html) and fit your module accordingly.
+This will setup a [Lightning Trainer](https://pytorch-lightning.readthedocs.io/en/0.8.4/trainer.html) and fit your model accordingly.
 ## Data Format
-To train your metric we expect your data to be a csv with the following columns:
+To train your metric we expect your data to be a csv with the following named columns:
 - `src`: The source segment.
 - `mt`: The machine translation hypothesis.
 - `ref`: The reference segment.
@@ -30,7 +30,7 @@ Example:
 | Argument | Default | Description |
 | :--------- | :------ | :------ |
 | `seed` | 3 | Training seed. | 
-| `deterministic` | True | If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility. |
+| `deterministic` | True | If `True` enables cudnn.deterministic. This might make your system slower, but ensures reproducibility. |
 | `verbose` | False | Verbosity mode. |
 | `early_stopping` | True | Enables early stopping. | 
 | `save_top_k` | 1 | Sets how many checkpoints we want to save (keeping only the best ones). |
@@ -49,12 +49,12 @@ Example:
 | `model` | `required` | Type of metric we want to train. Options: [`CometEstimator`, `CometRanker`, `QualityEstimator`] |
 | `batch_size` | 8 | Batch size used to train the model. |
 | `nr_frozen_epochs` | 0 | Number of epochs we keep the encoder frozen. |
-| `keep_embeddings_frozen` | False | If set to True, keeps the embedding layer frozen during training. Usefull to save some GPU memory. |
+| `keep_embeddings_frozen` | False | If set to `True`, keeps the embedding layer frozen during training. Useful to save some GPU memory. |
 | `optimizer` |  Adam | PyTorch Optimizer class name |
 | `learning_rate` | 1e-05 | Learning rate to be used during training. |
 | `scheduler` | constant | Learning Rate scheduler. Options: [`constant`, `linear_warmup`, `warmup_constant`]  |
-| `warmup_steps` | None |Scheduler warmup steps.   | 
-| `encoder_model` | XLMR | Encoder Model  to be used: Options: [`LASER`, `BERT`, `XLMR`]. | 
+| `warmup_steps` | None | Scheduler warmup steps. | 
+| `encoder_model` | XLMR | Encoder Model to be used: Options: [`LASER`, `BERT`, `XLMR`]. | 
 | `pretrained_model` | xlmr.base | pretrained model to be used e.g: xlmr.base vs xlmr.large (for LASER this is ignored) | 
 | `pool` | avg | Pooling technique to create the sentence embeddings. Options: [`avg`, `avg+cls`, `max`, `cls`, `default`] |
 | `load_weights` | False | Loads compatible weights from another checkpoint file. |

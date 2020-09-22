@@ -167,15 +167,15 @@
             
   <div class="section" id="train-your-own-metric">
 <h1>Train your own Metric<a class="headerlink" href="#train-your-own-metric" title="Permalink to this headline">¶</a></h1>
-<p>To train our models we rely on <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/">PyTorch Lightning</a> Library. This means that all our models are <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/lightning-module.html">Lightning Modules</a>.</p>
+<p>To train our models we rely on the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/">PyTorch Lightning</a> Library. This means that all our models are <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/lightning-module.html">Lightning Modules</a>.</p>
 <p>To train a new metric we just need to run 1 command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>comet train -f <span class="o">{</span>my_configs<span class="o">}</span>.yaml
 </pre></div>
 </div>
-<p>This will setup a <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/trainer.html">Lightning Trainer</a> and fit your module accordingly.</p>
+<p>This will setup a <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/trainer.html">Lightning Trainer</a> and fit your model accordingly.</p>
 <div class="section" id="data-format">
 <h2>Data Format<a class="headerlink" href="#data-format" title="Permalink to this headline">¶</a></h2>
-<p>To train your metric we expect your data to be a csv with the following columns:</p>
+<p>To train your metric we expect your data to be a csv with the following named columns:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">src</span></code>: The source segment.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">mt</span></code>: The machine translation hypothesis.</p></li>
@@ -228,7 +228,7 @@
 <tr>
 <td align="left"><code>deterministic</code></td>
 <td align="left">True</td>
-<td align="left">If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility.</td>
+<td align="left">If <code>True</code> enables cudnn.deterministic. This might make your system slower, but ensures reproducibility.</td>
 </tr>
 <tr>
 <td align="left"><code>verbose</code></td>
@@ -306,7 +306,7 @@
 <tr>
 <td align="left"><code>keep_embeddings_frozen</code></td>
 <td align="left">False</td>
-<td align="left">If set to True, keeps the embedding layer frozen during training. Usefull to save some GPU memory.</td>
+<td align="left">If set to <code>True</code>, keeps the embedding layer frozen during training. Useful to save some GPU memory.</td>
 </tr>
 <tr>
 <td align="left"><code>optimizer</code></td>
@@ -331,7 +331,7 @@
 <tr>
 <td align="left"><code>encoder_model</code></td>
 <td align="left">XLMR</td>
-<td align="left">Encoder Model  to be used: Options: [<code>LASER</code>, <code>BERT</code>, <code>XLMR</code>].</td>
+<td align="left">Encoder Model to be used: Options: [<code>LASER</code>, <code>BERT</code>, <code>XLMR</code>].</td>
 </tr>
 <tr>
 <td align="left"><code>pretrained_model</code></td>
