@@ -1,4 +1,4 @@
-<div style="text-align:center"><img src="resources/LOGO.png" alt="comet_logo"></div>
+<div style="text-align:center"><img src="docs/source/_static/img/comet_logo.png" alt="comet_logo"></div>
 
 ## Quick Installation
 

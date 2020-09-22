@@ -49,7 +49,9 @@ extensions = [
     # 'sphinx-issues',
     # 'pytest-sphinx',
     'sphinx_markdown_tables',
+    'sphinx.ext.autosectionlabel'
 ]
+autosectionlabel_prefix_document = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -84,7 +86,6 @@ pygments_style = None
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
-
 
 
 # Add any paths that contain custom static files (such as style sheets) here,

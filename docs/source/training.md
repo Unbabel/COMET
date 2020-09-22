@@ -27,57 +27,56 @@ Example:
 
 ### Lightning Trainer Configurations
 
-| Argument | Description | Default |
-| :---------: | :------: | :------: |
-| `seed` | Training seed. | 3 |
-| `deterministic` | If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility. | True |
-| `verbose` | Verbosity mode. | False |
-| `overfit_batches` | Uses this much data of the training set. If nonzero, will use the same training set for validation and testing. If the training dataloaders have shuffle=True, Lightning will automatically disable it. | 0 |
-| `early_stopping` |  Enables early stopping. | True |
-| `save_top_k` | Sets how many checkpoints we want to save (keeping only the best ones). | 1 |
-| `monitor` | Metric to monitor during training. | Kendall |
-| `metric_mode` | 'min' or 'max' depending if we wish to maximize or minimize the metric. | max |
-| `min_delta` | Sensitivity to the metric. | 0 |
-| `patience` | Number of epochs without improvement before stopping training | 1 |
-| `accumulate_grad_batches` | Gradient accumulation steps | 1 |
-| `lr_finder` | Enables the learning rate finder described in [Cyclical Learning Rates for Training Neural Networks](https://arxiv.org/abs/1506.01186) | False |
+| Argument | Default | Description |
+| :--------- | :------ | :------ |
+| `seed` | 3 | Training seed. | 
+| `deterministic` | True | If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility. |
+| `verbose` | False | Verbosity mode. |
+| `early_stopping` | True | Enables early stopping. | 
+| `save_top_k` | 1 | Sets how many checkpoints we want to save (keeping only the best ones). |
+| `monitor` | Kendall | Metric to monitor during training. |
+| `metric_mode` | max | 'min' or 'max' depending if we wish to maximize or minimize the metric. |
+| `min_delta` | 0 | Sensitivity to the metric. |
+| `patience` | 1 | Number of epochs without improvement before stopping training |
+| `accumulate_grad_batches` | 1 | Gradient accumulation steps |
+| `lr_finder` | False | Enables the learning rate finder described in [Cyclical Learning Rates for Training Neural Networks](https://arxiv.org/abs/1506.01186) |
 
 
 ### Base Model Configurations
 
-| Argument | Description | Default |
+| Argument | Default | Description |
 | :--------- | :------ | :------ |
-| `model` | Type of metric we want to train. Options: [`CometEstimator`, `CometRanker`, `QualityEstimator`] | None |
-| `batch_size` | Batch size used to train the model. | 8 |
-| `nr_frozen_epochs` | Number of epochs we keep the encoder frozen. | 0 |
-| `keep_embeddings_frozen` | If set to True, keeps the embedding layer frozen during training. Usefull to save some GPU memory. | False |
-| `optimizer` |  PyTorch Optimizer class name | Adam |
-| `learning_rate` | Learning rate to be used during training. | 1e-05 |
-| `scheduler` | Learning Rate scheduler. Options: [`constant`, `linear_warmup`, `warmup_constant`]  | constant |
-| `warmup_steps` | Scheduler warmup steps.   | None |
-| `encoder_model` | Encoder Model  to be used: Options: [`LASER`, `BERT`, `XLMR`]. | XLMR |
-| `pretrained_model` | pretrained model to be used e.g: xlmr.base vs xlmr.large (for LASER this is ignored) | xlmr.base |
-| `pool` | Pooling technique to create the sentence embeddings. Options: [`avg`, `avg+cls`, `max`, `cls`, `default`] | avg |
-| `load_weights` | Loads compatible weights from another checkpoint file. | False |
-| `train_path` | Path to the training csv. | None |
-| `val_path` | Path to the validation csv. | None |
-| `test_path` | Path to the test csv. (Not used) | None |
-| `loader_workers` | Number of workers for loading and preparing the batches. | False |
+| `model` | `required` | Type of metric we want to train. Options: [`CometEstimator`, `CometRanker`, `QualityEstimator`] |
+| `batch_size` | 8 | Batch size used to train the model. |
+| `nr_frozen_epochs` | 0 | Number of epochs we keep the encoder frozen. |
+| `keep_embeddings_frozen` | False | If set to True, keeps the embedding layer frozen during training. Usefull to save some GPU memory. |
+| `optimizer` |  Adam | PyTorch Optimizer class name |
+| `learning_rate` | 1e-05 | Learning rate to be used during training. |
+| `scheduler` | constant | Learning Rate scheduler. Options: [`constant`, `linear_warmup`, `warmup_constant`]  |
+| `warmup_steps` | None |Scheduler warmup steps.   | 
+| `encoder_model` | XLMR | Encoder Model  to be used: Options: [`LASER`, `BERT`, `XLMR`]. | 
+| `pretrained_model` | xlmr.base | pretrained model to be used e.g: xlmr.base vs xlmr.large (for LASER this is ignored) | 
+| `pool` | avg | Pooling technique to create the sentence embeddings. Options: [`avg`, `avg+cls`, `max`, `cls`, `default`] |
+| `load_weights` | False | Loads compatible weights from another checkpoint file. |
+| `train_path` | `required` | Path to the training csv. |
+| `val_path` | `required` | Path to the validation csv. |
+| `test_path` | None | Path to the test csv. (Not used) |
+| `loader_workers` | False | Number of workers for loading and preparing the batches. |
 
 **Note:** The `Ranker` model requires no further configs.
 
 ### Estimator Specific Configurations
 
-| Argument | Description | Default |
-| :---------: | :------: | :------: |
-| `encoder_learning_rate` | Learning rate used to fine-tune the encoder. Note that this is different from `learning_rate` config that will be used only for the top layer.  | None |
-| `layerwise_decay` | Decay for the layer wise learning rates. If 1.0 no decay is applied. | 1.0 |
-| `layer` | Layer from the pretrained encoder that we wish to extract the word embeddings. If `mix` uses a layer-wise attention mechanism to combine different layers. | mix |
-| `scalar_mix_dropout` | Sets the layer-wise dropout. Ignored if `layer != mix`. | mix |
-| `loss` | `mse` for Mean Squared Error or `binary_xent`for Binary Cross Entropy. | mse |
-| `hidden_sizes` | Hidden sizes of the different Feed-Forward layers on top. | 1536,768 |
-| `activations` | Activation functions for the Feed-Forward on top. | Tanh |
-| `dropout` | Dropout used in the Feed-Forward on top. | Tanh |
-| `final_activation` | Feed-Forward final activation function. If `False` the model outputs the logits | Sigmoid |
+| Argument | Default | Description |
+| :--------- | :------ | :------ |
+| `encoder_learning_rate` | `required` | Learning rate used to fine-tune the encoder. Note that this is different from `learning_rate` config that will be used only for the top layer.  |
+| `layerwise_decay` | 1.0 | Decay for the layer wise learning rates. If 1.0 no decay is applied. |
+| `layer` | mix | Layer from the pretrained encoder that we wish to extract the word embeddings. If `mix` uses a layer-wise attention mechanism to combine different layers. |
+| `scalar_mix_dropout` | mix | Sets the layer-wise dropout. Ignored if `layer != mix`. |
+| `loss` | mse | `mse` for Mean Squared Error or `binary_xent`for Binary Cross Entropy. |
+| `hidden_sizes` | 1536,768 | Hidden sizes of the different Feed-Forward layers on top. |
+| `activations` | Tanh | Activation functions for the Feed-Forward on top. |
+| `dropout` | 0.1 | Dropout used in the Feed-Forward on top. |
+| `final_activation` | Sigmoid | Feed-Forward final activation function. If `False` the model outputs the logits |
 
 
