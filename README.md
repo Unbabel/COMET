@@ -2,6 +2,8 @@
 
 ## Quick Installation
 
+Detailed usage examples and instructions can be found in the [Full Documentation](https://unbabel.github.io/COMET/html/index.html).
+
 To install COMET as a package, simply run
 
 ```bash
