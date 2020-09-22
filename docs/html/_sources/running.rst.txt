@@ -20,7 +20,7 @@ Using Python
 Instead of using CLI you can score you models using Python with the `predict` function::
 
    from comet.models import download_model
-   model = download_model("wmt-large-da-estimator-1719", "path/where/to/save/models")
+   model = download_model("wmt-large-da-estimator-1719", "path/where/to/save/models/")
    data = [
        {
            "src": "Hello world!",
