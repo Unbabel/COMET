@@ -1,0 +1,440 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>comet.models.encoders.laser &mdash; COMET 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/css/comet.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home" alt="Documentation Home"> COMET
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../running.html">Running COMET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">COMET Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../training.html">Train your own Metric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../library.html">Library Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">COMET</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>comet.models.encoders.laser</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for comet.models.encoders.laser</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">LASER Encoder Model</span>
+<span class="sd">===================================</span>
+<span class="sd">    Pretrained LASER Encoder model from Facebook.</span>
+<span class="sd">    https://github.com/facebookresearch/LASER</span>
+
+<span class="sd">    Check the original papers:</span>
+<span class="sd">        - https://arxiv.org/abs/1704.04154</span>
+<span class="sd">        - https://arxiv.org/abs/1812.10464</span>
+<span class="sd">    </span>
+<span class="sd">    and the original implementation: https://github.com/facebookresearch/LASER</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="kn">from</span> <span class="nn">comet.models.encoders.encoder_base</span> <span class="kn">import</span> <span class="n">Encoder</span>
+<span class="kn">from</span> <span class="nn">comet.models.utils</span> <span class="kn">import</span> <span class="n">convert_padding_direction</span><span class="p">,</span> <span class="n">sort_sequences</span>
+<span class="kn">from</span> <span class="nn">comet.tokenizers</span> <span class="kn">import</span> <span class="n">FastBPEEncoder</span>
+<span class="kn">from</span> <span class="nn">torchnlp.download</span> <span class="kn">import</span> <span class="n">download_file_maybe_extract</span>
+<span class="kn">from</span> <span class="nn">torchnlp.utils</span> <span class="kn">import</span> <span class="n">lengths_to_mask</span>
+
+<span class="c1"># LASER model trained for 93 different languages.</span>
+<span class="n">L93_LASER_MODEL_URL</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;https://dl.fbaipublicfiles.com/laser/models/bilstm.93langs.2018-12-26.pt&quot;</span>
+<span class="p">)</span>
+<span class="n">L93_MODEL_NAME</span> <span class="o">=</span> <span class="s2">&quot;bilstm.93langs.2018-12-26.pt&quot;</span>
+
+
+<span class="c1"># LASER model trained with europarl parallel data.</span>
+<span class="n">EPARL_LASER_MODEL_URL</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">&quot;https://dl.fbaipublicfiles.com/laser/models/bilstm.eparl21.2018-11-19.pt&quot;</span>
+<span class="p">)</span>
+<span class="n">EPARL_MODEL_NAME</span> <span class="o">=</span> <span class="s2">&quot;bilstm.eparl21.2018-11-19.pt&quot;</span>
+
+<span class="k">if</span> <span class="s2">&quot;HOME&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+    <span class="n">saving_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;HOME&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;/.cache/torch/unbabel_comet/&quot;</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;HOME environment variable is not defined.&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="LASEREncoder"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.laser.LASEREncoder">[docs]</a><span class="k">class</span> <span class="nc">LASEREncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Bidirectional LASER Encoder</span>
+<span class="sd">        </span>
+<span class="sd">    :param num_embeddings: Size of the vocabulary (73640 BPE tokens).</span>
+<span class="sd">    :param padding_idx: Index of the padding token in the vocabulary.</span>
+<span class="sd">    :param embed_dim: Size of the embeddings.</span>
+<span class="sd">    :param hidden_size: Number of features of the LSTM hidden layer.</span>
+<span class="sd">    :param num_layers: Number of LSTM stacked layers.</span>
+<span class="sd">    :param bidirectinal: Flag to initialize a Bidirectional LSTM.</span>
+<span class="sd">    :param left_pad: If set to True the inputs can be left padded.</span>
+<span class="sd">        (internaly they will be converted to right padded inputs)</span>
+<span class="sd">    :param padding_value: Value of the padding token.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_embeddings</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">73640</span><span class="p">,</span>
+        <span class="n">padding_idx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">embed_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">320</span><span class="p">,</span>
+        <span class="n">hidden_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+        <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="n">bidirectional</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">left_pad</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">padding_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_units</span> <span class="o">=</span> <span class="n">hidden_size</span> <span class="o">*</span> <span class="mi">2</span> <span class="k">if</span> <span class="n">bidirectional</span> <span class="k">else</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bidirectional</span> <span class="o">=</span> <span class="n">bidirectional</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_embeddings</span> <span class="o">=</span> <span class="n">num_embeddings</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embed_dim</span> <span class="o">=</span> <span class="n">embed_dim</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">padding_idx</span> <span class="o">=</span> <span class="n">padding_idx</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embed_tokens</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span>
+            <span class="n">num_embeddings</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">,</span> <span class="n">padding_idx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">padding_idx</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">LSTM</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="n">embed_dim</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="n">num_layers</span><span class="p">,</span>
+            <span class="n">bidirectional</span><span class="o">=</span><span class="n">bidirectional</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">left_pad</span> <span class="o">=</span> <span class="n">left_pad</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">padding_value</span> <span class="o">=</span> <span class="n">padding_value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">4096</span>  <span class="c1"># More than that is not recommended</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_layers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">1</span>  <span class="c1"># In LASER we can only use the last layer</span>
+
+<div class="viewcode-block" id="LASEREncoder.freeze_embeddings"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.laser.LASEREncoder.freeze_embeddings">[docs]</a>    <span class="k">def</span> <span class="nf">freeze_embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Freezes the embedding layer of the network to save some memory while training. &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed_tokens</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
+            <span class="n">param</span><span class="o">.</span><span class="n">requires_grad</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="LASEREncoder.from_pretrained"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.laser.LASEREncoder.from_pretrained">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">from_pretrained</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hparams</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Function that loads a pretrained LASER encoder and the respective tokenizer.</span>
+<span class="sd">        </span>
+<span class="sd">        :param hparams: Namespace.</span>
+
+<span class="sd">        :returns: LASER Encoder model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">saving_directory</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">saving_directory</span><span class="p">)</span>
+
+        <span class="n">download_file_maybe_extract</span><span class="p">(</span>
+            <span class="n">L93_LASER_MODEL_URL</span><span class="p">,</span>
+            <span class="n">directory</span><span class="o">=</span><span class="n">saving_directory</span><span class="p">,</span>
+            <span class="n">check_files</span><span class="o">=</span><span class="p">[</span><span class="n">L93_MODEL_NAME</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="n">state_dict</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">saving_directory</span> <span class="o">+</span> <span class="n">L93_MODEL_NAME</span><span class="p">)</span>
+        <span class="n">encoder</span> <span class="o">=</span> <span class="n">LASEREncoder</span><span class="p">(</span><span class="o">**</span><span class="n">state_dict</span><span class="p">[</span><span class="s2">&quot;params&quot;</span><span class="p">])</span>
+        <span class="n">encoder</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">state_dict</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">])</span>
+        <span class="n">encoder</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">FastBPEEncoder</span><span class="p">(</span><span class="n">state_dict</span><span class="p">[</span><span class="s2">&quot;dictionary&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">encoder</span></div>
+
+<div class="viewcode-block" id="LASEREncoder.forward"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.laser.LASEREncoder.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Encodes a batch of sequences.</span>
+
+<span class="sd">        :param tokens: Torch tensor with the input sequences [batch_size x seq_len].</span>
+<span class="sd">        :param lengths: Torch tensor with the lenght of each sequence [seq_len].</span>
+
+<span class="sd">        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` </span>
+<span class="sd">            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), </span>
+<span class="sd">            `all_layers` (List with word_embeddings from all layers, `extra` (tuple with the LSTM outputs, </span>
+<span class="sd">            hidden states and cell states).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="o">.</span><span class="n">flatten_parameters</span><span class="p">()</span>  <span class="c1"># Is it required? should this be in the __init__?</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">lengths</span><span class="p">,</span> <span class="n">unsorted_idx</span> <span class="o">=</span> <span class="n">sort_sequences</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">lengths</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">left_pad</span><span class="p">:</span>
+            <span class="c1"># convert left-padding to right-padding</span>
+            <span class="n">tokens</span> <span class="o">=</span> <span class="n">convert_padding_direction</span><span class="p">(</span>
+                <span class="n">tokens</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">padding_idx</span><span class="p">,</span>
+                <span class="n">left_to_right</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">bsz</span><span class="p">,</span> <span class="n">seqlen</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+
+        <span class="c1"># embed tokens</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embed_tokens</span><span class="p">(</span><span class="n">tokens</span><span class="p">)</span>
+
+        <span class="c1"># B x T x C -&gt; T x B x C</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># pack embedded source tokens into a PackedSequence</span>
+        <span class="n">packed_x</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">rnn</span><span class="o">.</span><span class="n">pack_padded_sequence</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">lengths</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+        <span class="c1"># apply LSTM</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bidirectional</span><span class="p">:</span>
+            <span class="n">state_size</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_layers</span><span class="p">,</span> <span class="n">bsz</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">state_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_layers</span><span class="p">,</span> <span class="n">bsz</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span>
+
+        <span class="n">h0</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">*</span><span class="n">state_size</span><span class="p">)</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+        <span class="n">c0</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="o">*</span><span class="n">state_size</span><span class="p">)</span><span class="o">.</span><span class="n">zero_</span><span class="p">()</span>
+        <span class="n">packed_outs</span><span class="p">,</span> <span class="p">(</span><span class="n">final_hiddens</span><span class="p">,</span> <span class="n">final_cells</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm</span><span class="p">(</span><span class="n">packed_x</span><span class="p">,</span> <span class="p">(</span><span class="n">h0</span><span class="p">,</span> <span class="n">c0</span><span class="p">))</span>
+
+        <span class="c1"># unpack outputs and apply dropout</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">rnn</span><span class="o">.</span><span class="n">pad_packed_sequence</span><span class="p">(</span>
+            <span class="n">packed_outs</span><span class="p">,</span> <span class="n">padding_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">padding_value</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">())</span> <span class="o">==</span> <span class="p">[</span><span class="n">seqlen</span><span class="p">,</span> <span class="n">bsz</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_units</span><span class="p">]</span>
+        <span class="n">word_embeddings</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bidirectional</span><span class="p">:</span>
+
+            <span class="k">def</span> <span class="nf">combine_bidir</span><span class="p">(</span><span class="n">outs</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                    <span class="p">[</span>
+                        <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">outs</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span><span class="p">],</span> <span class="n">outs</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
+                            <span class="mi">1</span><span class="p">,</span> <span class="n">bsz</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_units</span>
+                        <span class="p">)</span>
+                        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_layers</span><span class="p">)</span>
+                    <span class="p">],</span>
+                    <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="n">final_hiddens</span> <span class="o">=</span> <span class="n">combine_bidir</span><span class="p">(</span><span class="n">final_hiddens</span><span class="p">)</span>
+            <span class="n">final_cells</span> <span class="o">=</span> <span class="n">combine_bidir</span><span class="p">(</span><span class="n">final_cells</span><span class="p">)</span>
+
+        <span class="n">encoder_padding_mask</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">padding_idx</span><span class="p">)</span><span class="o">.</span><span class="n">t</span><span class="p">()</span>
+
+        <span class="c1"># Set padded outputs to -inf so they are not selected by max-pooling</span>
+        <span class="n">padding_mask</span> <span class="o">=</span> <span class="n">tokens</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">padding_idx</span><span class="p">)</span><span class="o">.</span><span class="n">t</span><span class="p">()</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">padding_mask</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">float</span><span class="p">()</span><span class="o">.</span><span class="n">masked_fill_</span><span class="p">(</span><span class="n">padding_mask</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;-inf&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">type_as</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># Build the sentence embedding by max-pooling over the encoder outputs</span>
+        <span class="n">sentemb</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">model_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reorder_output</span><span class="p">(</span>
+            <span class="n">encoder_out</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">&quot;sentemb&quot;</span><span class="p">:</span> <span class="n">sentemb</span><span class="p">,</span>
+                <span class="s2">&quot;extra&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">word_embeddings</span><span class="p">,</span> <span class="n">final_hiddens</span><span class="p">,</span> <span class="n">final_cells</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="n">new_order</span><span class="o">=</span><span class="n">unsorted_idx</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">model_out</span><span class="p">[</span><span class="s2">&quot;mask&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lengths_to_mask</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">tokens</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">model_out</span><span class="p">[</span><span class="s2">&quot;wordemb&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">model_out</span><span class="p">[</span><span class="s2">&quot;extra&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">model_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">model_out</span><span class="p">[</span><span class="s2">&quot;wordemb&quot;</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="n">model_out</span></div>
+
+<div class="viewcode-block" id="LASEREncoder.reorder_output"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.laser.LASEREncoder.reorder_output">[docs]</a>    <span class="k">def</span> <span class="nf">reorder_output</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">encoder_out</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">new_order</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function that reorders the LASER encoder outputs at the batch level.</span>
+<span class="sd">        </span>
+<span class="sd">        :param encoder_out: the output of the forward function.</span>
+<span class="sd">        :param new_order: the new order inside the batch.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># reorder encoder_out</span>
+        <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;extra&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">eo</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">new_order</span><span class="p">)</span> <span class="k">for</span> <span class="n">eo</span> <span class="ow">in</span> <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;extra&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="c1"># reorder sentence embeddings</span>
+        <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;sentemb&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;sentemb&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">index_select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">new_order</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">encoder_out</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Unbabel. All rights reserved.Source code available under the AGPL-3.0.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,487 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>comet.models.estimators.comet_estimator &mdash; COMET 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/css/comet.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+        <script src="../../../../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home" alt="Documentation Home"> COMET
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../running.html">Running COMET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">COMET Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../training.html">Train your own Metric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../library.html">Library Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">COMET</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+      <li>comet.models.estimators.comet_estimator</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for comet.models.estimators.comet_estimator</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Comet Estimator Model</span>
+<span class="sd">================================</span>
+<span class="sd">    Comet Estimator predicts a quality score for the </span>
+<span class="sd">    hyphotesis (e.g: the MT text) by looking at reference, source and MT.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="kn">from</span> <span class="nn">comet.models.estimators.estimator_base</span> <span class="kn">import</span> <span class="n">Estimator</span>
+<span class="kn">from</span> <span class="nn">comet.modules.feedforward</span> <span class="kn">import</span> <span class="n">FeedForward</span>
+<span class="kn">from</span> <span class="nn">comet.modules.scalar_mix</span> <span class="kn">import</span> <span class="n">ScalarMixWithDropout</span>
+<span class="kn">from</span> <span class="nn">torchnlp.utils</span> <span class="kn">import</span> <span class="n">collate_tensors</span>
+
+
+<div class="viewcode-block" id="CometEstimator"><a class="viewcode-back" href="../../../../library.html#comet.models.estimators.comet_estimator.CometEstimator">[docs]</a><span class="k">class</span> <span class="nc">CometEstimator</span><span class="p">(</span><span class="n">Estimator</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Estimator class that uses a pretrained encoder to extract features from</span>
+<span class="sd">    the sequences and then passes those features to a feed forward estimator.</span>
+
+<span class="sd">    :param hparams: Namespace containing the hyperparameters.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CometEstimator.ModelConfig"><a class="viewcode-back" href="../../../../library.html#comet.models.estimators.comet_estimator.CometEstimator.ModelConfig">[docs]</a>    <span class="k">class</span> <span class="nc">ModelConfig</span><span class="p">(</span><span class="n">Estimator</span><span class="o">.</span><span class="n">ModelConfig</span><span class="p">):</span>
+        <span class="n">switch_prob</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">hparams</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">hparams</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_build_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Estimator</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the estimator architecture.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_build_model</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">encoder_model</span> <span class="o">!=</span> <span class="s2">&quot;LASER&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layer</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layer</span> <span class="o">!=</span> <span class="s2">&quot;mix&quot;</span>
+                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layer</span>
+            <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">scalar_mix</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">ScalarMixWithDropout</span><span class="p">(</span>
+                    <span class="n">mixture_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span>
+                    <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">scalar_mix_dropout</span><span class="p">,</span>
+                    <span class="n">do_layer_norm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">==</span> <span class="s2">&quot;mix&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">!=</span> <span class="s2">&quot;default&quot;</span>
+                <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
+
+        <span class="n">input_emb_sz</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">output_units</span> <span class="o">*</span> <span class="mi">6</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">!=</span> <span class="s2">&quot;cls+avg&quot;</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">output_units</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">6</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">ff</span> <span class="o">=</span> <span class="n">FeedForward</span><span class="p">(</span>
+            <span class="n">in_dim</span><span class="o">=</span><span class="n">input_emb_sz</span><span class="p">,</span>
+            <span class="n">hidden_sizes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">hidden_sizes</span><span class="p">,</span>
+            <span class="n">activations</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">activations</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="n">final_activation</span><span class="o">=</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">final_activation</span>
+                <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="p">,</span> <span class="s2">&quot;final_activation&quot;</span>
+                <span class="p">)</span>  <span class="c1"># compatability with older checkpoints!</span>
+                <span class="k">else</span> <span class="s2">&quot;Sigmoid&quot;</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="CometEstimator.configure_optimizers"><a class="viewcode-back" href="../../../../library.html#comet.models.estimators.comet_estimator.CometEstimator.configure_optimizers">[docs]</a>    <span class="k">def</span> <span class="nf">configure_optimizers</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">LambdaLR</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot; Sets different Learning rates for different parameter groups. &quot;&quot;&quot;</span>
+        <span class="n">layer_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">layerwise_lr</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">encoder_learning_rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layerwise_decay</span>
+        <span class="p">)</span>
+        <span class="n">ff_parameters</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">}</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">encoder_model</span> <span class="o">!=</span> <span class="s2">&quot;LASER&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_mix</span><span class="p">:</span>
+            <span class="n">scalar_mix_parameters</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_mix</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+                    <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">]</span>
+
+            <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_optimizer</span><span class="p">(</span>
+                <span class="n">layer_parameters</span> <span class="o">+</span> <span class="n">ff_parameters</span> <span class="o">+</span> <span class="n">scalar_mix_parameters</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_optimizer</span><span class="p">(</span><span class="n">layer_parameters</span> <span class="o">+</span> <span class="n">ff_parameters</span><span class="p">)</span>
+        <span class="n">scheduler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_scheduler</span><span class="p">(</span><span class="n">optimizer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">optimizer</span><span class="p">],</span> <span class="p">[</span><span class="n">scheduler</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="CometEstimator.prepare_sample"><a class="viewcode-back" href="../../../../library.html#comet.models.estimators.comet_estimator.CometEstimator.prepare_sample">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_sample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">inference</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>
+    <span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function that prepares a sample to input the model.</span>
+
+<span class="sd">        :param sample: list of dictionaries.</span>
+<span class="sd">        :param inference: If set to true prepares only the model inputs.</span>
+
+<span class="sd">        :returns: Tuple with 2 dictionaries (model inputs and targets). </span>
+<span class="sd">            If `inference=True` returns only the model inputs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sample</span> <span class="o">=</span> <span class="n">collate_tensors</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+        <span class="n">src_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">])</span>
+        <span class="n">mt_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;mt&quot;</span><span class="p">])</span>
+        <span class="n">ref_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">])</span>
+
+        <span class="n">src_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;src_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">src_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">mt_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;mt_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">mt_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">ref_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ref_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ref_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+        <span class="k">if</span> <span class="s2">&quot;alt&quot;</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">:</span>
+            <span class="n">alt_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;alt&quot;</span><span class="p">])</span>
+            <span class="n">alt_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;alt_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">alt_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">src_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">mt_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">ref_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">alt_inputs</span><span class="p">}</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">src_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">mt_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">ref_inputs</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">inference</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">inputs</span>
+
+        <span class="n">targets</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">inputs</span><span class="p">,</span> <span class="n">targets</span></div>
+
+<div class="viewcode-block" id="CometEstimator.forward"><a class="viewcode-back" href="../../../../library.html#comet.models.estimators.comet_estimator.CometEstimator.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">src_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">mt_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">ref_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">src_lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">mt_lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">ref_lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">alt_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">alt_lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Function that encodes both Source, MT and Reference and returns a quality score.</span>
+
+<span class="sd">        :param src_tokens: SRC sequences [batch_size x src_seq_len]</span>
+<span class="sd">        :param mt_tokens: MT sequences [batch_size x mt_seq_len]</span>
+<span class="sd">        :param ref_tokens: REF sequences [batch_size x ref_seq_len]</span>
+<span class="sd">        :param src_lengths: SRC lengths [batch_size]</span>
+<span class="sd">        :param mt_lengths: MT lengths [batch_size]</span>
+<span class="sd">        :param ref_lengths: REF lengths [batch_size]</span>
+
+<span class="sd">        :param alt_tokens: Alternative REF sequences [batch_size x alt_seq_len]</span>
+<span class="sd">        :param alt_lengths: Alternative REF lengths [batch_size]</span>
+
+<span class="sd">        :return: Dictionary with model outputs to be passed to the loss function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">src_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">src_tokens</span><span class="p">,</span> <span class="n">src_lengths</span><span class="p">)</span>
+        <span class="n">mt_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">mt_tokens</span><span class="p">,</span> <span class="n">mt_lengths</span><span class="p">)</span>
+        <span class="n">ref_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">ref_tokens</span><span class="p">,</span> <span class="n">ref_lengths</span><span class="p">)</span>
+
+        <span class="n">diff_ref</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mt_sentemb</span> <span class="o">-</span> <span class="n">ref_sentemb</span><span class="p">)</span>
+        <span class="n">diff_src</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mt_sentemb</span> <span class="o">-</span> <span class="n">src_sentemb</span><span class="p">)</span>
+
+        <span class="n">prod_ref</span> <span class="o">=</span> <span class="n">mt_sentemb</span> <span class="o">*</span> <span class="n">ref_sentemb</span>
+        <span class="n">prod_src</span> <span class="o">=</span> <span class="n">mt_sentemb</span> <span class="o">*</span> <span class="n">src_sentemb</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="p">,</span> <span class="s2">&quot;switch_prob&quot;</span>
+            <span class="p">)</span>  <span class="c1"># compatability with older checkpoints!</span>
+            <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">switch_prob</span> <span class="o">&lt;=</span> <span class="mf">0.0</span>
+        <span class="p">):</span>
+            <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">,</span> <span class="n">prod_ref</span><span class="p">,</span> <span class="n">diff_ref</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="p">(</span><span class="n">alt_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">alt_lengths</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+
+                <span class="n">alt_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">alt_tokens</span><span class="p">,</span> <span class="n">alt_lengths</span><span class="p">)</span>
+
+                <span class="n">diff_alt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mt_sentemb</span> <span class="o">-</span> <span class="n">alt_sentemb</span><span class="p">)</span>
+                <span class="n">prod_alt</span> <span class="o">=</span> <span class="n">mt_sentemb</span> <span class="o">*</span> <span class="n">alt_sentemb</span>
+
+                <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">alt_sentemb</span><span class="p">,</span> <span class="n">prod_alt</span><span class="p">,</span> <span class="n">diff_alt</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">),</span>
+                    <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">score</span> <span class="o">=</span> <span class="p">(</span><span class="n">score</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">))</span> <span class="o">/</span> <span class="mi">2</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">score</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+            <span class="n">switch</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">switch_prob</span>
+
+            <span class="k">if</span> <span class="n">switch</span><span class="p">:</span>
+                <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">,</span> <span class="n">prod_ref</span><span class="p">,</span> <span class="n">diff_ref</span><span class="p">),</span>
+                    <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                    <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">,</span> <span class="n">prod_ref</span><span class="p">,</span> <span class="n">diff_ref</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">),</span>
+                    <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)}</span>
+
+        <span class="k">elif</span> <span class="p">(</span><span class="n">alt_tokens</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">alt_lengths</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="c1"># Switcheroo Inference!</span>
+            <span class="n">alt_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">alt_tokens</span><span class="p">,</span> <span class="n">alt_lengths</span><span class="p">)</span>
+            <span class="n">diff_alt</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mt_sentemb</span> <span class="o">-</span> <span class="n">alt_sentemb</span><span class="p">)</span>
+            <span class="n">prod_alt</span> <span class="o">=</span> <span class="n">mt_sentemb</span> <span class="o">*</span> <span class="n">alt_sentemb</span>
+
+            <span class="c1"># Source + MT + Reference</span>
+            <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">,</span> <span class="n">prod_ref</span><span class="p">,</span> <span class="n">diff_ref</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">src_mt_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)</span>
+
+            <span class="c1"># Reference + MT + Source</span>
+            <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">,</span> <span class="n">prod_ref</span><span class="p">,</span> <span class="n">diff_ref</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">ref_mt_src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)</span>
+
+            <span class="c1"># Source + MT + Alternative Reference</span>
+            <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">alt_sentemb</span><span class="p">,</span> <span class="n">prod_alt</span><span class="p">,</span> <span class="n">diff_alt</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">src_mt_alt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)</span>
+
+            <span class="c1"># Alternative Reference + MT + Source</span>
+            <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">alt_sentemb</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">,</span> <span class="n">prod_alt</span><span class="p">,</span> <span class="n">diff_alt</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">alt_mt_src</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)</span>
+
+            <span class="c1"># Alternative Reference + MT + Reference</span>
+            <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">alt_sentemb</span><span class="p">,</span> <span class="n">prod_alt</span><span class="p">,</span> <span class="n">diff_alt</span><span class="p">,</span> <span class="n">prod_ref</span><span class="p">,</span> <span class="n">diff_ref</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">alt_mt_ref</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)</span>
+
+            <span class="c1"># Reference + MT + Alternative Reference</span>
+            <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">,</span> <span class="n">prod_ref</span><span class="p">,</span> <span class="n">diff_ref</span><span class="p">,</span> <span class="n">prod_alt</span><span class="p">,</span> <span class="n">diff_alt</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">ref_mt_alt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)</span>
+
+            <span class="n">score</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">src_mt_ref</span><span class="p">,</span> <span class="n">ref_mt_src</span><span class="p">,</span> <span class="n">src_mt_alt</span><span class="p">,</span> <span class="n">alt_mt_src</span><span class="p">,</span> <span class="n">alt_mt_ref</span><span class="p">,</span> <span class="n">ref_mt_alt</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">confidence</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">score</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">score</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="n">confidence</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="n">confidence</span><span class="p">}</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Usual scoring</span>
+            <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">,</span> <span class="n">prod_ref</span><span class="p">,</span> <span class="n">diff_ref</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">switch_prob</span><span class="p">)</span>
+
+            <span class="c1"># Switch src and reference embeddings</span>
+            <span class="n">embedded_sequences</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">,</span> <span class="n">prod_src</span><span class="p">,</span> <span class="n">diff_src</span><span class="p">,</span> <span class="n">prod_ref</span><span class="p">,</span> <span class="n">diff_ref</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;score&quot;</span><span class="p">:</span> <span class="n">score</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">(</span><span class="n">embedded_sequences</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">switch_prob</span>
+            <span class="p">}</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Unbabel. All rights reserved.Source code available under the AGPL-3.0.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

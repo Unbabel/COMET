@@ -1,0 +1,491 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Train your own Metric &mdash; COMET 0.0.1 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/comet.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Library Reference" href="library.html" />
+    <link rel="prev" title="COMET Metrics" href="models.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> COMET
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="running.html">Running COMET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Train your own Metric</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#data-format">Data Format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#training-flags">Training flags</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#lightning-trainer-configurations">Lightning Trainer Configurations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#base-model-configurations">Base Model Configurations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#estimator-specific-configurations">Estimator Specific Configurations</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="library.html">Library Reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">COMET</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Train your own Metric</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/training.md.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="train-your-own-metric">
+<h1>Train your own Metric<a class="headerlink" href="#train-your-own-metric" title="Permalink to this headline">¶</a></h1>
+<p>To train our models we rely on <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/">PyTorch Lightning</a> Library. This means that all our models are <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/lightning-module.html">Lightning Modules</a>.</p>
+<p>To train a new metric we just need to run 1 command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>comet train -f <span class="o">{</span>my_configs<span class="o">}</span>.yaml
+</pre></div>
+</div>
+<p>This will setup a <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/trainer.html">Lightning Trainer</a> and fit your module accordingly.</p>
+<div class="section" id="data-format">
+<h2>Data Format<a class="headerlink" href="#data-format" title="Permalink to this headline">¶</a></h2>
+<p>To train your metric we expect your data to be a csv with the following columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">src</span></code>: The source segment.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mt</span></code>: The machine translation hypothesis.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ref</span></code>: The reference segment.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">score</span></code>: The human judgment score.</p></li>
+</ul>
+<p>Example:</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th align="center">src</th>
+<th align="center">mt</th>
+<th align="center">ref</th>
+<th align="center">score</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">Hello world!</td>
+<td align="center">Oi mundo.</td>
+<td align="center">Olá mundo!</td>
+<td align="center">0.5</td>
+</tr>
+<tr>
+<td align="center">This is a sample</td>
+<td align="center">este é um exemplo</td>
+<td align="center">isto é um exemplo!</td>
+<td align="center">0.8</td>
+</tr>
+</tbody>
+</table></div>
+<div class="section" id="training-flags">
+<h2>Training flags<a class="headerlink" href="#training-flags" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="lightning-trainer-configurations">
+<h3>Lightning Trainer Configurations<a class="headerlink" href="#lightning-trainer-configurations" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th align="left">Argument</th>
+<th align="left">Default</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>seed</code></td>
+<td align="left">3</td>
+<td align="left">Training seed.</td>
+</tr>
+<tr>
+<td align="left"><code>deterministic</code></td>
+<td align="left">True</td>
+<td align="left">If true enables cudnn.deterministic. Might make your system slower, but ensures reproducibility.</td>
+</tr>
+<tr>
+<td align="left"><code>verbose</code></td>
+<td align="left">False</td>
+<td align="left">Verbosity mode.</td>
+</tr>
+<tr>
+<td align="left"><code>early_stopping</code></td>
+<td align="left">True</td>
+<td align="left">Enables early stopping.</td>
+</tr>
+<tr>
+<td align="left"><code>save_top_k</code></td>
+<td align="left">1</td>
+<td align="left">Sets how many checkpoints we want to save (keeping only the best ones).</td>
+</tr>
+<tr>
+<td align="left"><code>monitor</code></td>
+<td align="left">Kendall</td>
+<td align="left">Metric to monitor during training.</td>
+</tr>
+<tr>
+<td align="left"><code>metric_mode</code></td>
+<td align="left">max</td>
+<td align="left">'min' or 'max' depending if we wish to maximize or minimize the metric.</td>
+</tr>
+<tr>
+<td align="left"><code>min_delta</code></td>
+<td align="left">0</td>
+<td align="left">Sensitivity to the metric.</td>
+</tr>
+<tr>
+<td align="left"><code>patience</code></td>
+<td align="left">1</td>
+<td align="left">Number of epochs without improvement before stopping training</td>
+</tr>
+<tr>
+<td align="left"><code>accumulate_grad_batches</code></td>
+<td align="left">1</td>
+<td align="left">Gradient accumulation steps</td>
+</tr>
+<tr>
+<td align="left"><code>lr_finder</code></td>
+<td align="left">False</td>
+<td align="left">Enables the learning rate finder described in <a href="https://arxiv.org/abs/1506.01186">Cyclical Learning Rates for Training Neural Networks</a></td>
+</tr>
+</tbody>
+</table></div>
+<div class="section" id="base-model-configurations">
+<h3>Base Model Configurations<a class="headerlink" href="#base-model-configurations" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th align="left">Argument</th>
+<th align="left">Default</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>model</code></td>
+<td align="left"><code>required</code></td>
+<td align="left">Type of metric we want to train. Options: [<code>CometEstimator</code>, <code>CometRanker</code>, <code>QualityEstimator</code>]</td>
+</tr>
+<tr>
+<td align="left"><code>batch_size</code></td>
+<td align="left">8</td>
+<td align="left">Batch size used to train the model.</td>
+</tr>
+<tr>
+<td align="left"><code>nr_frozen_epochs</code></td>
+<td align="left">0</td>
+<td align="left">Number of epochs we keep the encoder frozen.</td>
+</tr>
+<tr>
+<td align="left"><code>keep_embeddings_frozen</code></td>
+<td align="left">False</td>
+<td align="left">If set to True, keeps the embedding layer frozen during training. Usefull to save some GPU memory.</td>
+</tr>
+<tr>
+<td align="left"><code>optimizer</code></td>
+<td align="left">Adam</td>
+<td align="left">PyTorch Optimizer class name</td>
+</tr>
+<tr>
+<td align="left"><code>learning_rate</code></td>
+<td align="left">1e-05</td>
+<td align="left">Learning rate to be used during training.</td>
+</tr>
+<tr>
+<td align="left"><code>scheduler</code></td>
+<td align="left">constant</td>
+<td align="left">Learning Rate scheduler. Options: [<code>constant</code>, <code>linear_warmup</code>, <code>warmup_constant</code>]</td>
+</tr>
+<tr>
+<td align="left"><code>warmup_steps</code></td>
+<td align="left">None</td>
+<td align="left">Scheduler warmup steps.</td>
+</tr>
+<tr>
+<td align="left"><code>encoder_model</code></td>
+<td align="left">XLMR</td>
+<td align="left">Encoder Model  to be used: Options: [<code>LASER</code>, <code>BERT</code>, <code>XLMR</code>].</td>
+</tr>
+<tr>
+<td align="left"><code>pretrained_model</code></td>
+<td align="left">xlmr.base</td>
+<td align="left">pretrained model to be used e.g: xlmr.base vs xlmr.large (for LASER this is ignored)</td>
+</tr>
+<tr>
+<td align="left"><code>pool</code></td>
+<td align="left">avg</td>
+<td align="left">Pooling technique to create the sentence embeddings. Options: [<code>avg</code>, <code>avg+cls</code>, <code>max</code>, <code>cls</code>, <code>default</code>]</td>
+</tr>
+<tr>
+<td align="left"><code>load_weights</code></td>
+<td align="left">False</td>
+<td align="left">Loads compatible weights from another checkpoint file.</td>
+</tr>
+<tr>
+<td align="left"><code>train_path</code></td>
+<td align="left"><code>required</code></td>
+<td align="left">Path to the training csv.</td>
+</tr>
+<tr>
+<td align="left"><code>val_path</code></td>
+<td align="left"><code>required</code></td>
+<td align="left">Path to the validation csv.</td>
+</tr>
+<tr>
+<td align="left"><code>test_path</code></td>
+<td align="left">None</td>
+<td align="left">Path to the test csv. (Not used)</td>
+</tr>
+<tr>
+<td align="left"><code>loader_workers</code></td>
+<td align="left">False</td>
+<td align="left">Number of workers for loading and preparing the batches.</td>
+</tr>
+</tbody>
+</table><p><strong>Note:</strong> The <code class="docutils literal notranslate"><span class="pre">Ranker</span></code> model requires no further configs.</p>
+</div>
+<div class="section" id="estimator-specific-configurations">
+<h3>Estimator Specific Configurations<a class="headerlink" href="#estimator-specific-configurations" title="Permalink to this headline">¶</a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th align="left">Argument</th>
+<th align="left">Default</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left"><code>encoder_learning_rate</code></td>
+<td align="left"><code>required</code></td>
+<td align="left">Learning rate used to fine-tune the encoder. Note that this is different from <code>learning_rate</code> config that will be used only for the top layer.</td>
+</tr>
+<tr>
+<td align="left"><code>layerwise_decay</code></td>
+<td align="left">1.0</td>
+<td align="left">Decay for the layer wise learning rates. If 1.0 no decay is applied.</td>
+</tr>
+<tr>
+<td align="left"><code>layer</code></td>
+<td align="left">mix</td>
+<td align="left">Layer from the pretrained encoder that we wish to extract the word embeddings. If <code>mix</code> uses a layer-wise attention mechanism to combine different layers.</td>
+</tr>
+<tr>
+<td align="left"><code>scalar_mix_dropout</code></td>
+<td align="left">mix</td>
+<td align="left">Sets the layer-wise dropout. Ignored if <code>layer != mix</code>.</td>
+</tr>
+<tr>
+<td align="left"><code>loss</code></td>
+<td align="left">mse</td>
+<td align="left"><code>mse</code> for Mean Squared Error or <code>binary_xent</code>for Binary Cross Entropy.</td>
+</tr>
+<tr>
+<td align="left"><code>hidden_sizes</code></td>
+<td align="left">1536,768</td>
+<td align="left">Hidden sizes of the different Feed-Forward layers on top.</td>
+</tr>
+<tr>
+<td align="left"><code>activations</code></td>
+<td align="left">Tanh</td>
+<td align="left">Activation functions for the Feed-Forward on top.</td>
+</tr>
+<tr>
+<td align="left"><code>dropout</code></td>
+<td align="left">0.1</td>
+<td align="left">Dropout used in the Feed-Forward on top.</td>
+</tr>
+<tr>
+<td align="left"><code>final_activation</code></td>
+<td align="left">Sigmoid</td>
+<td align="left">Feed-Forward final activation function. If <code>False</code> the model outputs the logits</td>
+</tr>
+</tbody>
+</table></div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="library.html" class="btn btn-neutral float-right" title="Library Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="models.html" class="btn btn-neutral float-left" title="COMET Metrics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Unbabel. All rights reserved.Source code available under the AGPL-3.0.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
