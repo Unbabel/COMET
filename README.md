@@ -1,5 +1,7 @@
 <div style="text-align:center"><img src="docs/source/_static/img/comet_logo.png" alt="comet_logo"></div>
 
+**Note:** This is a Pre-Release Version. We are currently working on results for the WMT2020 shared task and will likely update the repository in the beginning of October (after the shared task results).
+
 ## Quick Installation
 
 Detailed usage examples and instructions can be found in the [Full Documentation](https://unbabel.github.io/COMET/html/index.html).
