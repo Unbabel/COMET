@@ -1,5 +1,12 @@
 <div style="text-align:center"><img src="docs/source/_static/img/comet_logo.png" alt="comet_logo"></div>
 
+[![GitHub license](https://img.shields.io/github/license/Unbabel/COMET)](https://github.com/Unbabel/COMET/blob/master/LICENSE) 
+[![GitHub stars](https://img.shields.io/github/stars/Unbabel/COMET)](https://github.com/Unbabel/COMET/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/Unbabel/COMET)](https://github.com/Unbabel/COMET/network)
+![PyPI](https://img.shields.io/pypi/v/unbabel-comet)
+![Python Version](https://img.shields.io/badge/python%20version-%3E3.6-blue)
+[![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
+
 **Note:** This is a Pre-Release Version. We are currently working on results for the WMT2020 shared task and will likely update the repository in the beginning of October (after the shared task results).
 
 ## Quick Installation
