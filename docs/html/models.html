@@ -158,7 +158,7 @@
             
   <div class="section" id="comet-metrics">
 <h1>COMET Metrics<a class="headerlink" href="#comet-metrics" title="Permalink to this headline">¶</a></h1>
-<p>COMET models can be optimized towards different kinds of human judgements (for example HTER or DA’s). Because of we provide a list of different Metrics that you can use to test you systems:</p>
+<p>COMET models can be optimized towards different kinds of human judgements (for example HTER or DA). Accordingly we list below the available metric models. Note that the recommmended standard metric is highlighted at the top of the table:</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -188,9 +188,9 @@
 <td align="left">Translation ranking model that uses XLM-R to encode sentences. This model was trained with WMT17 and WMT18 Direct Assessments Relative Ranks (DARR).</td>
 </tr>
 </tbody>
-</table><p>The first four models (<code class="docutils literal notranslate"><span class="pre">wmt-*</span></code>) where trained and tested for the WMT2020 shared task, thus they were only introduced in our submission to the shared task (paper still under-review)</p>
-<p><strong>NOTE:</strong> Even when regressing on the same Human Judgement scores between metrics are not comparable (e.g. scores from a large and a base model are not comparable even when trained on the same type of judgements)! Please make sure you use the same metric when comparing 2 systems!</p>
-<p>Also, since HTER measures the amount of edits we needed to correct an MT hypothesis, models regressing on HTER produce low scores for better systems.</p>
+</table><p>The first four models (<code class="docutils literal notranslate"><span class="pre">wmt-*</span></code>) were trained and tested for the WMT2020 shared task, thus they were only introduced in our submission to the shared task (paper still under-review)</p>
+<p><strong>NOTE:</strong> Even when regressing on the same types of human judgement, scores between metrics are not comparable (e.g. scores from a large and a base model are not comparable even when trained on the same type of judgements)! Please make sure you use the same metric when comparing two systems!</p>
+<p>Also, since HTER measures the amount of edits we needed to correct an MT hypothesis, output scores will be inverted, i.e. lower scores mean higher quality (indicated with ↓ in the table above).</p>
 </div>
 
 

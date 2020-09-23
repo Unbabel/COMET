@@ -48,7 +48,7 @@ Translation Ranking Model
     :members:
 
 *****************
-Auxiliar Modules
+Auxiliary Modules
 *****************
 
 .. automodule:: comet.modules.feedforward

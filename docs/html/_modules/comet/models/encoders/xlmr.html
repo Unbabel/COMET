@@ -307,7 +307,7 @@
                 <span class="n">check_files</span><span class="o">=</span><span class="p">[</span><span class="n">XLMR_LARGE_V0_MODEL_NAME</span><span class="p">],</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pretrained_model</span><span class="si">}</span><span class="s2"> is an invalid XLM-R model.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{pretrained_model}</span><span class="s2"> is an invalid XLM-R model.&quot;</span><span class="p">)</span>
 
         <span class="n">xlmr</span> <span class="o">=</span> <span class="n">XLMRModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
             <span class="n">saving_directory</span> <span class="o">+</span> <span class="n">pretrained_model</span><span class="p">,</span> <span class="n">checkpoint_file</span><span class="o">=</span><span class="s2">&quot;model.pt&quot;</span>
