@@ -76,6 +76,8 @@ def download_model(model: str, saving_directory: str = None) -> ModelBase:
 
     if os.path.isdir(saving_directory + model):
         click.secho(f"{model} is already in cache.", fg="yellow")
+        if not model.endswith("/"):
+            model += "/"
 
     elif model not in models.keys():
         raise Exception(f"{model} is not a valid COMET model!")
