@@ -1,7 +1,7 @@
 COMET: High-quality Machine Translation Evaluation
 ===================================================
 
-.. image:: _static/img/comet_logo.png
+.. image:: _static/img/logo.png
    :width: 800
    :alt: COMET by Unbabel
 
