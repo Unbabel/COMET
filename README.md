@@ -1,4 +1,4 @@
-<div style="text-align:center"><img src="https://raw.githubusercontent.com/Unbabel/COMET/master/docs/source/_static/img/logo.png" alt="comet_logo"></div>
+<div style="text-align:center"><img src="https://raw.githubusercontent.com/Unbabel/COMET/master/docs/source/_static/img/COMET_lockup-dark.png" alt="comet_logo"></div>
 
 [![GitHub license](https://img.shields.io/github/license/Unbabel/COMET)](https://github.com/Unbabel/COMET/blob/master/LICENSE) 
 [![GitHub stars](https://img.shields.io/github/stars/Unbabel/COMET)](https://github.com/Unbabel/COMET/stargazers)
