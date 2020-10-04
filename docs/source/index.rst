@@ -31,7 +31,7 @@ Contents:
 License
 ==============
 
-Free software: GPLv3 license
+Free software: Apache License 2.0
 
 Citation
 =========
