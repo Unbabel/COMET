@@ -20,12 +20,12 @@
 project = 'COMET'
 copyright = (
     '2020, Unbabel. All rights reserved.'
-    'Source code available under the AGPL-3.0.'
+    'Source code available under Apache License 2.0'
 )
 author = 'Unbabel'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.0.3'
 
 
 # -- General configuration ---------------------------------------------------
