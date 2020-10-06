@@ -1,15 +1,18 @@
-<div style="text-align:center"><img src="https://raw.githubusercontent.com/Unbabel/COMET/master/docs/source/_static/img/COMET_lockup-dark.png" alt="comet_logo"></div>
-
-[![GitHub license](https://img.shields.io/github/license/Unbabel/COMET)](https://github.com/Unbabel/COMET/blob/master/LICENSE) 
-[![GitHub stars](https://img.shields.io/github/stars/Unbabel/COMET)](https://github.com/Unbabel/COMET/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/Unbabel/COMET)](https://github.com/Unbabel/COMET/network)
-![PyPI](https://img.shields.io/pypi/v/unbabel-comet)
-![Python Version](https://img.shields.io/badge/python%20version-%3E3.6-blue)
-[![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Unbabel/COMET/master/docs/source/_static/img/COMET_lockup-dark.png">
+  <br />
+  <br />
+  <a href="https://github.com/Unbabel/COMET/blob/master/LICENSE"><img alt="License" src="https://img.shields.io/github/license/Unbabel/COMET" /></a>
+  <a href="https://github.com/Unbabel/COMET/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/Unbabel/COMET" /></a>
+  <a href=""><img alt="PyPI" src="https://img.shields.io/pypi/v/unbabel-comet" /></a>
+  <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
+</p>
 
 **Note:** This is a Pre-Release Version. We are currently working on results for the WMT2020 shared task and will likely update the repository in the beginning of October (after the shared task results).
 
 ## Quick Installation
+
+We recommend python 3.6 to run COMET.
 
 Detailed usage examples and instructions can be found in the [Full Documentation](https://unbabel.github.io/COMET/html/index.html).
 
