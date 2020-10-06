@@ -125,6 +125,3 @@ In order to run the toolkit tests you must run the following command:
 coverage run --source=comet -m unittest discover
 coverage report -m
 ```
-
-## Code Style:
-To make sure all the code follows the same style we use [Black](https://github.com/psf/black).
