@@ -1,7 +1,6 @@
 f"""
 Shell script tho reproduce results for BLEURT in data from WMT19 Metrics Shared task.
 """
-import argparse
 import sys
 from datetime import datetime
 

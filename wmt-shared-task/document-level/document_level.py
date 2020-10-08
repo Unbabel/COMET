@@ -4,12 +4,8 @@ Shell script to Evaluate COMET at Document-level.
 import argparse
 import json
 
-from tqdm import tqdm
-
 from comet.models import load_checkpoint
-from comet.models.utils import move_to_cpu, move_to_cuda
 from scipy.stats import pearsonr
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

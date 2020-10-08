@@ -11,14 +11,12 @@ import json
 import os
 
 import click
-import pandas as pd
-import torch
 import yaml
 
 from comet.corpora import corpus2download, download_corpus
 from comet.models import download_model, load_checkpoint, model2download, str2model
 from comet.trainer import TrainerConfig, build_trainer
-from pytorch_lightning import Trainer, seed_everything
+from pytorch_lightning import seed_everything
 
 
 @click.group()

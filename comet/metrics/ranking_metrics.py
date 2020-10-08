@@ -4,8 +4,6 @@ Ranking Metrics
 ==============
     Metrics to evaluate ranking quality of ranker models.
 """
-from typing import Tuple
-
 import torch
 
 from pytorch_lightning.metrics import Metric

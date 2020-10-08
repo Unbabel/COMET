@@ -3,10 +3,7 @@ import unittest
 from argparse import Namespace
 from io import StringIO
 
-import numpy as np
-import torch
 from comet.models import QualityEstimator
-from comet.models.utils import average_pooling, max_pooling
 
 
 class TestQualityEstimator(unittest.TestCase):

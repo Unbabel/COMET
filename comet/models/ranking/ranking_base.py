@@ -6,16 +6,14 @@ Translation Ranking Base Model
     This task consists of ranking "good" translations above "worse" ones.
 """
 from argparse import Namespace
-from typing import Dict, List, Union
+from typing import List
 
 import pandas as pd
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from tqdm import tqdm
 
 from comet.models.model_base import ModelBase
-from comet.models.utils import average_pooling, max_pooling, move_to_cuda
+from comet.models.utils import average_pooling, max_pooling
 from comet.modules.scalar_mix import ScalarMixWithDropout
 from comet.metrics import WMTKendall
 
