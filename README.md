@@ -16,23 +16,39 @@ We recommend python 3.6 to run COMET.
 
 Detailed usage examples and instructions can be found in the [Full Documentation](https://unbabel.github.io/COMET/html/index.html).
 
-To install COMET as a package, simply run
+Simple installation from PyPI
 
 ```bash
 pip install unbabel-comet
 ```
 
+To develop locally:
+```bash
+git clone https://github.com/Unbabel/COMET
+pip install -r requirements.txt
+pip install -e .
+```
+
 ## Scoring MT outputs:
 
 ### Via Bash:
+
+Example:
+
 ```bash
-comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt
+echo -e "Hello world\nThis is a sample" >> src.en
+echo -e "Oi mundo\neste é um exemplo" >> hyp.pt
+echo -e "Olá mundo\nisto é um exemplo" >> ref.pt
+```
+
+```bash
+comet score -s src.en -h hyp.pt -r ref.pt
 ```
 
 You can export your results to a JSON file using the `--to_json` flag and select another model/metric with `--model`.
 
 ```bash
-comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model wmt-large-hter-estimator --to_json output.json
+comet score -s src.en -h hyp.pt -r ref.pt --model wmt-large-hter-estimator --to_json segments.json
 ```
 
 ### Via Python:

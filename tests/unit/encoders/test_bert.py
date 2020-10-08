@@ -19,6 +19,14 @@ class TestBERTEncoder(unittest.TestCase):
     hparams = Namespace(pretrained_model="bert-base-cased")
     model_base = BERTEncoder.from_pretrained(hparams)
     tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+    
+    def test_layerwise_lr(self):
+        expected_lr = [0.1] # Last layer with 0.1 and all others with decay
+        expected_lr += [0.1*(0.95**i) for i in range(1, 12)] # LR for other layers
+        expected_lr += [0.1*(0.95**13)] # LR for embeddings (pos, word, layer_norm, token_type)
+        parameter_groups = self.model_base.layerwise_lr(0.1, 0.95)
+        param_lrs = [params["lr"] for params in parameter_groups[::-1]]
+        self.assertListEqual(expected_lr, param_lrs)
 
     def test_num_layers(self):
         self.assertEqual(self.model_base.num_layers, 13)

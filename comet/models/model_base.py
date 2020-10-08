@@ -16,7 +16,6 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, RandomSampler, Subset
 
-import pycld2 as cld2
 import pytorch_lightning as ptl
 from comet.models.encoders import Encoder, str2encoder
 from comet.schedulers import str2scheduler

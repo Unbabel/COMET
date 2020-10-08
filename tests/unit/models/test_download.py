@@ -11,11 +11,10 @@ from comet.models import CometEstimator, download_model, model2download
 
 
 class TestDownload(unittest.TestCase):
-
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(DATA_PATH + "wmt-base-da-estimator-1719")
-        #os.remove(DATA_PATH + "public-models.yaml")
+        # os.remove(DATA_PATH + "public-models.yaml")
 
     def test_model2download(self):
         model2link = model2download(DATA_PATH)

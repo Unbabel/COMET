@@ -171,21 +171,10 @@ class CometRanker(RankingBase):
             if show_progress:
                 pbar.close()
 
-        scores = []
+        assert len(distance_weighted) == len(samples)
+        scores = [] 
         for i in range(len(samples)):
-            samples[i]["langid"] = {
-                "src": self.langid(samples[i]["src"]),
-                "mt": self.langid(samples[i]["mt"]),
-                "ref": self.langid(samples[i]["ref"]),
-            }
-            if (
-                samples[i]["langid"]["src"] == samples[i]["langid"]["mt"]
-                and samples[i]["langid"]["mt"] != samples[i]["langid"]["ref"]
-            ):
-                scores.append(distance_ref[i])
-            else:
-                scores.append(distance_weighted[i])
-
+            scores.append(distance_weighted[i])
             samples[i]["predicted_score"] = scores[-1]
             samples[i]["reference_distance"] = distance_ref[i]
             samples[i]["source_distance"] = distance_src[i]
