@@ -13,8 +13,8 @@ class TestCometEstimator(unittest.TestCase):
 
     hparams = Namespace(
         **{
-            "encoder_model": "LASER", 
-            "pretrained_model": None, 
+            "encoder_model": "LASER",
+            "pretrained_model": None,
             "nr_frozen_epochs": 0,
             "loss": "mse",
             # FeedForward Definition
@@ -22,22 +22,15 @@ class TestCometEstimator(unittest.TestCase):
             "hidden_sizes": "1024",
             "activations": "Tanh",
             "dropout": 0.1,
-            "final_activation": False
+            "final_activation": False,
         }
     )
     estimator = CometEstimator(hparams)
 
     def test_read_csv(self):
-        csv_file = StringIO(
-            "src,ref,mt,score\n" "ola mundo,hi world,hey world!,0.8\n"
-        )
+        csv_file = StringIO("src,ref,mt,score\n" "ola mundo,hi world,hey world!,0.8\n")
         expected = [
-            {
-                "src": "ola mundo",
-                "ref": "hi world",
-                "mt": "hey world!",
-                "score": 0.8
-            }
+            {"src": "ola mundo", "ref": "hi world", "mt": "hey world!", "score": 0.8}
         ]
 
         data = self.estimator.read_csv(csv_file)
@@ -58,33 +51,26 @@ class TestCometEstimator(unittest.TestCase):
                 },
                 "val_target": {
                     "score": torch.tensor(np.arange(7)),
-                }
+                },
             }
         ]
         expected = {
-            "pearson": torch.tensor(0.8660254, dtype=torch.float32), 
-            "kendall": torch.tensor(0.7559289, dtype=torch.float32), 
-            "spearman": torch.tensor(0.866025, dtype=torch.float32)
+            "pearson": torch.tensor(0.8660254, dtype=torch.float32),
+            "kendall": torch.tensor(0.7559289, dtype=torch.float32),
+            "spearman": torch.tensor(0.866025, dtype=torch.float32),
         }
         metrics = self.estimator.compute_metrics(dummy_outputs)
         self.assertDictEqual(
             {k: round(v.item(), 4) for k, v in metrics.items()},
             {k: round(v.item(), 4) for k, v in expected.items()},
         )
-    
+
     def test_prepare_sample_to_forward(self):
         """ Test compatability between prepare_sample and forward functions. """
-        sample = [{
-            "src": "ola mundo",
-            "ref": "hi world",
-            "mt": "hey world!",
-            "score": 0.8
-        },{
-            "src": "ola mundo",
-            "ref": "hi world",
-            "mt": "hey world!",
-            "score": 0.8
-        }]
+        sample = [
+            {"src": "ola mundo", "ref": "hi world", "mt": "hey world!", "score": 0.8},
+            {"src": "ola mundo", "ref": "hi world", "mt": "hey world!", "score": 0.8},
+        ]
 
         model_input, target = self.estimator.prepare_sample(sample)
         model_output = self.estimator(**model_input)
@@ -96,8 +82,7 @@ class TestCometEstimator(unittest.TestCase):
         self.estimator.layer = 0
 
         # tokens from ["hello world", "how are your?"]
-        tokens = torch.tensor([[29733,  4139,     1,     1],
-                [ 2231,   137, 57374,     8]])
+        tokens = torch.tensor([[29733, 4139, 1, 1], [2231, 137, 57374, 8]])
         lengths = torch.tensor([2, 4])
         encoder_out = self.estimator.encoder(tokens, lengths)
 
@@ -119,7 +104,9 @@ class TestCometEstimator(unittest.TestCase):
         )
         self.estimator.hparams = hparams
         # AVG pooling is tested in test_utils.py
-        expected = average_pooling(tokens, encoder_out["wordemb"], encoder_out["mask"], 1)
+        expected = average_pooling(
+            tokens, encoder_out["wordemb"], encoder_out["mask"], 1
+        )
         sentemb = self.estimator.get_sentence_embedding(tokens, lengths)
         self.assertTrue(torch.equal(sentemb, expected))
 
@@ -140,15 +127,15 @@ class TestCometEstimator(unittest.TestCase):
         )
         self.estimator.hparams = hparams
         cls_embedding = encoder_out["wordemb"][:, 0, :]
-        avg_embedding = average_pooling(tokens, encoder_out["wordemb"], encoder_out["mask"], 1)
+        avg_embedding = average_pooling(
+            tokens, encoder_out["wordemb"], encoder_out["mask"], 1
+        )
         expected = torch.cat((cls_embedding, avg_embedding), dim=1)
         sentemb = self.estimator.get_sentence_embedding(tokens, lengths)
-        self.assertTrue(torch.equal(sentemb, expected)) 
+        self.assertTrue(torch.equal(sentemb, expected))
 
         # Expected sentence output with pool = 'default'
-        hparams = Namespace(
-            **{"encoder_model": "LASER", "pool": "default"}
-        )
+        hparams = Namespace(**{"encoder_model": "LASER", "pool": "default"})
         self.estimator.hparams = hparams
         expected = encoder_out["sentemb"]
         sentemb = self.estimator.get_sentence_embedding(tokens, lengths)
