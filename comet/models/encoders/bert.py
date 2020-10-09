@@ -53,20 +53,27 @@ class BERTEncoder(Encoder):
         """
         :return: List with grouped model parameters with layer-wise decaying learning rate
         """
+        # Embedding Layer
         opt_parameters = [
             {
                 "params": self.model.embeddings.parameters(),
                 "lr": lr * decay ** (self.num_layers),
             }
         ]
+        # Last Layer
+        last_layer = [{
+            "params": self.model.encoder.layer[-1].parameters(),
+            "lr": lr
+        }]
+        # All layers
         opt_parameters += [
             {
                 "params": self.model.encoder.layer[l].parameters(),
-                "lr": lr * decay ** (self.num_layers - 1 - l),
+                "lr": lr * decay ** l,
             }
-            for l in range(self.num_layers - 1)
+            for l in range(self.num_layers-2, 0, -1)
         ]
-        return opt_parameters
+        return opt_parameters + last_layer
 
     def forward(
         self, tokens: torch.Tensor, lengths: torch.Tensor

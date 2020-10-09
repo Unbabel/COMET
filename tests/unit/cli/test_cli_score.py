@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-import unittest
+import json
+import os
 import shutil
+import unittest
 
 from click.testing import CliRunner
-from tests.data import DATA_PATH
-
 from comet.cli import score
 from comet.models import download_model
+from tests.data import DATA_PATH
 
 
 class TestScoreCli(unittest.TestCase):
@@ -14,6 +15,7 @@ class TestScoreCli(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(DATA_PATH + "emnlp-base-da-ranker")
         shutil.rmtree(DATA_PATH + "wmt-large-da-estimator-1719")
+        os.remove(DATA_PATH + "results.json")
 
     def setUp(self):
         self.runner = CliRunner()
@@ -47,11 +49,17 @@ class TestScoreCli(unittest.TestCase):
             "-r",
             DATA_PATH + "ref.de",
             "--to_json",
-            DATA_PATH + "results.json" "--cpu",
+            DATA_PATH + "results.json",
+            "--cpu",
         ]
         result = self.runner.invoke(score, args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)
         self.assertIn(
             "Predictions saved in: {}".format(DATA_PATH + "results.json"), result.stdout
         )
+        self.assertTrue(os.path.exists(DATA_PATH + "results.json"))
+        with open(DATA_PATH + "results.json") as json_file:
+            samples = json.load(json_file)
+            for s in samples:
+                self.assertIn("predicted_score", s)
         self.assertIn("COMET system score: ", result.stdout)

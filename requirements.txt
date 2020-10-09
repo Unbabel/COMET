@@ -11,5 +11,4 @@ pytorch-lightning==0.8.4
 pytorch-nlp==0.5.0
 Cython==0.29.15
 fastBPE==0.1.0
-pycld2==0.41
 sphinx-markdown-tables==0.0.15

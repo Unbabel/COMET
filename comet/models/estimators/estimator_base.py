@@ -62,7 +62,7 @@ class Estimator(ModelBase):
         scalar_mix_dropout: float = 0.0
 
         loss: str = "mse"
-        hidden_sizes: str = "1536,768"
+        hidden_sizes: str = "1024"
         activations: str = "Tanh"
         dropout: float = 0.1
         final_activation: str = "Sigmoid"
@@ -149,20 +149,20 @@ class Estimator(ModelBase):
         encoder_out = self.encoder(tokens, lengths)
 
         # for LASER we dont care about the word embeddings
-        if self.hparams.pool == "default" or self.hparams.encoder_model == "LASER":
-            sentemb = encoder_out["sentemb"]
+        if self.hparams.encoder_model == "LASER":
+            pass
 
         elif self.scalar_mix:
             embeddings = self.scalar_mix(encoder_out["all_layers"], encoder_out["mask"])
 
-        elif self.layer > 0 and self.layer < self.encoder.num_layers:
+        elif self.layer >= 0 and self.layer < self.encoder.num_layers:
             embeddings = encoder_out["all_layers"][self.layer]
 
         else:
             raise Exception("Invalid model layer {}.".format(self.layer))
 
-        if self.hparams.pool == "default":
-            pass
+        if self.hparams.pool == "default" or self.hparams.encoder_model == "LASER":
+            sentemb = encoder_out["sentemb"]
 
         elif self.hparams.pool == "max":
             sentemb = max_pooling(
@@ -264,6 +264,8 @@ class Estimator(ModelBase):
                 pbar.close()
 
         assert len(scores) == len(samples)
+        for i in range(len(scores)):
+            samples[i]["predicted_score"] = scores[i]
         return samples, scores
 
     def document_predict(

@@ -1,35 +1,54 @@
-<div style="text-align:center"><img src="https://raw.githubusercontent.com/Unbabel/COMET/master/docs/source/_static/img/COMET_lockup-dark.png" alt="comet_logo"></div>
-
-[![GitHub license](https://img.shields.io/github/license/Unbabel/COMET)](https://github.com/Unbabel/COMET/blob/master/LICENSE) 
-[![GitHub stars](https://img.shields.io/github/stars/Unbabel/COMET)](https://github.com/Unbabel/COMET/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/Unbabel/COMET)](https://github.com/Unbabel/COMET/network)
-![PyPI](https://img.shields.io/pypi/v/unbabel-comet)
-![Python Version](https://img.shields.io/badge/python%20version-%3E3.6-blue)
-[![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Unbabel/COMET/master/docs/source/_static/img/COMET_lockup-dark.png">
+  <br />
+  <br />
+  <a href="https://github.com/Unbabel/COMET/blob/master/LICENSE"><img alt="License" src="https://img.shields.io/github/license/Unbabel/COMET" /></a>
+  <a href="https://github.com/Unbabel/COMET/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/Unbabel/COMET" /></a>
+  <a href=""><img alt="PyPI" src="https://img.shields.io/pypi/v/unbabel-comet" /></a>
+  <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
+</p>
 
 **Note:** This is a Pre-Release Version. We are currently working on results for the WMT2020 shared task and will likely update the repository in the beginning of October (after the shared task results).
 
 ## Quick Installation
 
+We recommend python 3.6 to run COMET.
+
 Detailed usage examples and instructions can be found in the [Full Documentation](https://unbabel.github.io/COMET/html/index.html).
 
-To install COMET as a package, simply run
+Simple installation from PyPI
 
 ```bash
 pip install unbabel-comet
 ```
 
+To develop locally:
+```bash
+git clone https://github.com/Unbabel/COMET
+pip install -r requirements.txt
+pip install -e .
+```
+
 ## Scoring MT outputs:
 
 ### Via Bash:
+
+Example:
+
 ```bash
-comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt
+echo -e "Hello world\nThis is a sample" >> src.en
+echo -e "Oi mundo\neste é um exemplo" >> hyp.pt
+echo -e "Olá mundo\nisto é um exemplo" >> ref.pt
+```
+
+```bash
+comet score -s src.en -h hyp.pt -r ref.pt
 ```
 
 You can export your results to a JSON file using the `--to_json` flag and select another model/metric with `--model`.
 
 ```bash
-comet score -s path/to/sources.txt -h path/to/hypothesis.txt -r path/to/references.txt --model wmt-large-hter-estimator --to_json output.json
+comet score -s src.en -h hyp.pt -r ref.pt --model wmt-large-hter-estimator --to_json segments.json
 ```
 
 ### Via Python:
@@ -122,6 +141,3 @@ In order to run the toolkit tests you must run the following command:
 coverage run --source=comet -m unittest discover
 coverage report -m
 ```
-
-## Code Style:
-To make sure all the code follows the same style we use [Black](https://github.com/psf/black).

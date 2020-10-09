@@ -7,10 +7,10 @@ from comet.models.encoders import LASEREncoder
 
 
 class TestLASEREncoder(unittest.TestCase):
-    """ 
-    There is not much we can test in our encoders... 
-    
-    The only thing we are interested is in maintaining a well defined interface 
+    """
+    There is not much we can test in our encoders...
+
+    The only thing we are interested is in maintaining a well defined interface
     between all encoders.
     """
 

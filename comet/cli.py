@@ -11,14 +11,12 @@ import json
 import os
 
 import click
-import pandas as pd
-import torch
 import yaml
 
 from comet.corpora import corpus2download, download_corpus
 from comet.models import download_model, load_checkpoint, model2download, str2model
 from comet.trainer import TrainerConfig, build_trainer
-from pytorch_lightning import Trainer, seed_everything
+from pytorch_lightning import seed_everything
 
 
 @click.group()
@@ -122,6 +120,10 @@ def score(model, source, hypothesis, reference, cuda, to_json):
             json.dump(data, outfile, ensure_ascii=False, indent=4)
         click.secho(f"Predictions saved in: {to_json}.", fg="yellow")
 
+    for i in range(len(scores)):
+        click.secho(
+            "Segment {} score: {}".format(i, scores[i]), fg="yellow"
+        )
     click.secho(
         "COMET system score: {}.".format(sum(scores) / len(scores)), fg="yellow"
     )
