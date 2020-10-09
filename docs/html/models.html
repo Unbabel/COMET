@@ -86,7 +86,14 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running COMET</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">COMET Metrics</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">COMET Metrics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#faq">FAQ</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#what-model-metric-should-i-use">What model/metric should I use?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-interpret-comet-predicted-scores">How to interpret COMET predicted scores?</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a></li>
 </ul>
 <ul>
@@ -191,6 +198,27 @@
 </table><p>The first four models (<code class="docutils literal notranslate"><span class="pre">wmt-*</span></code>) were trained and tested for the WMT2020 shared task, thus they were only introduced in our submission to the shared task (paper still under-review)</p>
 <p><strong>NOTE:</strong> Even when regressing on the same types of human judgement, scores between metrics are not comparable (e.g. scores from a large and a base model are not comparable even when trained on the same type of judgements)! Please make sure you use the same metric when comparing two systems!</p>
 <p>Also, since HTER measures the amount of edits we needed to correct an MT hypothesis, output scores will be inverted, i.e. lower scores mean higher quality (indicated with ↓ in the table above).</p>
+<div class="section" id="faq">
+<h2>FAQ<a class="headerlink" href="#faq" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="what-model-metric-should-i-use">
+<h3>What model/metric should I use?<a class="headerlink" href="#what-model-metric-should-i-use" title="Permalink to this headline">¶</a></h3>
+<p>The standard metric model loaded as default is the <code class="docutils literal notranslate"><span class="pre">wmt-large-da-estimator-1719</span></code> and this is the model we hope to promote as the ‘standard’ COMET metric.</p>
+</div>
+<div class="section" id="how-to-interpret-comet-predicted-scores">
+<h3>How to interpret COMET predicted scores?<a class="headerlink" href="#how-to-interpret-comet-predicted-scores" title="Permalink to this headline">¶</a></h3>
+<p>COMET models like our <strong>recommended model (<code class="docutils literal notranslate"><span class="pre">wmt-large-da-estimator-1719</span></code>)</strong> were trained to simulate the ratings of the <a class="reference external" href="http://www.statmt.org/wmt20/metrics-task.html">WMT Metrics shared task</a>, which are normalized per annotator. This means that predicted scores are not bounded between 0 and 1 (like BLEU or METEOR). To help you analyse your scores we took all the scores from all systems submitted to the <a class="reference external" href="http://www.statmt.org/wmt20/translation-task.html">WMT20 News Translation shared task</a>:</p>
+<p align="center">
+    <img src="_static/img/wmt20_scores_distribution.png">
+</p><p>Here are a few stats:</p>
+<ul class="simple">
+<li><p>The median system score is 0.415992</p></li>
+<li><p>Systems with score &lt; 0.313875 are in the bottom 25%</p></li>
+<li><p>Systems with score &gt; 0.582837 are in the top 25%</p></li>
+</ul>
+<p>Models trained on <a class="reference external" href="http://www.mt-archive.info/05/AMTA-2006-Snover.pdf">HTER</a> are easier to interpret due to the fact that HTER is bounded at 0. For all HTER models achieving a value close to 0 would mean that your MT system produces translations that do not require post-editions in order to be “correct”. Regardless of that take into consideration that the median system score with our HTER model (<code class="docutils literal notranslate"><span class="pre">wmt-large-hter-estimator</span></code>) is 0.125638 for all the systems submitted to the <a class="reference external" href="http://www.statmt.org/wmt20/translation-task.html">WMT20 News Translation shared task</a> and a system must achieve a score lower than 0.070397 to be in the top 25%.</p>
+<p>Translation Ranking models (e.g. <code class="docutils literal notranslate"><span class="pre">emnlp-base-da-ranker</span></code>) are based on distances and the result for a single segment should tell you: “How close, semantically, is that translation from the source and the reference texts”. With that said, the median system score for the WMT20 data is 0.172957, systems with a score &lt;0.151348 are in the bottom 25% and systems with a score &gt;0.192181 are in the top 25%.</p>
+</div>
+</div>
 </div>
 
 

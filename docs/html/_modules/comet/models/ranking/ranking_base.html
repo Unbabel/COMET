@@ -161,16 +161,14 @@
 <span class="sd">    This task consists of ranking &quot;good&quot; translations above &quot;worse&quot; ones.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
 
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
-<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
-<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
 
 <span class="kn">from</span> <span class="nn">comet.models.model_base</span> <span class="kn">import</span> <span class="n">ModelBase</span>
-<span class="kn">from</span> <span class="nn">comet.models.utils</span> <span class="kn">import</span> <span class="n">average_pooling</span><span class="p">,</span> <span class="n">max_pooling</span><span class="p">,</span> <span class="n">move_to_cuda</span>
+<span class="kn">from</span> <span class="nn">comet.models.utils</span> <span class="kn">import</span> <span class="n">average_pooling</span><span class="p">,</span> <span class="n">max_pooling</span>
 <span class="kn">from</span> <span class="nn">comet.modules.scalar_mix</span> <span class="kn">import</span> <span class="n">ScalarMixWithDropout</span>
 <span class="kn">from</span> <span class="nn">comet.metrics</span> <span class="kn">import</span> <span class="n">WMTKendall</span>
 
@@ -231,113 +229,6 @@
                 <span class="k">else</span> <span class="kc">None</span>
             <span class="p">)</span>
 
-<div class="viewcode-block" id="RankingBase.compute_loss"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_base.RankingBase.compute_loss">[docs]</a>    <span class="k">def</span> <span class="nf">compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_out</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Computes Triplet Margin Loss.</span>
-<span class="sd">        </span>
-<span class="sd">        :param model_out: model specific output with reference, pos and neg</span>
-<span class="sd">            sentence embeddings.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">ref</span> <span class="o">=</span> <span class="n">model_out</span><span class="p">[</span><span class="s2">&quot;ref_sentemb&quot;</span><span class="p">]</span>
-        <span class="n">positive</span> <span class="o">=</span> <span class="n">model_out</span><span class="p">[</span><span class="s2">&quot;pos_sentemb&quot;</span><span class="p">]</span>
-        <span class="n">negative</span> <span class="o">=</span> <span class="n">model_out</span><span class="p">[</span><span class="s2">&quot;neg_sentemb&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">positive</span><span class="p">,</span> <span class="n">negative</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="RankingBase.compute_metrics"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_base.RankingBase.compute_metrics">[docs]</a>    <span class="k">def</span> <span class="nf">compute_metrics</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;  Computes WMT19 shared task kendall tau like metric. &quot;&quot;&quot;</span>
-        <span class="n">distance_pos</span><span class="p">,</span> <span class="n">distance_neg</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">minibatch</span> <span class="ow">in</span> <span class="n">outputs</span><span class="p">:</span>
-            <span class="n">minibatch</span> <span class="o">=</span> <span class="n">minibatch</span><span class="p">[</span><span class="s2">&quot;val_prediction&quot;</span><span class="p">]</span>
-            <span class="n">ref_embedding</span> <span class="o">=</span> <span class="n">minibatch</span><span class="p">[</span><span class="s2">&quot;ref_sentemb&quot;</span><span class="p">]</span>
-            <span class="n">pos_embedding</span> <span class="o">=</span> <span class="n">minibatch</span><span class="p">[</span><span class="s2">&quot;pos_sentemb&quot;</span><span class="p">]</span>
-            <span class="n">neg_embedding</span> <span class="o">=</span> <span class="n">minibatch</span><span class="p">[</span><span class="s2">&quot;neg_sentemb&quot;</span><span class="p">]</span>
-            <span class="n">distance_ref_pos</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">pos_embedding</span><span class="p">,</span> <span class="n">ref_embedding</span><span class="p">)</span>
-            <span class="n">distance_ref_neg</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">neg_embedding</span><span class="p">,</span> <span class="n">ref_embedding</span><span class="p">)</span>
-            <span class="n">distance_pos</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">distance_ref_pos</span><span class="p">)</span>
-            <span class="n">distance_neg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">distance_ref_neg</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;kendall&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">distance_pos</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">distance_neg</span><span class="p">))</span>
-        <span class="p">}</span></div>
-
-<div class="viewcode-block" id="RankingBase.predict"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_base.RankingBase.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">cuda</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">show_progress</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
-        <span class="sd">&quot;&quot;&quot;Function that runs a model prediction,</span>
-<span class="sd">        </span>
-<span class="sd">        :param samples: List of dictionaries with &#39;mt&#39; and &#39;ref&#39; keys.</span>
-<span class="sd">        :param cuda: Flag that runs inference using 1 single GPU.</span>
-<span class="sd">        :param show_progress: Flag to show progress during inference of multiple examples.</span>
-
-<span class="sd">        :return: Dictionary with original samples + predicted scores and list of predicted scores</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
-
-        <span class="k">if</span> <span class="n">cuda</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span><span class="p">)</span>
-
-        <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
-            <span class="n">batches</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">samples</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">batch_size</span><span class="p">]</span>
-                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
-            <span class="p">]</span>
-            <span class="n">model_inputs</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">if</span> <span class="n">show_progress</span><span class="p">:</span>
-                <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span>
-                    <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">),</span>
-                    <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Preparing batches...&quot;</span><span class="p">,</span>
-                    <span class="n">dynamic_ncols</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                    <span class="n">leave</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">batches</span><span class="p">:</span>
-                <span class="n">model_inputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">batch</span><span class="p">,</span> <span class="n">inference</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-                <span class="k">if</span> <span class="n">show_progress</span><span class="p">:</span>
-                    <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="n">show_progress</span><span class="p">:</span>
-                <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
-            <span class="k">if</span> <span class="n">show_progress</span><span class="p">:</span>
-                <span class="n">pbar</span> <span class="o">=</span> <span class="n">tqdm</span><span class="p">(</span>
-                    <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">batches</span><span class="p">),</span>
-                    <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Scoring hypothesis...&quot;</span><span class="p">,</span>
-                    <span class="n">dynamic_ncols</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                    <span class="n">leave</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="n">scores</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="k">for</span> <span class="n">model_input</span> <span class="ow">in</span> <span class="n">model_inputs</span><span class="p">:</span>
-                <span class="n">mt_input</span><span class="p">,</span> <span class="n">ref_input</span> <span class="o">=</span> <span class="n">model_input</span>
-                <span class="k">if</span> <span class="n">cuda</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
-                    <span class="n">mt_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span>
-                        <span class="o">**</span><span class="n">move_to_cuda</span><span class="p">(</span><span class="n">mt_input</span><span class="p">)</span>
-                    <span class="p">)</span>
-                    <span class="n">ref_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span>
-                        <span class="o">**</span><span class="n">move_to_cuda</span><span class="p">(</span><span class="n">ref_input</span><span class="p">)</span>
-                    <span class="p">)</span>
-                    <span class="n">distances</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">mt_embeddings</span><span class="p">,</span> <span class="n">ref_embeddings</span><span class="p">)</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">mt_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="o">**</span><span class="n">mt_input</span><span class="p">)</span>
-                    <span class="n">ref_embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="o">**</span><span class="n">ref_input</span><span class="p">)</span>
-                    <span class="n">distances</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">mt_embeddings</span><span class="p">,</span> <span class="n">ref_embeddings</span><span class="p">)</span>
-
-                <span class="n">distances</span> <span class="o">=</span> <span class="n">distances</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
-                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">distances</span><span class="p">)):</span>
-                    <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">distances</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
-
-                <span class="k">if</span> <span class="n">show_progress</span><span class="p">:</span>
-                    <span class="n">pbar</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-
-            <span class="k">if</span> <span class="n">show_progress</span><span class="p">:</span>
-                <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)):</span>
-            <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;predicted_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">scores</span></div>
-
 <div class="viewcode-block" id="RankingBase.get_sentence_embedding"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_base.RankingBase.get_sentence_embedding">[docs]</a>    <span class="k">def</span> <span class="nf">get_sentence_embedding</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
@@ -361,7 +252,7 @@
             <span class="k">pass</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_mix</span><span class="p">:</span>
             <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_mix</span><span class="p">(</span><span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">],</span> <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;mask&quot;</span><span class="p">])</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">num_layers</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">num_layers</span><span class="p">:</span>
             <span class="n">embeddings</span> <span class="o">=</span> <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid model layer </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">))</span>
@@ -369,7 +260,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;default&quot;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">encoder_model</span> <span class="o">==</span> <span class="s2">&quot;LASER&quot;</span><span class="p">:</span>
             <span class="n">sentemb</span> <span class="o">=</span> <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;sentemb&quot;</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span>
             <span class="n">sentemb</span> <span class="o">=</span> <span class="n">max_pooling</span><span class="p">(</span>
                 <span class="n">tokens</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">padding_index</span>
             <span class="p">)</span>
@@ -388,36 +279,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid pooling technique.&quot;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">sentemb</span></div>
-
-<div class="viewcode-block" id="RankingBase.forward"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_base.RankingBase.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">ref_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
-        <span class="n">pos_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
-        <span class="n">neg_tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
-        <span class="n">ref_lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
-        <span class="n">pos_lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
-        <span class="n">neg_lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Function that encodes the reference, positive samples and negative samples</span>
-<span class="sd">        and returns embeddings for the triplet.</span>
-
-<span class="sd">        :param ref_tokens: reference sequences [batch_size x ref_seq_len]</span>
-<span class="sd">        :param pos_tokens: positive sequences [batch_size x pos_seq_len]</span>
-<span class="sd">        :param neg_tokens: negative sequences [batch_size x neg_seq_len]</span>
-<span class="sd">        :param ref_lengths: reference lengths [batch_size]</span>
-<span class="sd">        :param pos_lengths: positive lengths [batch_size]</span>
-<span class="sd">        :param neg_lengths: negative lengths [batch_size]</span>
-
-<span class="sd">        :return: Dictionary with model outputs to be passed to the loss function.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;ref_sentemb&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">ref_tokens</span><span class="p">,</span> <span class="n">ref_lengths</span><span class="p">),</span>
-            <span class="s2">&quot;pos_sentemb&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">pos_tokens</span><span class="p">,</span> <span class="n">pos_lengths</span><span class="p">),</span>
-            <span class="s2">&quot;neg_sentemb&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">neg_tokens</span><span class="p">,</span> <span class="n">neg_lengths</span><span class="p">),</span>
-        <span class="p">}</span></div></div>
+        <span class="k">return</span> <span class="n">sentemb</span></div></div>
 </pre></div>
 
            </div>

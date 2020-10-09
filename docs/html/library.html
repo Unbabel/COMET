@@ -86,6 +86,7 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running COMET</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html#faq">FAQ:</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a></li>
 </ul>
 <ul class="current">
@@ -1179,46 +1180,6 @@ to produce better sentence embeddings by optmizing Triplet Margin Loss.</p>
 </dd>
 </dl>
 <dl class="py method">
-<dt id="comet.models.ranking.ranking_base.RankingBase.compute_loss">
-<code class="sig-name descname">compute_loss</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model_out</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>torch.Tensor<span class="p">]</span></span></em>, <em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span> &#x2192; torch.Tensor<a class="reference internal" href="_modules/comet/models/ranking/ranking_base.html#RankingBase.compute_loss"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#comet.models.ranking.ranking_base.RankingBase.compute_loss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes Triplet Margin Loss.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>model_out</strong> – model specific output with reference, pos and neg
-sentence embeddings.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="comet.models.ranking.ranking_base.RankingBase.compute_metrics">
-<code class="sig-name descname">compute_metrics</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">outputs</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Dict<span class="p">[</span>str<span class="p">, </span>torch.Tensor<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>torch.Tensor<span class="p">]</span><a class="reference internal" href="_modules/comet/models/ranking/ranking_base.html#RankingBase.compute_metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#comet.models.ranking.ranking_base.RankingBase.compute_metrics" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes WMT19 shared task kendall tau like metric.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt id="comet.models.ranking.ranking_base.RankingBase.forward">
-<code class="sig-name descname">forward</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">ref_tokens</span><span class="p">:</span> <span class="n">torch.Tensor</span></em>, <em class="sig-param"><span class="n">pos_tokens</span><span class="p">:</span> <span class="n">torch.Tensor</span></em>, <em class="sig-param"><span class="n">neg_tokens</span><span class="p">:</span> <span class="n">torch.Tensor</span></em>, <em class="sig-param"><span class="n">ref_lengths</span><span class="p">:</span> <span class="n">torch.Tensor</span></em>, <em class="sig-param"><span class="n">pos_lengths</span><span class="p">:</span> <span class="n">torch.Tensor</span></em>, <em class="sig-param"><span class="n">neg_lengths</span><span class="p">:</span> <span class="n">torch.Tensor</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span> &#x2192; Dict<span class="p">[</span>str<span class="p">, </span>torch.Tensor<span class="p">]</span><a class="reference internal" href="_modules/comet/models/ranking/ranking_base.html#RankingBase.forward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#comet.models.ranking.ranking_base.RankingBase.forward" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function that encodes the reference, positive samples and negative samples
-and returns embeddings for the triplet.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ref_tokens</strong> – reference sequences [batch_size x ref_seq_len]</p></li>
-<li><p><strong>pos_tokens</strong> – positive sequences [batch_size x pos_seq_len]</p></li>
-<li><p><strong>neg_tokens</strong> – negative sequences [batch_size x neg_seq_len]</p></li>
-<li><p><strong>ref_lengths</strong> – reference lengths [batch_size]</p></li>
-<li><p><strong>pos_lengths</strong> – positive lengths [batch_size]</p></li>
-<li><p><strong>neg_lengths</strong> – negative lengths [batch_size]</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Dictionary with model outputs to be passed to the loss function.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt id="comet.models.ranking.ranking_base.RankingBase.get_sentence_embedding">
 <code class="sig-name descname">get_sentence_embedding</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">tokens</span><span class="p">:</span> <span class="n">torch.Tensor</span></em>, <em class="sig-param"><span class="n">lengths</span><span class="p">:</span> <span class="n">torch.Tensor</span></em><span class="sig-paren">)</span> &#x2192; torch.Tensor<a class="reference internal" href="_modules/comet/models/ranking/ranking_base.html#RankingBase.get_sentence_embedding"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#comet.models.ranking.ranking_base.RankingBase.get_sentence_embedding" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="simple">
@@ -1234,24 +1195,6 @@ and returns embeddings for the triplet.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>torch.Tensor [batch_size x hidden_size]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="comet.models.ranking.ranking_base.RankingBase.predict">
-<code class="sig-name descname">predict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">samples</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span>str<span class="p">, </span>str<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">cuda</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">show_progress</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/comet/models/ranking/ranking_base.html#RankingBase.predict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#comet.models.ranking.ranking_base.RankingBase.predict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function that runs a model prediction,</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>samples</strong> – List of dictionaries with ‘mt’ and ‘ref’ keys.</p></li>
-<li><p><strong>cuda</strong> – Flag that runs inference using 1 single GPU.</p></li>
-<li><p><strong>show_progress</strong> – Flag to show progress during inference of multiple examples.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Dictionary with original samples + predicted scores and list of predicted scores</p>
 </dd>
 </dl>
 </dd></dl>

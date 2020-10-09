@@ -33,6 +33,10 @@ License
 
 Free software: Apache License 2.0
 
+Contributing
+==============
+We welcome contributions to improve COMET. Please refer to `CONTRIBUTING.md <https://github.com/Unbabel/COMET/blob/master/CONTRIBUTING.md>`_ for quick instructions or to contributing instructions for more detailed instructions on how to set up your development environment.
+
 Citation
 =========
 

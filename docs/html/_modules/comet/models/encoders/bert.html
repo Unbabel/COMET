@@ -208,20 +208,27 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        :return: List with grouped model parameters with layer-wise decaying learning rate</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Embedding Layer</span>
         <span class="n">opt_parameters</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">{</span>
                 <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
                 <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span> <span class="o">*</span> <span class="n">decay</span> <span class="o">**</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">),</span>
             <span class="p">}</span>
         <span class="p">]</span>
+        <span class="c1"># Last Layer</span>
+        <span class="n">last_layer</span> <span class="o">=</span> <span class="p">[{</span>
+            <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">layer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+            <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span>
+        <span class="p">}]</span>
+        <span class="c1"># All layers</span>
         <span class="n">opt_parameters</span> <span class="o">+=</span> <span class="p">[</span>
             <span class="p">{</span>
                 <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">layer</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
-                <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span> <span class="o">*</span> <span class="n">decay</span> <span class="o">**</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">l</span><span class="p">),</span>
+                <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span> <span class="o">*</span> <span class="n">decay</span> <span class="o">**</span> <span class="n">l</span><span class="p">,</span>
             <span class="p">}</span>
-            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">]</span>
-        <span class="k">return</span> <span class="n">opt_parameters</span></div>
+        <span class="k">return</span> <span class="n">opt_parameters</span> <span class="o">+</span> <span class="n">last_layer</span></div>
 
 <div class="viewcode-block" id="BERTEncoder.forward"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.bert.BERTEncoder.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
