@@ -2,7 +2,7 @@
 name: Questions and Help
 about: Ask questions about COMET
 title: "[QUESTION]"
-labels: ''
+labels: question
 assignees: ''
 
 ---
