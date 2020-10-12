@@ -91,7 +91,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="models.html#faq">FAQ:</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a></li>
 </ul>
 <ul>
@@ -166,15 +165,18 @@
 <div class="section" id="command-line-interface">
 <h2>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">¶</a></h2>
 <p>After installing COMET you can score you MT outputs with the following command:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">sources</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">h</span> <span class="n">hypothesis</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">r</span> <span class="n">references</span><span class="o">.</span><span class="n">txt</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">echo</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;Dem Feuer konnte Einhalt geboten werden</span><span class="se">\n</span><span class="s2">Schulen und Kindergärten wurden eröffnet.&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span>
+<span class="n">echo</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;The fire could be stopped</span><span class="se">\n</span><span class="s2">Schools and kindergartens were open&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">hyp</span><span class="o">.</span><span class="n">en</span>
+<span class="n">echo</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;They were able to control the fire.</span><span class="se">\n</span><span class="s2">Schools and kindergartens opened&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span>
+<span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">h</span> <span class="n">hyp</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span>
 </pre></div>
 </div>
 <p>You can also specify a metric model using the <cite>—model</cite> flag (see <a class="reference internal" href="models.html#comet-metrics"><span class="std std-ref">COMET Metrics</span></a> for available metric models):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">sources</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">h</span> <span class="n">hypothesis</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">r</span> <span class="n">references</span><span class="o">.</span><span class="n">txt</span> <span class="o">--</span><span class="n">model</span> <span class="n">wmt</span><span class="o">-</span><span class="n">large</span><span class="o">-</span><span class="n">da</span><span class="o">-</span><span class="n">estimator</span><span class="o">-</span><span class="mi">1719</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">h</span> <span class="n">hyp</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">model</span> <span class="n">wmt</span><span class="o">-</span><span class="n">large</span><span class="o">-</span><span class="n">da</span><span class="o">-</span><span class="n">estimator</span><span class="o">-</span><span class="mi">1719</span>
 </pre></div>
 </div>
 <p>You can export your results to a JSON file using the <cite>—to_json</cite> flag:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">sources</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">h</span> <span class="n">hypothesis</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">r</span> <span class="n">references</span><span class="o">.</span><span class="n">txt</span> <span class="o">--</span><span class="n">to_json</span> <span class="n">output</span><span class="o">.</span><span class="n">json</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">h</span> <span class="n">hyp</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">to_json</span> <span class="n">output</span><span class="o">.</span><span class="n">json</span>
 </pre></div>
 </div>
 </div>
@@ -184,24 +186,24 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">comet.models</span> <span class="kn">import</span> <span class="n">download_model</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">download_model</span><span class="p">(</span><span class="s2">&quot;wmt-large-da-estimator-1719&quot;</span><span class="p">,</span> <span class="s2">&quot;path/where/to/save/models/&quot;</span><span class="p">)</span>
 <span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="s2">&quot;Hello world!&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="s2">&quot;Oi mundo!&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;Olá mundo!&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-        <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="s2">&quot;This is a sample&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="s2">&quot;este é um exemplo&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;isto é um exemplo!&quot;</span>
-    <span class="p">}</span>
+   <span class="p">{</span>
+      <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="s2">&quot;Dem Feuer konnte Einhalt geboten werden&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="s2">&quot;The fire could be stopped&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;They were able to control the fire.&quot;</span>
+   <span class="p">},</span>
+   <span class="p">{</span>
+      <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="s2">&quot;Schulen und Kindergärten wurden eröffnet.&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="s2">&quot;Schools and kindergartens were open&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;Schools and kindergartens opened&quot;</span>
+   <span class="p">}</span>
 <span class="p">]</span>
 <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Scoring MT ouputs using lists:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Hello world!&quot;</span><span class="p">,</span> <span class="s2">&quot;This is a sample&quot;</span><span class="p">]</span>
-<span class="n">hypothesis</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Oi mundo!&quot;</span><span class="p">,</span> <span class="s2">&quot;este é um exemplo&quot;</span><span class="p">]</span>
-<span class="n">reference</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Olá mundo!&quot;</span><span class="p">,</span> <span class="s2">&quot;isto é um exemplo!&quot;</span><span class="p">]</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Dem Feuer konnte Einhalt geboten werden&quot;</span><span class="p">,</span> <span class="s2">&quot;Schulen und Kindergärten wurden eröffnet.&quot;</span><span class="p">]</span>
+<span class="n">hypothesis</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;The fire could be stopped&quot;</span><span class="p">,</span> <span class="s2">&quot;Schools and kindergartens were open&quot;</span><span class="p">]</span>
+<span class="n">reference</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;They were able to control the fire.&quot;</span><span class="p">,</span> <span class="s2">&quot;Schools and kindergartens opened&quot;</span><span class="p">]</span>
 <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="n">hypothesis</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">reference</span><span class="p">}</span>
 <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">())]</span>
 <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>

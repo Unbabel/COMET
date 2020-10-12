@@ -7,15 +7,18 @@ Command Line Interface
 
 After installing COMET you can score you MT outputs with the following command:: 
 
-   comet score -s sources.txt -h hypothesis.txt -r references.txt
+   echo -e "Dem Feuer konnte Einhalt geboten werden\nSchulen und Kindergärten wurden eröffnet." >> src.de
+   echo -e "The fire could be stopped\nSchools and kindergartens were open" >> hyp.en
+   echo -e "They were able to control the fire.\nSchools and kindergartens opened" >> ref.en
+   comet score -s src.de -h hyp.en -r ref.en
 
 You can also specify a metric model using the `---model` flag (see :ref:`models:COMET Metrics` for available metric models):: 
 
-   comet score -s sources.txt -h hypothesis.txt -r references.txt --model wmt-large-da-estimator-1719
+   comet score -s src.de -h hyp.en -r ref.en --model wmt-large-da-estimator-1719
 
 You can export your results to a JSON file using the `---to_json` flag::
 
-   comet score -s sources.txt -h hypothesis.txt -r references.txt --to_json output.json
+   comet score -s src.de -h hyp.en -r ref.en --to_json output.json
 
 
 Using Python
@@ -26,24 +29,24 @@ Instead of using CLI you can also score your models in Python with the `predict`
    from comet.models import download_model
    model = download_model("wmt-large-da-estimator-1719", "path/where/to/save/models/")
    data = [
-       {
-           "src": "Hello world!",
-           "mt": "Oi mundo!",
-           "ref": "Olá mundo!"
-       },
-       {
-           "src": "This is a sample",
-           "mt": "este é um exemplo",
-           "ref": "isto é um exemplo!"
-       }
+      {
+         "src": "Dem Feuer konnte Einhalt geboten werden",
+         "mt": "The fire could be stopped",
+         "ref": "They were able to control the fire."
+      },
+      {
+         "src": "Schulen und Kindergärten wurden eröffnet.",
+         "mt": "Schools and kindergartens were open",
+         "ref": "Schools and kindergartens opened"
+      }
    ]
    model.predict(data)
 
 Scoring MT ouputs using lists::
    
-   source = ["Hello world!", "This is a sample"]
-   hypothesis = ["Oi mundo!", "este é um exemplo"]
-   reference = ["Olá mundo!", "isto é um exemplo!"]
+   source = ["Dem Feuer konnte Einhalt geboten werden", "Schulen und Kindergärten wurden eröffnet."]
+   hypothesis = ["The fire could be stopped", "Schools and kindergartens were open"]
+   reference = ["They were able to control the fire.", "Schools and kindergartens opened"]
    data = {"src": source, "mt": hypothesis, "ref": reference}
    data = [dict(zip(data, t)) for t in zip(*data.values())]
    model.predict(data)
