@@ -119,7 +119,7 @@ comet train -f {config_file_path}.yaml
 
 Launch tensorboard with:
 ```bash
-tensorboard --logdir="experiments/lightning_logs/"
+tensorboard --logdir="experiments/"
 ```
 
 ## Download Command: 
