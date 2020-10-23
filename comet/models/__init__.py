@@ -108,6 +108,9 @@ def load_checkpoint(checkpoint: str) -> ModelBase:
     Returns:
         - COMET Model
     """
+    if not os.path.exists(checkpoint):
+        raise Exception(f"{checkpoint} file not found!")
+    
     tags_csv_file = "/".join(checkpoint.split("/")[:-1] + ["meta_tags.csv"])
     hparam_yaml_file = "/".join(checkpoint.split("/")[:-1] + ["hparams.yaml"])
 
