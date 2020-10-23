@@ -55,7 +55,7 @@ comet score -s src.de -h hyp.en -r ref.en --model wmt-large-hter-estimator --to_
 
 ```python
 from comet.models import download_model
-model = download_model("wmt-large-da-estimator-1719", "path/where/to/save/models/")
+model = download_model("wmt-large-da-estimator-1719")
 data = [
     {
         "src": "Dem Feuer konnte Einhalt geboten werden",
@@ -119,7 +119,7 @@ comet train -f {config_file_path}.yaml
 
 Launch tensorboard with:
 ```bash
-tensorboard --logdir="experiments/lightning_logs/"
+tensorboard --logdir="experiments/"
 ```
 
 ## Download Command: 
