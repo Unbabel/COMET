@@ -352,7 +352,8 @@ class ModelBase(ptl.LightningModule):
             self.unfreeze_encoder()
             self._frozen = False
 
-        return {"loss": loss_value, "log": {"loss": loss_value}}
+        self.log('train_loss', loss_value, on_step=True, on_epoch=True)
+        return loss_value
 
     def validation_step(
         self,
@@ -399,16 +400,13 @@ class ModelBase(ptl.LightningModule):
         val_loss = torch.stack([x["val_loss"] for x in val_outs]).mean()
 
         # Store Metrics for Reporting...
-        train_metrics = self.compute_metrics(train_outs)
         val_metrics = self.compute_metrics(val_outs)
-        train_metrics["avg_loss"] = train_loss
         val_metrics["avg_loss"] = val_loss
-        logging_metrics = {"train_" + k: v for k, v in train_metrics.items()}
+        self.log_dict(val_metrics, prog_bar=True)
 
-        return {
-            "progress_bar": val_metrics,
-            "log": logging_metrics,
-        }
+        train_metrics = self.compute_metrics(train_outs)
+        train_metrics["avg_loss"] = train_loss
+        self.log_dict({"train_" + k: v for k, v in train_metrics.items()})
 
     def test_step(
         self,
@@ -474,17 +472,3 @@ class ModelBase(ptl.LightningModule):
             collate_fn=self.prepare_sample,
             num_workers=self.hparams.loader_workers,
         )
-
-    def langid(self, segment: str) -> str:
-        """Auxiliar function to identify the language of a specific segment.
-        Useful for detecting MT hypothesis that DO NOT TRANSLATE the source. These segments
-        will be scored high due to its similarity to the source. 
-        
-        :param segment: String with the text we wish to identify the langauge.
-
-        :return: Language code (un for `unknown` languages)
-        """
-        try:
-            return cld2.detect(segment, bestEffort=True)[2][0][1]
-        except:
-            return "un"

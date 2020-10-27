@@ -17,7 +17,7 @@ class TestMetrics(unittest.TestCase):
             "kendall": torch.tensor(0.7559289, dtype=torch.float32),
             "spearman": torch.tensor(0.866025, dtype=torch.float32),
         }
-        result = report(a, b)
+        result = report.compute(a, b)
         self.assertDictEqual(
             {k: round(v.item(), 4) for k, v in result.items()},
             {k: round(v.item(), 4) for k, v in expected.items()},
@@ -31,4 +31,4 @@ class TestMetrics(unittest.TestCase):
 
         expected = (1 - 2) / (1 + 2)
 
-        self.assertEqual(metric(pos, neg), expected)
+        self.assertEqual(metric.compute(pos, neg), expected)
