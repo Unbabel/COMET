@@ -84,6 +84,7 @@ data = [dict(zip(data, t)) for t in zip(*data.values())]
 model.predict(data)
 ```
 
+**Note:** Using the python interface you will get a list of segment-level scores. You can obtain the corpus-level score by averaging the segment-level scores
 
 ## Model Zoo:
 
