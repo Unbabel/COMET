@@ -156,12 +156,12 @@
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Translation Ranking Base Model</span>
-<span class="sd">==============================</span>
+<span class="sd">==============</span>
 <span class="sd">    Abstract base class used to build new ranking systems inside COMET.</span>
 <span class="sd">    This task consists of ranking &quot;good&quot; translations above &quot;worse&quot; ones.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">argparse</span> <span class="kn">import</span> <span class="n">Namespace</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span>
 
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -181,18 +181,34 @@
 <span class="sd">    :param hparams: Namespace containing the hyperparameters.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">hparams</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="RankingBase.ModelConfig"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_base.RankingBase.ModelConfig">[docs]</a>    <span class="k">class</span> <span class="nc">ModelConfig</span><span class="p">(</span><span class="n">ModelBase</span><span class="o">.</span><span class="n">ModelConfig</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        Ranking ModelConfig:</span>
+
+<span class="sd">        --------------------------- Encoder -----------------------------------------</span>
+<span class="sd">        :param encoder_learning_rate: Learning rate used for the encoder model.</span>
+
+<span class="sd">        :param layer: Layer that will be used to extract embeddings. If &#39;mix&#39; embeddings</span>
+<span class="sd">            from all layers are combined with a layer-wise attention mechanism</span>
+
+<span class="sd">        :param scalar_mix_dropout: If layer=&#39;mix&#39; we can regularize layer&#39;s importance by </span>
+<span class="sd">            with a given probability setting that weight to - inf before softmax.    </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">layer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mix&quot;</span>
+        <span class="n">scalar_mix_dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">layerwise_decay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span></div>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hparams</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">,)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">hparams</span><span class="p">)</span>
 
 <div class="viewcode-block" id="RankingBase.read_csv"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_base.RankingBase.read_csv">[docs]</a>    <span class="k">def</span> <span class="nf">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Reads a comma separated value file.</span>
-
+        <span class="sd">&quot;&quot;&quot; Reads a comma separated value file.</span>
+<span class="sd">        </span>
 <span class="sd">        :param path: path to a csv file.</span>
-
-<span class="sd">        :return: List of records as dictionaries</span>
+<span class="sd">        </span>
+<span class="sd">        Return:</span>
+<span class="sd">            - List of records as dictionaries</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="s2">&quot;src&quot;</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">,</span> <span class="s2">&quot;pos&quot;</span><span class="p">,</span> <span class="s2">&quot;neg&quot;</span><span class="p">]]</span>
@@ -229,6 +245,26 @@
                 <span class="k">else</span> <span class="kc">None</span>
             <span class="p">)</span>
 
+<div class="viewcode-block" id="RankingBase.configure_optimizers"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_base.RankingBase.configure_optimizers">[docs]</a>    <span class="k">def</span> <span class="nf">configure_optimizers</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">LambdaLR</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot; Sets different Learning rates for different parameter groups. &quot;&quot;&quot;</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">layerwise_lr</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layerwise_decay</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">encoder_model</span> <span class="o">!=</span> <span class="s2">&quot;LASER&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_mix</span><span class="p">:</span>
+            <span class="n">parameters</span> <span class="o">=</span> <span class="n">parameters</span> <span class="o">+</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_mix</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+                    <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">]</span>
+
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_optimizer</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="n">scheduler</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_scheduler</span><span class="p">(</span><span class="n">optimizer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">optimizer</span><span class="p">],</span> <span class="p">[</span><span class="n">scheduler</span><span class="p">]</span></div>
+
 <div class="viewcode-block" id="RankingBase.get_sentence_embedding"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_base.RankingBase.get_sentence_embedding">[docs]</a>    <span class="k">def</span> <span class="nf">get_sentence_embedding</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
@@ -247,13 +283,17 @@
             <span class="n">tokens</span> <span class="o">=</span> <span class="n">tokens</span><span class="p">[:,</span> <span class="p">:</span> <span class="n">lengths</span><span class="o">.</span><span class="n">max</span><span class="p">()]</span>
 
         <span class="n">encoder_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">lengths</span><span class="p">)</span>
+
         <span class="c1"># for LASER we dont care about the word embeddings</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">encoder_model</span> <span class="o">==</span> <span class="s2">&quot;LASER&quot;</span><span class="p">:</span>
             <span class="k">pass</span>
+
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_mix</span><span class="p">:</span>
             <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_mix</span><span class="p">(</span><span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">],</span> <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;mask&quot;</span><span class="p">])</span>
+
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">num_layers</span><span class="p">:</span>
             <span class="n">embeddings</span> <span class="o">=</span> <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">]</span>
+
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid model layer </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="p">))</span>
 
@@ -276,6 +316,15 @@
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;cls&quot;</span><span class="p">:</span>
             <span class="n">sentemb</span> <span class="o">=</span> <span class="n">embeddings</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
 
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;cls+avg&quot;</span><span class="p">:</span>
+            <span class="n">cls_sentemb</span> <span class="o">=</span> <span class="n">embeddings</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="n">avg_sentemb</span> <span class="o">=</span> <span class="n">average_pooling</span><span class="p">(</span>
+                <span class="n">tokens</span><span class="p">,</span>
+                <span class="n">embeddings</span><span class="p">,</span>
+                <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;mask&quot;</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">padding_index</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">sentemb</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">cls_sentemb</span><span class="p">,</span> <span class="n">avg_sentemb</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid pooling technique.&quot;</span><span class="p">)</span>
 

@@ -154,21 +154,6 @@
             
   <h1>Source code for comet.modules.scalar_mix</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
-<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Layer-Wise Attention Mechanism</span>
-<span class="sd">================================</span>
-<span class="sd">    Computes a parameterised scalar mixture of N tensors, `mixture = gamma * sum(s_k * tensor_k)`</span>
-<span class="sd">    where `s = softmax(w)`, with `w` and `gamma` scalar parameters.</span>
-
-<span class="sd">    If `do_layer_norm=True` then apply layer normalization to each tensor before weighting.</span>
-
-<span class="sd">    If `dropout &gt; 0`, then for each scalar weight, adjust its softmax weight mass to 0 with</span>
-<span class="sd">    the dropout probability (i.e., setting the unnormalized weight to -inf). This effectively</span>
-<span class="sd">    should redistribute dropped probability mass to all other weights.</span>
-
-<span class="sd">    Original implementation:</span>
-<span class="sd">        - https://github.com/Hyperparticle/udify</span>
-<span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
 
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -176,6 +161,19 @@
 
 
 <div class="viewcode-block" id="ScalarMixWithDropout"><a class="viewcode-back" href="../../../library.html#comet.modules.scalar_mix.ScalarMixWithDropout">[docs]</a><span class="k">class</span> <span class="nc">ScalarMixWithDropout</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes a parameterised scalar mixture of N tensors, &#39;mixture = gamma * sum(s_k * tensor_k)&#39;</span>
+<span class="sd">    where &#39;s = softmax(w)&#39;, with &#39;w&#39; and &#39;gamma&#39; scalar parameters.</span>
+<span class="sd">    </span>
+<span class="sd">    If &#39;do_layer_norm=True&#39; then apply layer normalization to each tensor before weighting.</span>
+<span class="sd">    </span>
+<span class="sd">    If &#39;dropout &gt; 0&#39;, then for each scalar weight, adjust its softmax weight mass to 0 with</span>
+<span class="sd">    the dropout probability (i.e., setting the unnormalized weight to -inf). This effectively</span>
+<span class="sd">    should redistribute dropped probability mass to all other weights.</span>
+
+<span class="sd">    Original implementation:</span>
+<span class="sd">        - https://github.com/Hyperparticle/udify</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -225,13 +223,13 @@
         <span class="n">mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Compute a weighted average of the `tensors`.  The input tensors an be any shape</span>
+<span class="sd">        Compute a weighted average of the &#39;tensors&#39;.  The input tensors an be any shape</span>
 <span class="sd">        with at least two dimensions, but must all be the same shape.</span>
-<span class="sd">        When `do_layer_norm=True`, the `mask` is required input.  If the `tensors` are</span>
-<span class="sd">        dimensioned  `(dim_0, ..., dim_{n-1}, dim_n)`, then the `mask` is dimensioned</span>
-<span class="sd">        `(dim_0, ..., dim_{n-1})`, as in the typical case with `tensors` of shape</span>
-<span class="sd">        `(batch_size, timesteps, dim)` and `mask` of shape `(batch_size, timesteps)`.</span>
-<span class="sd">        When `do_layer_norm=False` the `mask` is ignored.</span>
+<span class="sd">        When &#39;do_layer_norm=True&#39;, the &#39;mask&#39; is required input.  If the &#39;tensors&#39; are</span>
+<span class="sd">        dimensioned  &#39;(dim_0, ..., dim_{n-1}, dim_n)&#39;, then the &#39;mask&#39; is dimensioned</span>
+<span class="sd">        &#39;(dim_0, ..., dim_{n-1})&#39;, as in the typical case with &#39;tensors&#39; of shape</span>
+<span class="sd">        &#39;(batch_size, timesteps, dim)&#39; and &#39;mask&#39; of shape &#39;(batch_size, timesteps)&#39;.</span>
+<span class="sd">        When &#39;do_layer_norm=False&#39; the &#39;mask&#39; is ignored.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tensors</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mixture_size</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>

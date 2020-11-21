@@ -1,6 +1,6 @@
 # Train your own Metric
 
-To train our models we rely on the [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/0.8.4/) Library. This means that all our models are [Lightning Modules](https://pytorch-lightning.readthedocs.io/en/0.8.4/lightning-module.html).
+To train our models we rely on the [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/stable/) Library. This means that all our models are [Lightning Modules](https://pytorch-lightning.readthedocs.io/en/stable/lightning_module.html).
 
 To train a new metric we just need to run 1 command:
 
@@ -8,7 +8,7 @@ To train a new metric we just need to run 1 command:
 comet train -f {my_configs}.yaml
 ```
 
-This will setup a [Lightning Trainer](https://pytorch-lightning.readthedocs.io/en/0.8.4/trainer.html) and fit your model accordingly.
+This will setup a [Lightning Trainer](https://pytorch-lightning.readthedocs.io/en/stable/trainer.html) and fit your model accordingly.
 ## Data Format
 To train your metric we expect your data to be a csv with the following named columns:
 - `src`: The source segment.

@@ -167,7 +167,6 @@
  | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
- | <a href="#Q"><strong>Q</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
@@ -230,13 +229,6 @@
 
       <ul>
         <li><a href="library.html#module-comet.models.estimators.estimator_base">module</a>
-</li>
-      </ul></li>
-      <li>
-    comet.models.estimators.quality_estimator
-
-      <ul>
-        <li><a href="library.html#module-comet.models.estimators.quality_estimator">module</a>
 </li>
       </ul></li>
       <li>
@@ -303,6 +295,8 @@
       <ul>
         <li><a href="library.html#comet.models.model_base.ModelBase.configure_optimizers">(comet.models.model_base.ModelBase method)</a>
 </li>
+        <li><a href="library.html#comet.models.ranking.ranking_base.RankingBase.configure_optimizers">(comet.models.ranking.ranking_base.RankingBase method)</a>
+</li>
       </ul></li>
   </ul></td>
 </tr></table>
@@ -344,8 +338,6 @@
         <li><a href="library.html#comet.models.encoders.xlmr.XLMREncoder.forward">(comet.models.encoders.xlmr.XLMREncoder method)</a>
 </li>
         <li><a href="library.html#comet.models.estimators.comet_estimator.CometEstimator.forward">(comet.models.estimators.comet_estimator.CometEstimator method)</a>
-</li>
-        <li><a href="library.html#comet.models.estimators.quality_estimator.QualityEstimator.forward">(comet.models.estimators.quality_estimator.QualityEstimator method)</a>
 </li>
         <li><a href="library.html#comet.models.model_base.ModelBase.forward">(comet.models.model_base.ModelBase method)</a>
 </li>
@@ -400,8 +392,6 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#comet.models.model_base.ModelBase.langid">langid() (comet.models.model_base.ModelBase method)</a>
-</li>
       <li><a href="library.html#comet.models.encoders.laser.LASEREncoder">LASEREncoder (class in comet.models.encoders.laser)</a>
 </li>
       <li><a href="library.html#comet.models.encoders.bert.BERTEncoder.layerwise_lr">layerwise_lr() (comet.models.encoders.bert.BERTEncoder method)</a>
@@ -420,6 +410,8 @@
         <li><a href="library.html#comet.models.encoders.xlmr.XLMREncoder.lm_head">(comet.models.encoders.xlmr.XLMREncoder property)</a>
 </li>
       </ul></li>
+      <li><a href="library.html#comet.models.model_base.ModelBase.load_weights">load_weights() (comet.models.model_base.ModelBase method)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -453,8 +445,6 @@
         <li><a href="library.html#module-comet.models.estimators.comet_estimator">comet.models.estimators.comet_estimator</a>
 </li>
         <li><a href="library.html#module-comet.models.estimators.estimator_base">comet.models.estimators.estimator_base</a>
-</li>
-        <li><a href="library.html#module-comet.models.estimators.quality_estimator">comet.models.estimators.quality_estimator</a>
 </li>
         <li><a href="library.html#module-comet.models.model_base">comet.models.model_base</a>
 </li>
@@ -509,12 +499,12 @@
         <li><a href="library.html#comet.models.ranking.comet_ranker.CometRanker.predict">(comet.models.ranking.comet_ranker.CometRanker method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="library.html#comet.models.encoders.encoder_base.Encoder.prepare_sample">prepare_sample() (comet.models.encoders.encoder_base.Encoder method)</a>
 
       <ul>
         <li><a href="library.html#comet.models.estimators.comet_estimator.CometEstimator.prepare_sample">(comet.models.estimators.comet_estimator.CometEstimator method)</a>
-</li>
-        <li><a href="library.html#comet.models.estimators.quality_estimator.QualityEstimator.prepare_sample">(comet.models.estimators.quality_estimator.QualityEstimator method)</a>
 </li>
         <li><a href="library.html#comet.models.model_base.ModelBase.prepare_sample">(comet.models.model_base.ModelBase method)</a>
 </li>
@@ -524,24 +514,16 @@
   </ul></td>
 </tr></table>
 
-<h2 id="Q">Q</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#comet.models.estimators.quality_estimator.QualityEstimator">QualityEstimator (class in comet.models.estimators.quality_estimator)</a>
-</li>
-  </ul></td>
-</tr></table>
-
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="library.html#comet.models.ranking.ranking_base.RankingBase">RankingBase (class in comet.models.ranking.ranking_base)</a>
 </li>
+      <li><a href="library.html#comet.models.ranking.ranking_base.RankingBase.ModelConfig">RankingBase.ModelConfig (class in comet.models.ranking.ranking_base)</a>
+</li>
       <li><a href="library.html#comet.models.estimators.estimator_base.Estimator.read_csv">read_csv() (comet.models.estimators.estimator_base.Estimator method)</a>
 
       <ul>
-        <li><a href="library.html#comet.models.estimators.quality_estimator.QualityEstimator.read_csv">(comet.models.estimators.quality_estimator.QualityEstimator method)</a>
-</li>
         <li><a href="library.html#comet.models.model_base.ModelBase.read_csv">(comet.models.model_base.ModelBase method)</a>
 </li>
         <li><a href="library.html#comet.models.ranking.ranking_base.RankingBase.read_csv">(comet.models.ranking.ranking_base.RankingBase method)</a>

@@ -156,7 +156,7 @@
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Encoder Model base</span>
-<span class="sd">====================</span>
+<span class="sd">==============</span>
 <span class="sd">    Module defining the common interface between all pretrained encoder models.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">warnings</span>
@@ -170,15 +170,12 @@
 
 
 <div class="viewcode-block" id="Encoder"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.encoder_base.Encoder">[docs]</a><span class="k">class</span> <span class="nc">Encoder</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Base class for an encoder model.</span>
-
+    <span class="sd">&quot;&quot;&quot; Base class for an encoder model.</span>
+<span class="sd">    </span>
 <span class="sd">    :param output_units: Number of output features that will be passed to the Estimator.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">TextEncoderBase</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="n">TextEncoderBase</span><span class="p">,)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">tokenizer</span>
 
@@ -204,9 +201,10 @@
 
 <div class="viewcode-block" id="Encoder.from_pretrained"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.encoder_base.Encoder.from_pretrained">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_pretrained</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hparams</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Function that loads a pretrained encoder and the respective tokenizer.</span>
-
-<span class="sd">        :return: Encoder model</span>
+        <span class="sd">&quot;&quot;&quot; Function that loads a pretrained encoder and the respective tokenizer.</span>
+<span class="sd">        </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - Encoder model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
@@ -246,7 +244,7 @@
 
 <div class="viewcode-block" id="Encoder.layerwise_lr"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.encoder_base.Encoder.layerwise_lr">[docs]</a>    <span class="k">def</span> <span class="nf">layerwise_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">decay</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        :return: List with grouped model parameters with layer-wise decaying learning rate</span>
+<span class="sd">        returns grouped model parameters with layer-wise decaying learning rate</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
@@ -259,9 +257,12 @@
 <span class="sd">        :param tokens: Torch tensor with the input sequences [batch_size x seq_len].</span>
 <span class="sd">        :param lengths: Torch tensor with the lenght of each sequence [seq_len].</span>
 
-<span class="sd">        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` </span>
-<span class="sd">            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), </span>
-<span class="sd">            `all_layers` (List with word_embeddings from all layers, `extra` (model specific outputs).</span>
+<span class="sd">        Returns: </span>
+<span class="sd">            - &#39;sentemb&#39;: tensor [batch_size x output_units] with the sentence encoding.</span>
+<span class="sd">            - &#39;wordemb&#39;: tensor [batch_size x seq_len x output_units] with the word level embeddings.</span>
+<span class="sd">            - &#39;mask&#39;: input mask.</span>
+<span class="sd">            - &#39;all_layers&#39;: List with the word_embeddings returned by each layer.</span>
+<span class="sd">            - &#39;extra&#39;: model specific outputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
 </pre></div>

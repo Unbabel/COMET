@@ -168,12 +168,11 @@
 <span class="kn">import</span> <span class="nn">click</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">RandomSampler</span><span class="p">,</span> <span class="n">Subset</span>
-
 <span class="kn">import</span> <span class="nn">pytorch_lightning</span> <span class="k">as</span> <span class="nn">ptl</span>
+<span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">from</span> <span class="nn">comet.models.encoders</span> <span class="kn">import</span> <span class="n">Encoder</span><span class="p">,</span> <span class="n">str2encoder</span>
 <span class="kn">from</span> <span class="nn">comet.schedulers</span> <span class="kn">import</span> <span class="n">str2scheduler</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">RandomSampler</span><span class="p">,</span> <span class="n">Subset</span>
 
 
 <div class="viewcode-block" id="ModelBase"><a class="viewcode-back" href="../../../library.html#comet.models.model_base.ModelBase">[docs]</a><span class="k">class</span> <span class="nc">ModelBase</span><span class="p">(</span><span class="n">ptl</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">):</span>
@@ -373,6 +372,24 @@
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">scheduler</span><span class="si">}</span><span class="s2"> invalid scheduler!&quot;</span><span class="p">)</span>
 
+<div class="viewcode-block" id="ModelBase.load_weights"><a class="viewcode-back" href="../../../library.html#comet.models.model_base.ModelBase.load_weights">[docs]</a>    <span class="k">def</span> <span class="nf">load_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Function that loads the weights from a given checkpoint file. </span>
+<span class="sd">        Note:</span>
+<span class="sd">            If the checkpoint model architecture is different then `self`, only</span>
+<span class="sd">            the common parts will be loaded.</span>
+
+<span class="sd">        :param checkpoint: Path to the checkpoint containing the weights to be loaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="k">lambda</span> <span class="n">storage</span><span class="p">,</span> <span class="n">loc</span><span class="p">:</span> <span class="n">storage</span><span class="p">)</span>
+        <span class="n">pretrained_dict</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;state_dict&quot;</span><span class="p">]</span>
+        <span class="n">model_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span>
+        <span class="c1"># 1. filter out unnecessary keys</span>
+        <span class="n">pretrained_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">pretrained_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">model_dict</span><span class="p">}</span>
+        <span class="c1"># 2. overwrite entries in the existing state dict</span>
+        <span class="n">model_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pretrained_dict</span><span class="p">)</span>
+        <span class="c1"># 3. load the new state dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">model_dict</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="ModelBase.read_csv"><a class="viewcode-back" href="../../../library.html#comet.models.model_base.ModelBase.read_csv">[docs]</a>    <span class="k">def</span> <span class="nf">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Reads a comma separated value file.</span>
 
@@ -507,7 +524,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze_encoder</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_frozen</span> <span class="o">=</span> <span class="kc">False</span>
 
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;loss&quot;</span><span class="p">:</span> <span class="n">loss_value</span><span class="p">,</span> <span class="s2">&quot;log&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;loss&quot;</span><span class="p">:</span> <span class="n">loss_value</span><span class="p">}}</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s1">&#39;train_loss&#39;</span><span class="p">,</span> <span class="n">loss_value</span><span class="p">,</span> <span class="n">on_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">on_epoch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss_value</span></div>
 
 <div class="viewcode-block" id="ModelBase.validation_step"><a class="viewcode-back" href="../../../library.html#comet.models.model_base.ModelBase.validation_step">[docs]</a>    <span class="k">def</span> <span class="nf">validation_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -554,16 +572,13 @@
         <span class="n">val_loss</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;val_loss&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">val_outs</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
 
         <span class="c1"># Store Metrics for Reporting...</span>
-        <span class="n">train_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">(</span><span class="n">train_outs</span><span class="p">)</span>
         <span class="n">val_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">(</span><span class="n">val_outs</span><span class="p">)</span>
-        <span class="n">train_metrics</span><span class="p">[</span><span class="s2">&quot;avg_loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">train_loss</span>
         <span class="n">val_metrics</span><span class="p">[</span><span class="s2">&quot;avg_loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val_loss</span>
-        <span class="n">logging_metrics</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;train_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">train_metrics</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="n">val_metrics</span><span class="p">,</span> <span class="n">prog_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;progress_bar&quot;</span><span class="p">:</span> <span class="n">val_metrics</span><span class="p">,</span>
-            <span class="s2">&quot;log&quot;</span><span class="p">:</span> <span class="n">logging_metrics</span><span class="p">,</span>
-        <span class="p">}</span></div>
+        <span class="n">train_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_metrics</span><span class="p">(</span><span class="n">train_outs</span><span class="p">)</span>
+        <span class="n">train_metrics</span><span class="p">[</span><span class="s2">&quot;avg_loss&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">train_loss</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_dict</span><span class="p">({</span><span class="s2">&quot;train_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">train_metrics</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span></div>
 
 <div class="viewcode-block" id="ModelBase.test_step"><a class="viewcode-back" href="../../../library.html#comet.models.model_base.ModelBase.test_step">[docs]</a>    <span class="k">def</span> <span class="nf">test_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -628,21 +643,7 @@
             <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
             <span class="n">collate_fn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">,</span>
             <span class="n">num_workers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">loader_workers</span><span class="p">,</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="ModelBase.langid"><a class="viewcode-back" href="../../../library.html#comet.models.model_base.ModelBase.langid">[docs]</a>    <span class="k">def</span> <span class="nf">langid</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">segment</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Auxiliar function to identify the language of a specific segment.</span>
-<span class="sd">        Useful for detecting MT hypothesis that DO NOT TRANSLATE the source. These segments</span>
-<span class="sd">        will be scored high due to its similarity to the source. </span>
-<span class="sd">        </span>
-<span class="sd">        :param segment: String with the text we wish to identify the langauge.</span>
-
-<span class="sd">        :return: Language code (un for `unknown` languages)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">cld2</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">segment</span><span class="p">,</span> <span class="n">bestEffort</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
-        <span class="k">except</span><span class="p">:</span>
-            <span class="k">return</span> <span class="s2">&quot;un&quot;</span></div></div>
+        <span class="p">)</span></div></div>
 </pre></div>
 
            </div>

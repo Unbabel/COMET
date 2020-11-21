@@ -167,12 +167,12 @@
             
   <div class="section" id="train-your-own-metric">
 <h1>Train your own Metric<a class="headerlink" href="#train-your-own-metric" title="Permalink to this headline">¶</a></h1>
-<p>To train our models we rely on the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/">PyTorch Lightning</a> Library. This means that all our models are <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/lightning-module.html">Lightning Modules</a>.</p>
+<p>To train our models we rely on the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/">PyTorch Lightning</a> Library. This means that all our models are <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/lightning_module.html">Lightning Modules</a>.</p>
 <p>To train a new metric we just need to run 1 command:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>comet train -f <span class="o">{</span>my_configs<span class="o">}</span>.yaml
 </pre></div>
 </div>
-<p>This will setup a <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/0.8.4/trainer.html">Lightning Trainer</a> and fit your model accordingly.</p>
+<p>This will setup a <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/trainer.html">Lightning Trainer</a> and fit your model accordingly.</p>
 <div class="section" id="data-format">
 <h2>Data Format<a class="headerlink" href="#data-format" title="Permalink to this headline">¶</a></h2>
 <p>To train your metric we expect your data to be a csv with the following named columns:</p>

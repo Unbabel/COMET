@@ -171,29 +171,28 @@
 
 
 <div class="viewcode-block" id="BERTEncoder"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.bert.BERTEncoder">[docs]</a><span class="k">class</span> <span class="nc">BERTEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;BERT encoder.</span>
+    <span class="sd">&quot;&quot;&quot; BERT encoder.</span>
 <span class="sd">    :param tokenizer: BERT text encoder.</span>
 <span class="sd">    :param hparams: ArgumentParser.</span>
+
+<span class="sd">    Check the available models here: </span>
+<span class="sd">        https://huggingface.co/transformers/pretrained_models.html</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">HFTextEncoder</span><span class="p">,</span>
-        <span class="n">hparams</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">:</span> <span class="n">HFTextEncoder</span><span class="p">,</span> <span class="n">hparams</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">,)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">hparams</span><span class="o">.</span><span class="n">pretrained_model</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">output_hidden_states</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_output_units</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">hidden_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_n_layers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">num_hidden_layers</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_max_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_position_embeddings</span>
 
 <div class="viewcode-block" id="BERTEncoder.from_pretrained"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.bert.BERTEncoder.from_pretrained">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_pretrained</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hparams</span><span class="p">:</span> <span class="n">Namespace</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Encoder</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Function that loads a pretrained encoder from Hugging Face.</span>
+        <span class="sd">&quot;&quot;&quot; Function that loads a pretrained encoder from Hugging Face.</span>
 <span class="sd">        :param hparams: Namespace.</span>
 
-<span class="sd">        :return: Encoder model</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - Encoder model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">HFTextEncoder</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">hparams</span><span class="o">.</span><span class="n">pretrained_model</span><span class="p">)</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">BERTEncoder</span><span class="p">(</span><span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">hparams</span><span class="o">=</span><span class="n">hparams</span><span class="p">)</span>
@@ -206,47 +205,43 @@
 
 <div class="viewcode-block" id="BERTEncoder.layerwise_lr"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.bert.BERTEncoder.layerwise_lr">[docs]</a>    <span class="k">def</span> <span class="nf">layerwise_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">decay</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        :return: List with grouped model parameters with layer-wise decaying learning rate</span>
+<span class="sd">        returns grouped model parameters with layer-wise decaying learning rate</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Embedding Layer</span>
         <span class="n">opt_parameters</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">{</span>
                 <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
                 <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span> <span class="o">*</span> <span class="n">decay</span> <span class="o">**</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">),</span>
             <span class="p">}</span>
         <span class="p">]</span>
-        <span class="c1"># Last Layer</span>
-        <span class="n">last_layer</span> <span class="o">=</span> <span class="p">[{</span>
-            <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">layer</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
-            <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span>
-        <span class="p">}]</span>
-        <span class="c1"># All layers</span>
         <span class="n">opt_parameters</span> <span class="o">+=</span> <span class="p">[</span>
             <span class="p">{</span>
                 <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">layer</span><span class="p">[</span><span class="n">l</span><span class="p">]</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
-                <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span> <span class="o">*</span> <span class="n">decay</span> <span class="o">**</span> <span class="n">l</span><span class="p">,</span>
+                <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">lr</span> <span class="o">*</span> <span class="n">decay</span> <span class="o">**</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">l</span><span class="p">),</span>
             <span class="p">}</span>
-            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
         <span class="p">]</span>
-        <span class="k">return</span> <span class="n">opt_parameters</span> <span class="o">+</span> <span class="n">last_layer</span></div>
+        <span class="k">return</span> <span class="n">opt_parameters</span></div>
 
 <div class="viewcode-block" id="BERTEncoder.forward"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.bert.BERTEncoder.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">tokens</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">lengths</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Encodes a batch of sequences.</span>
-
 <span class="sd">        :param tokens: Torch tensor with the input sequences [batch_size x seq_len].</span>
-<span class="sd">        :param lengths: Torch tensor with the lenght of each sequence [seq_len].</span>
+<span class="sd">        :param lengths: Torch tensor with the length of each sequence [seq_len].</span>
 
-<span class="sd">        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` </span>
-<span class="sd">            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), </span>
-<span class="sd">            `all_layers` (List with word_embeddings from all layers), `extra` (tuple with the </span>
-<span class="sd">            last_hidden_state, the pooler_output representing  the entire sentence and the word </span>
-<span class="sd">            embeddings for all BERT layers).</span>
+<span class="sd">        Returns: </span>
+<span class="sd">            - &#39;sentemb&#39;: tensor [batch_size x 1024] with the sentence encoding.</span>
+<span class="sd">            - &#39;wordemb&#39;: tensor [batch_size x seq_len x 1024] with the word level embeddings.</span>
+<span class="sd">            - &#39;mask&#39;: torch.Tensor [seq_len x batch_size] </span>
+<span class="sd">            - &#39;all_layers&#39;: List with the word_embeddings returned by each layer.</span>
+<span class="sd">            - &#39;extra&#39;: tuple with the last_hidden_state [batch_size x seq_len x hidden_size],</span>
+<span class="sd">                the pooler_output representing the entire sentence and the word embeddings for </span>
+<span class="sd">                all BERT layers (list of tensors [batch_size x seq_len x hidden_size])</span>
+<span class="sd">            </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">lengths_to_mask</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">tokens</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
-        <span class="n">last_hidden_states</span><span class="p">,</span> <span class="n">pooler_output</span><span class="p">,</span> <span class="n">all_layers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+        <span class="n">last_hidden_states</span><span class="p">,</span> <span class="n">pooler_output</span><span class="p">,</span> <span class="n">all_layers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">mask</span><span class="p">,</span> <span class="n">output_hidden_states</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;sentemb&quot;</span><span class="p">:</span> <span class="n">pooler_output</span><span class="p">,</span>
             <span class="s2">&quot;wordemb&quot;</span><span class="p">:</span> <span class="n">last_hidden_states</span><span class="p">,</span>

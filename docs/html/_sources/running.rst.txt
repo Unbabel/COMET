@@ -50,3 +50,5 @@ Scoring MT ouputs using lists::
    data = {"src": source, "mt": hypothesis, "ref": reference}
    data = [dict(zip(data, t)) for t in zip(*data.values())]
    model.predict(data)
+
+**Note:** COMET corpus-level scores are obtained by averaging segment-level scores.

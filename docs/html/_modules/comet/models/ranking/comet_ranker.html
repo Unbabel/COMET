@@ -156,7 +156,7 @@
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Comet Ranker Model</span>
-<span class="sd">======================</span>
+<span class="sd">==============</span>
 <span class="sd">    The goal of this model is to rank good translations closer to the reference and source text</span>
 <span class="sd">    and bad translations further by a small margin.</span>
 
@@ -176,7 +176,7 @@
 
 <div class="viewcode-block" id="CometRanker"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.comet_ranker.CometRanker">[docs]</a><span class="k">class</span> <span class="nc">CometRanker</span><span class="p">(</span><span class="n">RankingBase</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Comet Ranker class that uses a pretrained encoder to extract features</span>
+<span class="sd">    Comet Ranker class that uses a pretrained encoder to extract features </span>
 <span class="sd">    from the sequences and then passes those features through a Triplet Margin Loss.</span>
 
 <span class="sd">    :param hparams: Namespace containing the hyperparameters.</span>
@@ -210,13 +210,12 @@
             <span class="n">distance_neg</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">harmonic_distance_neg</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;kendall&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">distance_pos</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">distance_neg</span><span class="p">))</span>
+            <span class="s2">&quot;kendall&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">distance_pos</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">distance_neg</span><span class="p">))</span>
         <span class="p">}</span></div>
 
 <div class="viewcode-block" id="CometRanker.compute_loss"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.comet_ranker.CometRanker.compute_loss">[docs]</a>    <span class="k">def</span> <span class="nf">compute_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_out</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Computes Triplet Margin Loss for both the reference and the source.</span>
-<span class="sd">        </span>
 <span class="sd">        :param model_out: model specific output with src_anchor, ref_anchor, pos and neg</span>
 <span class="sd">            sentence embeddings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -232,12 +231,10 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">cuda</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">show_progress</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
         <span class="sd">&quot;&quot;&quot; Function that runs a model prediction,</span>
-<span class="sd">        </span>
 <span class="sd">        :param samples: List of dictionaries with &#39;mt&#39; and &#39;ref&#39; keys.</span>
 <span class="sd">        :param cuda: Flag that runs inference using 1 single GPU.</span>
 <span class="sd">        :param show_progress: Flag to show progress during inference of multiple examples.</span>
-<span class="sd">        </span>
-<span class="sd">        :return: Dictionary with model outputs</span>
+<span class="sd">        Return: Dictionary with model outputs</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
@@ -326,13 +323,24 @@
             <span class="k">if</span> <span class="n">show_progress</span><span class="p">:</span>
                 <span class="n">pbar</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">distance_weighted</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
-        <span class="n">scores</span> <span class="o">=</span> <span class="p">[]</span> 
+        <span class="n">scores</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">)):</span>
-            <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">distance_weighted</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;langid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">langid</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;src&quot;</span><span class="p">]),</span>
+                <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">langid</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;mt&quot;</span><span class="p">]),</span>
+                <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">langid</span><span class="p">(</span><span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;ref&quot;</span><span class="p">]),</span>
+            <span class="p">}</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;langid&quot;</span><span class="p">][</span><span class="s2">&quot;src&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;langid&quot;</span><span class="p">][</span><span class="s2">&quot;mt&quot;</span><span class="p">]</span>
+                <span class="ow">and</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;langid&quot;</span><span class="p">][</span><span class="s2">&quot;mt&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;langid&quot;</span><span class="p">][</span><span class="s2">&quot;ref&quot;</span><span class="p">]</span>
+            <span class="p">):</span>
+                <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">distance_ref</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">scores</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">distance_weighted</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
             <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;predicted_score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scores</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;reference_distance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">distance_ref</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;source_distance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">distance_src</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">samples</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="s2">&quot;source_distance&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">distance_ref</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">scores</span></div>
 
@@ -341,13 +349,14 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="kc">None</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Function that prepares a sample to input the model.</span>
-<span class="sd">        </span>
 <span class="sd">        :param sample: list of dictionaries.</span>
 <span class="sd">        :param inference: If set to to False, then the model expects </span>
 <span class="sd">            a MT and reference instead of anchor, pos, and neg segments.</span>
 
-<span class="sd">        :return: Tuple with a dictionary containing the model inputs and None OR List </span>
-<span class="sd">            with source, MT and reference tokenized and vectorized.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            - Tuple with a dictionary containing the model inputs and None.</span>
+<span class="sd">        or</span>
+<span class="sd">            - List with source, MT and reference tokenized and vectorized.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">sample</span> <span class="o">=</span> <span class="n">collate_tensors</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">inference</span><span class="p">:</span>
@@ -384,7 +393,7 @@
         <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Function that encodes the anchor, positive samples and negative samples</span>
+<span class="sd">        Function that encodes the anchor, positive samples and negative samples </span>
 <span class="sd">        and returns embeddings for the triplet.</span>
 
 <span class="sd">        :param src_tokens: anchor sequences [batch_size x anchor_seq_len]</span>
@@ -396,7 +405,7 @@
 <span class="sd">        :param pos_lengths: positive lengths [batch_size]</span>
 <span class="sd">        :param neg_lengths: negative lengths [batch_size]</span>
 
-<span class="sd">        :return: Dictionary with model outputs to be passed to the loss function.</span>
+<span class="sd">        Return: Dictionary with model outputs to be passed to the loss function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">&quot;src_sentemb&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">src_tokens</span><span class="p">,</span> <span class="n">src_lengths</span><span class="p">),</span>

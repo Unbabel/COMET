@@ -155,8 +155,8 @@
   <h1>Source code for comet.models.encoders.xlmr</h1><div class="highlight"><pre>
 <span></span><span class="c1"># -*- coding: utf-8 -*-</span>
 <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">XLM-R Encoder Model</span>
-<span class="sd">====================</span>
+<span class="sd">Fairseq XLM-R Encoder Model</span>
+<span class="sd">==============</span>
 <span class="sd">    Pretrained XLM-RoBERTa from Fairseq framework.</span>
 <span class="sd">    https://github.com/pytorch/fairseq/tree/master/examples/xlmr</span>
 <span class="sd">&quot;&quot;&quot;</span>
@@ -193,7 +193,7 @@
 <div class="viewcode-block" id="XLMREncoder"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.xlmr.XLMREncoder">[docs]</a><span class="k">class</span> <span class="nc">XLMREncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    XLM-RoBERTa encoder from Fairseq.</span>
-
+<span class="sd">    </span>
 <span class="sd">    :param xlmr: XLM-R model to be used.</span>
 <span class="sd">    :param tokenizer: XLM-R model tokenizer to be used.</span>
 <span class="sd">    :param hparams: Namespace.</span>
@@ -212,7 +212,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">xlmr</span>
 
 <div class="viewcode-block" id="XLMREncoder.freeze_embeddings"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.xlmr.XLMREncoder.freeze_embeddings">[docs]</a>    <span class="k">def</span> <span class="nf">freeze_embeddings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Freezes the embedding layer of the network to save some memory while training. &quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot; Frezees the embedding layer of the network to save some memory while training. &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="p">(</span>
             <span class="n">param</span>
         <span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">decoder</span><span class="o">.</span><span class="n">sentence_encoder</span><span class="o">.</span><span class="n">embed_tokens</span><span class="o">.</span><span class="n">parameters</span><span class="p">():</span>
@@ -230,7 +230,7 @@
 
 <div class="viewcode-block" id="XLMREncoder.layerwise_lr"><a class="viewcode-back" href="../../../../library.html#comet.models.encoders.xlmr.XLMREncoder.layerwise_lr">[docs]</a>    <span class="k">def</span> <span class="nf">layerwise_lr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lr</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">decay</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        :return: List with grouped model parameters with layer-wise decaying learning rate</span>
+<span class="sd">        returns grouped model parameters with layer-wise decaying learning rate</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Embedding layer</span>
         <span class="n">opt_parameters</span> <span class="o">=</span> <span class="p">[</span>
@@ -323,13 +323,15 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Encodes a batch of sequences.</span>
-<span class="sd">        </span>
 <span class="sd">        :param tokens: Torch tensor with the input sequences [batch_size x seq_len].</span>
 <span class="sd">        :param lengths: Torch tensor with the length of each sequence [seq_len].</span>
 
-<span class="sd">        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` </span>
-<span class="sd">            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), </span>
-<span class="sd">            `all_layers` (List with word_embeddings from all layers), `extra` (tuple with all XLM-R layers).</span>
+<span class="sd">        Returns: </span>
+<span class="sd">            - &#39;sentemb&#39;: tensor [batch_size x 1024] with the sentence encoding.</span>
+<span class="sd">            - &#39;wordemb&#39;: tensor [batch_size x seq_len x 1024] with the word level embeddings.</span>
+<span class="sd">            - &#39;all_layers&#39;: List with the word_embeddings returned by each layer.</span>
+<span class="sd">            - &#39;mask&#39;: torch.Tensor [seq_len x batch_size] </span>
+<span class="sd">            - &#39;extra&#39;: tuple with all XLM-R layers (list of tensors [batch_size x seq_len x hidden_size]) </span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mask</span> <span class="o">=</span> <span class="n">lengths_to_mask</span><span class="p">(</span><span class="n">lengths</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">tokens</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
         <span class="n">all_layers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">extract_features</span><span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">return_all_hiddens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
