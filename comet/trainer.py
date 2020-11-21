@@ -17,7 +17,6 @@ from comet.models.utils import apply_to_sample
 from pytorch_lightning.callbacks import (
     Callback,
     EarlyStopping,
-    LearningRateLogger,
     ModelCheckpoint,
 )
 from pytorch_lightning.loggers import LightningLoggerBase, TensorBoardLogger
@@ -118,7 +117,6 @@ class TrainReport(Callback):
     ) -> None:
         metrics = trainer.callback_metrics
         metrics = LightningLoggerBase._flatten_dict(metrics, "_")
-        del metrics["loss"]
         metrics = apply_to_sample(lambda x: x.item(), metrics)
         self._stack.append(metrics)
         # pl_module.print() # Print newline
@@ -169,12 +167,11 @@ def build_trainer(hparams: Namespace) -> pl.Trainer:
         period=0,  # Always allow saving checkpoint even within the same epoch
         mode=hparams.metric_mode,
     )
-    other_callbacks = [LearningRateLogger(), TrainReport()]
+    other_callbacks = [early_stop_callback, TrainReport()]
 
     trainer = pl.Trainer(
         logger=tb_logger,
         checkpoint_callback=checkpoint_callback,
-        early_stop_callback=early_stop_callback,
         callbacks=other_callbacks,
         gradient_clip_val=hparams.gradient_clip_val,
         gpus=hparams.gpus,
@@ -189,8 +186,6 @@ def build_trainer(hparams: Namespace) -> pl.Trainer:
         limit_train_batches=hparams.limit_train_batches,
         limit_val_batches=hparams.limit_val_batches,
         val_check_interval=hparams.val_check_interval,
-        log_save_interval=hparams.log_save_interval,
-        row_log_interval=hparams.row_log_interval,
         distributed_backend=hparams.distributed_backend,
         precision=hparams.precision,
         weights_summary="top",

@@ -7,18 +7,16 @@ Regression Metrics
 import warnings
 
 import numpy as np
+import torch
 from scipy.stats import kendalltau, pearsonr, spearmanr
 
-import torch
-from pytorch_lightning.metrics import Metric
 
-
-class RegressionReport(Metric):
+class RegressionReport():
     def __init__(self):
-        super().__init__(name="regression_report")
+        super().__init__()
         self.metrics = [Pearson(), Kendall(), Spearman()]
 
-    def forward(self, x: np.array, y: np.array) -> float:
+    def compute(self, x: np.array, y: np.array) -> float:
         """Computes Kendall correlation.
 
         :param x: predicted scores.
@@ -28,14 +26,14 @@ class RegressionReport(Metric):
         """
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            return {metric.name: metric(x, y) for metric in self.metrics}
+            return {metric.name: metric.compute(x, y) for metric in self.metrics}
 
 
-class Kendall(Metric):
+class Kendall():
     def __init__(self):
-        super().__init__(name="kendall")
+        self.name = "kendall"
 
-    def forward(self, x: np.array, y: np.array) -> float:
+    def compute(self, x: np.array, y: np.array) -> float:
         """Computes Kendall correlation.
 
         :param x: predicted scores.
@@ -46,11 +44,11 @@ class Kendall(Metric):
         return torch.tensor(kendalltau(x, y)[0], dtype=torch.float32)
 
 
-class Pearson(Metric):
+class Pearson():
     def __init__(self):
-        super().__init__(name="pearson")
+        self.name = "pearson"
 
-    def forward(self, x: np.array, y: np.array) -> torch.Tensor:
+    def compute(self, x: np.array, y: np.array) -> torch.Tensor:
         """Computes Pearson correlation.
 
         :param x: predicted scores.
@@ -61,11 +59,11 @@ class Pearson(Metric):
         return torch.tensor(pearsonr(x, y)[0], dtype=torch.float32)
 
 
-class Spearman(Metric):
+class Spearman():
     def __init__(self):
-        super().__init__(name="spearman")
+        self.name = "spearman"
 
-    def forward(self, x: np.array, y: np.array) -> float:
+    def compute(self, x: np.array, y: np.array) -> float:
         """Computes Spearman correlation.
 
         :param x: predicted scores.

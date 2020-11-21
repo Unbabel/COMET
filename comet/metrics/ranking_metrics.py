@@ -6,14 +6,12 @@ Ranking Metrics
 """
 import torch
 
-from pytorch_lightning.metrics import Metric
 
-
-class WMTKendall(Metric):
+class WMTKendall():
     def __init__(self):
-        super().__init__(name="kendall")
+        self.name = "kendall"
 
-    def forward(
+    def compute(
         self, distance_pos: torch.Tensor, distance_neg: torch.Tensor
     ) -> torch.Tensor:
         """Computes the level of concordance, discordance and the WMT kendall tau metric

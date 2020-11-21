@@ -55,7 +55,7 @@ comet score -s src.de -h hyp.en -r ref.en --model wmt-large-hter-estimator --to_
 
 ```python
 from comet.models import download_model
-model = download_model("wmt-large-da-estimator-1719", "path/where/to/save/models/")
+model = download_model("wmt-large-da-estimator-1719")
 data = [
     {
         "src": "Dem Feuer konnte Einhalt geboten werden",
@@ -84,6 +84,7 @@ data = [dict(zip(data, t)) for t in zip(*data.values())]
 model.predict(data)
 ```
 
+**Note:** Using the python interface you will get a list of segment-level scores. You can obtain the corpus-level score by averaging the segment-level scores
 
 ## Model Zoo:
 
@@ -119,7 +120,7 @@ comet train -f {config_file_path}.yaml
 
 Launch tensorboard with:
 ```bash
-tensorboard --logdir="experiments/lightning_logs/"
+tensorboard --logdir="experiments/"
 ```
 
 ## Download Command: 
@@ -140,4 +141,53 @@ In order to run the toolkit tests you must run the following command:
 ```bash
 coverage run --source=comet -m unittest discover
 coverage report -m
+```
+
+## Publications
+
+```
+@inproceedings{rei-etal-2020-comet,
+    title = "{COMET}: A Neural Framework for {MT} Evaluation",
+    author = "Rei, Ricardo  and
+      Stewart, Craig  and
+      Farinha, Ana C  and
+      Lavie, Alon",
+    booktitle = "Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)",
+    month = nov,
+    year = "2020",
+    address = "Online",
+    publisher = "Association for Computational Linguistics",
+    url = "https://www.aclweb.org/anthology/2020.emnlp-main.213",
+    pages = "2685--2702",
+}
+```
+
+```
+@inproceedings{rei-EtAl:2020:WMT,
+  author    = {Rei, Ricardo  and  Stewart, Craig  and  Farinha, Ana C  and  Lavie, Alon},
+  title     = {Unbabel's Participation in the WMT20 Metrics Shared Task},
+  booktitle      = {Proceedings of the Fifth Conference on Machine Translation},
+  month          = {November},
+  year           = {2020},
+  address        = {Online},
+  publisher      = {Association for Computational Linguistics},
+  pages     = {909--918},
+}
+```
+
+```
+@inproceedings{stewart-etal-2020-comet,
+    title = "{COMET} - Deploying a New State-of-the-art {MT} Evaluation Metric in Production",
+    author = "Stewart, Craig  and
+      Rei, Ricardo  and
+      Farinha, Catarina  and
+      Lavie, Alon",
+    booktitle = "Proceedings of the 14th Conference of the Association for Machine Translation in the Americas (Volume 2: User Track)",
+    month = oct,
+    year = "2020",
+    address = "Virtual",
+    publisher = "Association for Machine Translation in the Americas",
+    url = "https://www.aclweb.org/anthology/2020.amta-user.4",
+    pages = "78--109",
+}
 ```

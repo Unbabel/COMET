@@ -127,7 +127,7 @@ class Estimator(ModelBase):
         targets = (
             torch.cat([batch["val_target"]["score"] for batch in outputs]).cpu().numpy()
         )
-        return self.metrics(predictions, targets)
+        return self.metrics.compute(predictions, targets)
 
     def get_sentence_embedding(
         self, tokens: torch.Tensor, lengths: torch.Tensor
