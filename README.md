@@ -164,7 +164,7 @@ coverage report -m
 ```
 @inproceedings{rei-EtAl:2020:WMT,
   author    = {Rei, Ricardo  and  Stewart, Craig  and  Farinha, Ana C  and  Lavie, Alon},
-  title     = {Unbabelâ€™s Participation in the WMT20 Metrics Shared Task},
+  title     = {Unbabel's Participation in the WMT20 Metrics Shared Task},
   booktitle      = {Proceedings of the Fifth Conference on Machine Translation},
   month          = {November},
   year           = {2020},
