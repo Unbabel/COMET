@@ -122,10 +122,10 @@ class TrainReport(Callback):
         # pl_module.print() # Print newline
 
     @rank_zero_only
-    def on_fit_end(self, trainer: pl.Trainer) -> None:
+    def on_fit_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         click.secho("\nTraining Report Experiment:", fg="yellow")
-        index_column = ["Epoch " + str(i + 1) for i in range(len(self._stack))]
-        df = pd.DataFrame(self._stack, index=index_column)
+        index_column = ["Epoch " + str(i) for i in range(len(self._stack)-1)]
+        df = pd.DataFrame(self._stack[1:], index=index_column)
         click.secho("{}".format(df), fg="yellow")
 
 
@@ -153,9 +153,7 @@ def build_trainer(hparams: Namespace) -> pl.Trainer:
 
     # Model Checkpoint Callback
     ckpt_path = os.path.join(
-        "experiments/lightning/",
-        tb_logger.version,
-        "checkpoints",
+        "experiments/lightning/", tb_logger.version, "checkpoints",
     )
 
     checkpoint_callback = ModelCheckpoint(
