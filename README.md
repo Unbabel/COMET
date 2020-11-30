@@ -68,7 +68,7 @@ data = [
         "ref": "Schools and kindergartens opened"
     }
 ]
-model.predict(data)
+model.predict(data, cuda=True, show_progress=True)
 ```
 
 ### Simple Pythonic way to convert list or segments to model inputs:
@@ -81,7 +81,7 @@ reference = ["They were able to control the fire.", "Schools and kindergartens o
 data = {"src": source, "mt": hypothesis, "ref": reference}
 data = [dict(zip(data, t)) for t in zip(*data.values())]
 
-model.predict(data)
+model.predict(data, cuda=True, show_progress=True)
 ```
 
 **Note:** Using the python interface you will get a list of segment-level scores. You can obtain the corpus-level score by averaging the segment-level scores
