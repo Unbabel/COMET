@@ -122,10 +122,10 @@ class TrainReport(Callback):
         # pl_module.print() # Print newline
 
     @rank_zero_only
-    def on_fit_end(self, trainer: pl.Trainer) -> None:
+    def on_fit_end(self, trainer: pl.Trainer, pl_module: pl.LightningModule) -> None:
         click.secho("\nTraining Report Experiment:", fg="yellow")
-        index_column = ["Epoch " + str(i + 1) for i in range(len(self._stack))]
-        df = pd.DataFrame(self._stack, index=index_column)
+        index_column = ["Epoch " + str(i) for i in range(len(self._stack) - 1)]
+        df = pd.DataFrame(self._stack[1:], index=index_column)
         click.secho("{}".format(df), fg="yellow")
 
 
@@ -152,26 +152,21 @@ def build_trainer(hparams: Namespace) -> pl.Trainer:
     )
 
     # Model Checkpoint Callback
-    ckpt_path = os.path.join(
-        "experiments/lightning/",
-        tb_logger.version,
-        "checkpoints",
-    )
+    ckpt_path = os.path.join("experiments/lightning/", tb_logger.version)
 
     checkpoint_callback = ModelCheckpoint(
-        filepath=ckpt_path,
+        dirpath=ckpt_path,
         save_top_k=hparams.save_top_k,
         verbose=hparams.verbose,
         monitor=hparams.monitor,
         save_weights_only=hparams.save_weights_only,
-        period=0,  # Always allow saving checkpoint even within the same epoch
+        period=1,
         mode=hparams.metric_mode,
     )
-    other_callbacks = [early_stop_callback, TrainReport()]
+    other_callbacks = [early_stop_callback, checkpoint_callback, TrainReport()]
 
     trainer = pl.Trainer(
         logger=tb_logger,
-        checkpoint_callback=checkpoint_callback,
         callbacks=other_callbacks,
         gradient_clip_val=hparams.gradient_clip_val,
         gpus=hparams.gpus,
