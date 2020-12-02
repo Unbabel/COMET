@@ -20,6 +20,8 @@ You can export your results to a JSON file using the `---to_json` flag::
 
    comet score -s src.de -h hyp.en -r ref.en --to_json output.json
 
+Finally, if you don't have access to a GPU you can run COMET using CPU with the :code:`--cpu` flag but this will take some time to run.
+
 
 Using Python
 #############
@@ -40,7 +42,7 @@ Instead of using CLI you can also score your models in Python with the `predict`
          "ref": "Schools and kindergartens opened"
       }
    ]
-   model.predict(data)
+   model.predict(data, cuda=True, show_progress=True)
 
 Scoring MT ouputs using lists::
    
@@ -49,6 +51,6 @@ Scoring MT ouputs using lists::
    reference = ["They were able to control the fire.", "Schools and kindergartens opened"]
    data = {"src": source, "mt": hypothesis, "ref": reference}
    data = [dict(zip(data, t)) for t in zip(*data.values())]
-   model.predict(data)
+   model.predict(data, cuda=True, show_progress=True)
 
 **Note:** COMET corpus-level scores are obtained by averaging segment-level scores.

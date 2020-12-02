@@ -4,17 +4,25 @@ COMET models can be optimized towards different kinds of human judgements (for e
 
 | Model              |               Description                        |
 | :--------------------- | :------------------------------------------------ |
-| ↑`wmt-large-da-estimator-1719` | **RECOMMENDED:** Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19 |
+| ↑`wmt-large-da-estimator-1719` | **recommended:** Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19 |
 | ↑`wmt-base-da-estimator-1719` | Estimator model build on top of XLM-R (base) trained on DA from WMT17, WMT18 and WMT19 |
+| ↑`wmt-large-qe-estimator-1719` | **Reference-less Estimator** model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19 |
 | ↓`wmt-large-hter-estimator` | Estimator model build on top of XLM-R (large) trained to regress on HTER. |
 | ↓`wmt-base-hter-estimator` | Estimator model build on top of XLM-R (base) trained to regress on HTER. |
 | ↑`emnlp-base-da-ranker`    | Translation ranking model that uses XLM-R to encode sentences. This model was trained with WMT17 and WMT18 Direct Assessments Relative Ranks (DARR). |
 
-The first four models (`wmt-*`) were trained and tested for the WMT2020 shared task, thus they were only introduced in our submission to the shared task (paper still under-review)
+All the models starting with the `wmt-*` prefix were trained for the WMT2020 shared task, thus they were only introduced in our submission to the [shared task](http://www.statmt.org/wmt20/pdf/2020.wmt-1.101.pdf). The `emnlp-base-da-ranker` was introduced in the [COMET framework paper](https://www.aclweb.org/anthology/2020.emnlp-main.213.pdf) and used as a baseline in WMT20 Metrics shared task.
 
 **NOTE:** Even when regressing on the same types of human judgement, scores between metrics are not comparable (e.g. scores from a large and a base model are not comparable even when trained on the same type of judgements)! Please make sure you use the same metric when comparing two systems!
 
 Also, since HTER measures the amount of edits we needed to correct an MT hypothesis, output scores will be inverted, i.e. lower scores mean higher quality (indicated with ↓ in the table above).
+
+Finally, we also provide a list of DA estimator models trained only with data from 2017 and 2018.
+
+| Model              |               Description                        |
+| :--------------------- | :------------------------------------------------ |
+| ↑`wmt-large-da-estimator-1718` | Same as `wmt-large-da-estimator-1719` but only trained with data from WMT17 and WMT18. |
+| ↑`wmt-base-da-estimator-1718` | Same as `wmt-base-da-estimator-1719` but only trained with data from WMT17 and WMT18. |
 
 ## FAQ
 
@@ -39,3 +47,12 @@ Models trained on [HTER](http://www.mt-archive.info/05/AMTA-2006-Snover.pdf) are
 
 Translation Ranking models (e.g. `emnlp-base-da-ranker`) are based on distances and the result for a single segment should tell you: "How close, semantically, is that translation from the source and the reference texts". With that said, the median system score for the WMT20 data is 0.172957, systems with a score <0.151348 are in the bottom 25% and systems with a score >0.192181 are in the top 25%.  
 
+### How to obtain a corpus-level score?
+
+When using the python `predict` function we obtain a list of segment-level scores. The corpus-level score is an arithmetic mean between the segment-level scores.
+
+```python
+_, sgm_scores = model.predict(data, cuda=True, show_progress=False)
+corpus_score = sum(sgm_scores)/len(sgm_scores)
+
+```

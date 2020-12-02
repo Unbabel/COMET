@@ -179,6 +179,7 @@
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">h</span> <span class="n">hyp</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">to_json</span> <span class="n">output</span><span class="o">.</span><span class="n">json</span>
 </pre></div>
 </div>
+<p>Finally, if you don’t have access to a GPU you can run COMET using CPU with the <code class="code docutils literal notranslate"><span class="pre">--cpu</span></code> flag but this will take some time to run.</p>
 </div>
 <div class="section" id="using-python">
 <h2>Using Python<a class="headerlink" href="#using-python" title="Permalink to this headline">¶</a></h2>
@@ -197,7 +198,7 @@
       <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;Schools and kindergartens opened&quot;</span>
    <span class="p">}</span>
 <span class="p">]</span>
-<span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cuda</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Scoring MT ouputs using lists:</p>
@@ -206,7 +207,7 @@
 <span class="n">reference</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;They were able to control the fire.&quot;</span><span class="p">,</span> <span class="s2">&quot;Schools and kindergartens opened&quot;</span><span class="p">]</span>
 <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="n">hypothesis</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">reference</span><span class="p">}</span>
 <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">())]</span>
-<span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cuda</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><strong>Note:</strong> COMET corpus-level scores are obtained by averaging segment-level scores.</p>
