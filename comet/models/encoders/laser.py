@@ -46,7 +46,7 @@ else:
 class LASEREncoder(Encoder):
     """
     Bidirectional LASER Encoder
-        
+
     :param num_embeddings: Size of the vocabulary (73640 BPE tokens).
     :param padding_idx: Index of the padding token in the vocabulary.
     :param embed_dim: Size of the embeddings.
@@ -108,7 +108,7 @@ class LASEREncoder(Encoder):
     @classmethod
     def from_pretrained(cls, hparams: Namespace):
         """Function that loads a pretrained LASER encoder and the respective tokenizer.
-        
+
         :param hparams: Namespace.
 
         :returns: LASER Encoder model
@@ -136,9 +136,9 @@ class LASEREncoder(Encoder):
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the lenght of each sequence [seq_len].
 
-        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` 
-            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), 
-            `all_layers` (List with word_embeddings from all layers, `extra` (tuple with the LSTM outputs, 
+        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb`
+            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask),
+            `all_layers` (List with word_embeddings from all layers, `extra` (tuple with the LSTM outputs,
             hidden states and cell states).
         """
         self.lstm.flatten_parameters()  # Is it required? should this be in the __init__?
@@ -223,7 +223,7 @@ class LASEREncoder(Encoder):
     ) -> Dict[str, torch.Tensor]:
         """
         Function that reorders the LASER encoder outputs at the batch level.
-        
+
         :param encoder_out: the output of the forward function.
         :param new_order: the new order inside the batch.
         """

@@ -35,4 +35,4 @@ class HFTextEncoder(TextEncoderBase):
             - torch.Tensor: Encoding of the 'sequence'.
         """
         sequence = TextEncoder.encode(self, sequence)
-        return torch.tensor(self.tokenizer.encode(sequence))
+        return torch.tensor(self.tokenizer(sequence, truncation=False)["input_ids"])

@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-import pickle
-import sys
 
 import click
 import pandas as pd
 import yaml
 
-import wget
 from torchnlp.download import download_file_maybe_extract
 
 from .estimators import CometEstimator, QualityEstimator
@@ -110,19 +107,19 @@ def load_checkpoint(checkpoint: str) -> ModelBase:
     """
     if not os.path.exists(checkpoint):
         raise Exception(f"{checkpoint} file not found!")
-    
+
     tags_csv_file = "/".join(checkpoint.split("/")[:-1] + ["meta_tags.csv"])
     hparam_yaml_file = "/".join(checkpoint.split("/")[:-1] + ["hparams.yaml"])
 
     if os.path.exists(tags_csv_file):
-        # Uggly convertion from older Lightning checkpoints 
+        # Uggly convertion from older Lightning checkpoints
         tags = pd.read_csv(
             tags_csv_file, header=None, index_col=0, squeeze=True
         ).to_dict()
         hparams = {}
         for k, v in tags.items():
-            if isinstance(v, str) and v.replace('.', '', 1).isdigit():
-                hparams[k] = float(v) if '.' in v else int(v)
+            if isinstance(v, str) and v.replace(".", "", 1).isdigit():
+                hparams[k] = float(v) if "." in v else int(v)
             else:
                 hparams[k] = v
         model = str2model[tags["model"]].load_from_checkpoint(

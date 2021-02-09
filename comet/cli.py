@@ -99,13 +99,19 @@ def train(config):
     show_default=True,
 )
 @click.option(
+    "--batch_size",
+    default=-1,
+    help="Batch size used during inference. By default uses the same batch size used during training.",
+    type=int,
+)
+@click.option(
     "--to_json",
     default=False,
     help="Creates and exports model predictions to a JSON file.",
     type=str,
     show_default=True,
 )
-def score(model, source, hypothesis, reference, cuda, to_json):
+def score(model, source, hypothesis, reference, cuda, batch_size, to_json):
     source = [s.strip() for s in source.readlines()]
     hypothesis = [s.strip() for s in hypothesis.readlines()]
     reference = [s.strip() for s in reference.readlines()]
@@ -113,7 +119,7 @@ def score(model, source, hypothesis, reference, cuda, to_json):
     data = [dict(zip(data, t)) for t in zip(*data.values())]
 
     model = load_checkpoint(model) if os.path.exists(model) else download_model(model)
-    data, scores = model.predict(data, cuda, show_progress=True)
+    data, scores = model.predict(data, cuda, show_progress=True, batch_size=batch_size)
 
     if isinstance(to_json, str):
         with open(to_json, "w") as outfile:
@@ -121,11 +127,9 @@ def score(model, source, hypothesis, reference, cuda, to_json):
         click.secho(f"Predictions saved in: {to_json}.", fg="yellow")
 
     for i in range(len(scores)):
-        click.secho(
-            "Segment {} score: {}".format(i, scores[i]), fg="yellow"
-        )
+        click.secho("Segment {} score: {:.3f}".format(i, scores[i]), fg="yellow")
     click.secho(
-        "COMET system score: {}.".format(sum(scores) / len(scores)), fg="yellow"
+        "COMET system score: {:.3f}".format(sum(scores) / len(scores)), fg="yellow"
     )
 
 

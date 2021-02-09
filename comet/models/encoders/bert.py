@@ -60,20 +60,15 @@ class BERTEncoder(Encoder):
                 "lr": lr * decay ** (self.num_layers),
             }
         ]
-        # Last Layer
-        last_layer = [{
-            "params": self.model.encoder.layer[-1].parameters(),
-            "lr": lr
-        }]
         # All layers
         opt_parameters += [
             {
                 "params": self.model.encoder.layer[l].parameters(),
                 "lr": lr * decay ** l,
             }
-            for l in range(self.num_layers-2, 0, -1)
+            for l in range(self.num_layers - 2, 0, -1)
         ]
-        return opt_parameters + last_layer
+        return opt_parameters
 
     def forward(
         self, tokens: torch.Tensor, lengths: torch.Tensor
@@ -84,14 +79,16 @@ class BERTEncoder(Encoder):
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the lenght of each sequence [seq_len].
 
-        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` 
-            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), 
-            `all_layers` (List with word_embeddings from all layers), `extra` (tuple with the 
-            last_hidden_state, the pooler_output representing  the entire sentence and the word 
+        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb`
+            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask),
+            `all_layers` (List with word_embeddings from all layers), `extra` (tuple with the
+            last_hidden_state, the pooler_output representing  the entire sentence and the word
             embeddings for all BERT layers).
         """
         mask = lengths_to_mask(lengths, device=tokens.device)
-        last_hidden_states, pooler_output, all_layers = self.model(tokens, mask)
+        last_hidden_states, pooler_output, all_layers = self.model(
+            tokens, mask, output_hidden_states=True, return_dict=False
+        )
         return {
             "sentemb": pooler_output,
             "wordemb": last_hidden_states,

@@ -15,8 +15,7 @@ from tqdm import tqdm
 
 from comet.metrics import RegressionReport
 from comet.models.model_base import ModelBase
-from comet.models.utils import (average_pooling, max_pooling, move_to_cpu,
-                                move_to_cuda)
+from comet.models.utils import average_pooling, max_pooling, move_to_cpu, move_to_cuda
 
 
 class Estimator(ModelBase):
@@ -31,7 +30,7 @@ class Estimator(ModelBase):
         Estimator ModelConfig:
 
         --------------------------- Encoder -----------------------------------------
-        
+
         :param encoder_learning_rate: Learning rate used for the encoder model.
 
         :param layerwise_decay: Decay for the layer wise learning rates. If 1.0 no decay is applied.
@@ -107,7 +106,7 @@ class Estimator(ModelBase):
     ) -> torch.Tensor:
         """
         Computes Loss value according to a loss function.
-        
+
         :param model_out: model specific output. Must contain a key 'score' with
             a tensor [batch_size x 1] with model predictions
         :param targets: Target score values [batch_size]
@@ -134,10 +133,10 @@ class Estimator(ModelBase):
     ) -> torch.Tensor:
         """Auxiliar function that extracts sentence embeddings for
             a single sentence.
-        
+
         :param tokens: sequences [batch_size x seq_len]
         :param lengths: lengths [batch_size]
-        
+
         :return: torch.Tensor [batch_size x hidden_size]
         """
         # When using just one GPU this should not change behavior
@@ -199,14 +198,16 @@ class Estimator(ModelBase):
         samples: List[Dict[str, str]],
         cuda: bool = False,
         show_progress: bool = False,
+        batch_size: int = -1,
     ) -> (Dict[str, Union[str, float]], List[float]):
         """Function that runs a model prediction,
-        
+
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
+        :para batch_size: Batch size used during inference. By default uses the same batch size used during training.
 
-        :return: Dictionary with original samples, predicted scores and langid results for SRC and MT 
+        :return: Dictionary with original samples, predicted scores and langid results for SRC and MT
             + list of predicted scores
         """
         if self.training:
@@ -215,10 +216,10 @@ class Estimator(ModelBase):
         if cuda and torch.cuda.is_available():
             self.to("cuda")
 
+        batch_size = self.hparams.batch_size if batch_size < 1 else batch_size
         with torch.no_grad():
             batches = [
-                samples[i : i + self.hparams.batch_size]
-                for i in range(0, len(samples), self.hparams.batch_size)
+                samples[i : i + batch_size] for i in range(0, len(samples), batch_size)
             ]
             model_inputs = []
             if show_progress:
@@ -281,7 +282,7 @@ class Estimator(ModelBase):
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
 
-        :return: tuple with Dictionary with original samples and predicted document score, micro 
+        :return: tuple with Dictionary with original samples and predicted document score, micro
             average scores, macro average scores.
         """
         if self.training:

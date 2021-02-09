@@ -21,7 +21,6 @@ from torch.nn import Parameter, ParameterList
 
 
 class ScalarMixWithDropout(torch.nn.Module):
-
     def __init__(
         self,
         mixture_size: int,

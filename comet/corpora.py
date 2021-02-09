@@ -20,7 +20,7 @@ corpus2download = {
 
 def download_corpus(corpus: str, saving_directory: str = None) -> None:
     """Function that downloads a corpus from AWS.
-    
+
     :param corpus: Name of the corpus to be loaded.
     :param saving_directory: RELATIVE path to the saving folder.
     """

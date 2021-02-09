@@ -168,12 +168,12 @@ class XLMREncoder(Encoder):
     ) -> Dict[str, torch.Tensor]:
         """
         Encodes a batch of sequences.
-        
+
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the length of each sequence [seq_len].
 
-        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` 
-            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), 
+        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb`
+            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask),
             `all_layers` (List with word_embeddings from all layers), `extra` (tuple with all XLM-R layers).
         """
         mask = lengths_to_mask(lengths, device=tokens.device)

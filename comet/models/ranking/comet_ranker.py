@@ -55,13 +55,15 @@ class CometRanker(RankingBase):
             distance_neg.append(harmonic_distance_neg)
 
         return {
-            "kendall": self.metrics.compute(torch.cat(distance_pos), torch.cat(distance_neg))
+            "kendall": self.metrics.compute(
+                torch.cat(distance_pos), torch.cat(distance_neg)
+            )
         }
 
     def compute_loss(self, model_out: Dict[str, torch.Tensor], *args) -> torch.Tensor:
         """
         Computes Triplet Margin Loss for both the reference and the source.
-        
+
         :param model_out: model specific output with src_anchor, ref_anchor, pos and neg
             sentence embeddings.
         """
@@ -74,14 +76,19 @@ class CometRanker(RankingBase):
         )
 
     def predict(
-        self, samples: Dict[str, str], cuda: bool = False, show_progress: bool = False
+        self,
+        samples: Dict[str, str],
+        cuda: bool = False,
+        show_progress: bool = False,
+        batch_size: int = -1,
     ) -> (Dict[str, Union[str, float]], List[float]):
-        """ Function that runs a model prediction,
-        
+        """Function that runs a model prediction,
+
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
-        
+        :para batch_size: Batch size used during inference. By default uses the same batch size used during training.
+
         :return: Dictionary with model outputs
         """
         if self.training:
@@ -90,10 +97,10 @@ class CometRanker(RankingBase):
         if cuda and torch.cuda.is_available():
             self.to("cuda")
 
+        batch_size = self.hparams.batch_size if batch_size < 1 else batch_size
         with torch.no_grad():
             batches = [
-                samples[i : i + self.hparams.batch_size]
-                for i in range(0, len(samples), self.hparams.batch_size)
+                samples[i : i + batch_size] for i in range(0, len(samples), batch_size)
             ]
             model_inputs = []
             if show_progress:
@@ -172,7 +179,7 @@ class CometRanker(RankingBase):
                 pbar.close()
 
         assert len(distance_weighted) == len(samples)
-        scores = [] 
+        scores = []
         for i in range(len(samples)):
             scores.append(distance_weighted[i])
             samples[i]["predicted_score"] = scores[-1]
@@ -186,12 +193,12 @@ class CometRanker(RankingBase):
     ) -> Union[Tuple[Dict[str, torch.Tensor], None], List[Dict[str, torch.Tensor]]]:
         """
         Function that prepares a sample to input the model.
-        
+
         :param sample: list of dictionaries.
-        :param inference: If set to to False, then the model expects 
+        :param inference: If set to to False, then the model expects
             a MT and reference instead of anchor, pos, and neg segments.
 
-        :return: Tuple with a dictionary containing the model inputs and None OR List 
+        :return: Tuple with a dictionary containing the model inputs and None OR List
             with source, MT and reference tokenized and vectorized.
         """
         sample = collate_tensors(sample)
