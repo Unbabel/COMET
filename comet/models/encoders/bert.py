@@ -60,11 +60,6 @@ class BERTEncoder(Encoder):
                 "lr": lr * decay ** (self.num_layers),
             }
         ]
-        # Last Layer
-        last_layer = [{
-            "params": self.model.encoder.layer[-1].parameters(),
-            "lr": lr
-        }]
         # All layers
         opt_parameters += [
             {
@@ -73,7 +68,7 @@ class BERTEncoder(Encoder):
             }
             for l in range(self.num_layers-2, 0, -1)
         ]
-        return opt_parameters + last_layer
+        return opt_parameters
 
     def forward(
         self, tokens: torch.Tensor, lengths: torch.Tensor
@@ -91,7 +86,7 @@ class BERTEncoder(Encoder):
             embeddings for all BERT layers).
         """
         mask = lengths_to_mask(lengths, device=tokens.device)
-        last_hidden_states, pooler_output, all_layers = self.model(tokens, mask)
+        last_hidden_states, pooler_output, all_layers = self.model(tokens, mask, output_hidden_states=True, return_dict=False)
         return {
             "sentemb": pooler_output,
             "wordemb": last_hidden_states,
