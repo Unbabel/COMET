@@ -199,13 +199,15 @@ class Estimator(ModelBase):
         samples: List[Dict[str, str]],
         cuda: bool = False,
         show_progress: bool = False,
+        batch_size: int = -1
     ) -> (Dict[str, Union[str, float]], List[float]):
         """Function that runs a model prediction,
         
         :param samples: List of dictionaries with 'mt' and 'ref' keys.
         :param cuda: Flag that runs inference using 1 single GPU.
         :param show_progress: Flag to show progress during inference of multiple examples.
-
+        :para batch_size: Batch size used during inference. By default uses the same batch size used during training.
+        
         :return: Dictionary with original samples, predicted scores and langid results for SRC and MT 
             + list of predicted scores
         """
@@ -215,10 +217,11 @@ class Estimator(ModelBase):
         if cuda and torch.cuda.is_available():
             self.to("cuda")
 
+        batch_size = self.hparams.batch_size if batch_size < 1 else batch_size
         with torch.no_grad():
             batches = [
-                samples[i : i + self.hparams.batch_size]
-                for i in range(0, len(samples), self.hparams.batch_size)
+                samples[i : i + batch_size]
+                for i in range(0, len(samples), batch_size)
             ]
             model_inputs = []
             if show_progress:
