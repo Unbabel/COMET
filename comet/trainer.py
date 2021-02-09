@@ -126,6 +126,11 @@ class TrainReport(Callback):
         click.secho("\nTraining Report Experiment:", fg="yellow")
         index_column = ["Epoch " + str(i) for i in range(len(self._stack) - 1)]
         df = pd.DataFrame(self._stack[1:], index=index_column)
+        # Clean dataframe columns
+        del df["train_loss_step"]
+        del df["gpu_id: 0/memory.used (MB)"]
+        del df["train_loss_epoch"]
+        del df ["train_avg_loss"]
         click.secho("{}".format(df), fg="yellow")
 
 
