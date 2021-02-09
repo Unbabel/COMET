@@ -11,7 +11,7 @@ import torch
 from scipy.stats import kendalltau, pearsonr, spearmanr
 
 
-class RegressionReport():
+class RegressionReport:
     def __init__(self):
         super().__init__()
         self.metrics = [Pearson(), Kendall(), Spearman()]
@@ -29,7 +29,7 @@ class RegressionReport():
             return {metric.name: metric.compute(x, y) for metric in self.metrics}
 
 
-class Kendall():
+class Kendall:
     def __init__(self):
         self.name = "kendall"
 
@@ -44,7 +44,7 @@ class Kendall():
         return torch.tensor(kendalltau(x, y)[0], dtype=torch.float32)
 
 
-class Pearson():
+class Pearson:
     def __init__(self):
         self.name = "pearson"
 
@@ -59,7 +59,7 @@ class Pearson():
         return torch.tensor(pearsonr(x, y)[0], dtype=torch.float32)
 
 
-class Spearman():
+class Spearman:
     def __init__(self):
         self.name = "spearman"
 

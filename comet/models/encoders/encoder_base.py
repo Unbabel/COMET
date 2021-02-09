@@ -104,8 +104,8 @@ class Encoder(nn.Module):
         :param tokens: Torch tensor with the input sequences [batch_size x seq_len].
         :param lengths: Torch tensor with the lenght of each sequence [seq_len].
 
-        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb` 
-            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask), 
+        :return: Dictionary with `sentemb` (tensor with dims [batch_size x output_units]), `wordemb`
+            (tensor with dims [batch_size x seq_len x output_units]), `mask` (input mask),
             `all_layers` (List with word_embeddings from all layers, `extra` (model specific outputs).
         """
         raise NotImplementedError

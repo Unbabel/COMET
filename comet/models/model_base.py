@@ -256,7 +256,7 @@ class ModelBase(ptl.LightningModule):
         self, samples: Dict[str, str]
     ) -> (Dict[str, Union[str, float]], List[float]):
         """Function that runs a model prediction,
-        
+
         :param samples: dictionary with expected model sequences.
             You can also pass a list of dictionaries to predict an entire batch.
 
@@ -267,7 +267,7 @@ class ModelBase(ptl.LightningModule):
     def forward(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
         """
         PyTorch Forward.
-        
+
         :return: Dictionary with model outputs to be passed to the loss function.
         """
         pass
@@ -277,7 +277,7 @@ class ModelBase(ptl.LightningModule):
     ) -> torch.Tensor:
         """
         Computes Loss value according to a loss function.
-        
+
         :param model_out: model specific output.
         :param targets: Target score values [batch_size]
         """
@@ -290,7 +290,7 @@ class ModelBase(ptl.LightningModule):
     ]:
         """
         Function that prepares a sample to input the model.
-        
+
         :param sample: List of dictionaries.
         :param inference: If set to true prepares only the model inputs.
 
@@ -352,7 +352,7 @@ class ModelBase(ptl.LightningModule):
             self.unfreeze_encoder()
             self._frozen = False
 
-        self.log('train_loss', loss_value, on_step=True, on_epoch=True)
+        self.log("train_loss", loss_value, on_step=True, on_epoch=True)
         return loss_value
 
     def validation_step(
@@ -392,7 +392,7 @@ class ModelBase(ptl.LightningModule):
             and measures the model performance accross the entire validation set.
 
         :param outputs:
-        
+
         :returns: Dictionary with metrics to be added to the lightning logger.
         """
         train_outs, val_outs = outputs

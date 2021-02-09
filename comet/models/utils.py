@@ -43,7 +43,7 @@ def mask_fill(
 ) -> torch.Tensor:
     """
     Function that masks embeddings representing padded elements.
-    
+
     :param fill_value: the value to fill the embeddings belonging to padded tokens.
     :param tokens: The input sequences [bsz x seq_len].
     :param embeddings: word embeddings [bsz x seq_len x hiddens].
@@ -56,7 +56,7 @@ def mask_fill(
 def sort_sequences(inputs: torch.Tensor, input_lengths: torch.Tensor):
     """
     Sort sequences according to lengths of the input sequence (descendingly).
-    
+
     :param inputs (Tensor): input sequences, size [B, T, D]
     :param input_lengths (Tensor): length of each sequence, size [B]
     """

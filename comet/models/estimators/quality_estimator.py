@@ -84,7 +84,7 @@ class QualityEstimator(CometEstimator):
         :param sample: list of dictionaries.
         :param inference: If set to true prepares only the model inputs.
 
-        :returns: Tuple with 2 dictionaries (model inputs and targets). 
+        :returns: Tuple with 2 dictionaries (model inputs and targets).
             If `inference=True` returns only the model inputs.
         """
         sample = collate_tensors(sample)

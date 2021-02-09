@@ -79,10 +79,10 @@ class RankingBase(ModelBase):
     ) -> torch.Tensor:
         """Auxiliar function that extracts sentence embeddings for
             a single sentence.
-        
+
         :param tokens: sequences [batch_size x seq_len]
         :param lengths: lengths [batch_size]
-        
+
         :return: torch.Tensor [batch_size x hidden_size]
         """
         # When using just one GPU this should not change behavior

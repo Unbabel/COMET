@@ -127,9 +127,7 @@ def score(model, source, hypothesis, reference, cuda, batch_size, to_json):
         click.secho(f"Predictions saved in: {to_json}.", fg="yellow")
 
     for i in range(len(scores)):
-        click.secho(
-            "Segment {} score: {:.3f}".format(i, scores[i]), fg="yellow"
-        )
+        click.secho("Segment {} score: {:.3f}".format(i, scores[i]), fg="yellow")
     click.secho(
         "COMET system score: {:.3f}".format(sum(scores) / len(scores)), fg="yellow"
     )

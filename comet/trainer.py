@@ -130,7 +130,7 @@ class TrainReport(Callback):
         del df["train_loss_step"]
         del df["gpu_id: 0/memory.used (MB)"]
         del df["train_loss_epoch"]
-        del df ["train_avg_loss"]
+        del df["train_avg_loss"]
         click.secho("{}".format(df), fg="yellow")
 
 
