@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 import os
-import pickle
-import sys
 
 import click
 import pandas as pd
 import yaml
 
-import wget
 from torchnlp.download import download_file_maybe_extract
 
 from .estimators import CometEstimator, QualityEstimator
