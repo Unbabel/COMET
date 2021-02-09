@@ -52,7 +52,7 @@ class TestScoreCli(unittest.TestCase):
             DATA_PATH + "results.json",
             "--cpu",
             "--batch_size",
-            "32"
+            "32",
         ]
         result = self.runner.invoke(score, args, catch_exceptions=False)
         self.assertEqual(result.exit_code, 0)

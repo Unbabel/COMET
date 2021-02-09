@@ -5,8 +5,7 @@ import shutil
 import unittest
 import unittest.mock
 
-from comet.models import (CometEstimator, download_model, load_checkpoint,
-                          model2download)
+from comet.models import CometEstimator, download_model, load_checkpoint, model2download
 from tests.data import DATA_PATH
 
 
@@ -22,7 +21,7 @@ class TestDownload(unittest.TestCase):
         self.assertEqual(
             str(context.exception), "folder/that/does/not/exist/ file not found!"
         )
-        
+
     def test_model2download(self):
         model2link = model2download(DATA_PATH)
         self.assertTrue(os.path.exists(DATA_PATH + "public-models.yaml"))
