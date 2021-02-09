@@ -21,8 +21,7 @@ class TestBERTEncoder(unittest.TestCase):
     tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
 
     def test_layerwise_lr(self):
-        expected_lr = [0.1]  # Last layer with 0.1 and all others with decay
-        expected_lr += [0.1 * (0.95 ** i) for i in range(1, 12)]  # LR for other layers
+        expected_lr = [0.1 * (0.95 ** i) for i in range(1, 12)]  # LR for other layers
         expected_lr += [
             0.1 * (0.95 ** 13)
         ]  # LR for embeddings (pos, word, layer_norm, token_type)

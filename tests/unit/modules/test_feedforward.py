@@ -112,6 +112,6 @@ class TestFeedForward(unittest.TestCase):
                         # Total correct predictions
                         correct += (predicted == labels).sum()
 
-                    accuracy = 100 * correct / total
+                    accuracy = 100 * correct // total
         self.assertGreaterEqual(accuracy, 95)
         self.assertEqual(round(0.1257449835538864, 2), round(loss.item(), 2))
