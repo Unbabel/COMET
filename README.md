@@ -11,7 +11,7 @@
 
 ## Quick Installation
 
-We recommend python 3.6 to run COMET.
+We recommend python 3.7 to run COMET.
 
 Detailed usage examples and instructions can be found in the [Full Documentation](https://unbabel.github.io/COMET/html/index.html).
 
