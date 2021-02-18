@@ -134,6 +134,7 @@ def load_checkpoint(checkpoint: str) -> ModelBase:
     else:
         raise Exception(
             "[meta_tags.csv|hparams.yaml is missing from the checkpoint folder."
+            " Please clean your cache folder (~/.cache/torch/unbabel_comet/) and try to download the model again."
         )
 
     model.eval()
