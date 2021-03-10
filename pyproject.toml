@@ -1,0 +1,57 @@
+[tool.poetry]
+name = "unbabel-comet"
+version = "0.1.0"
+description = "High-quality Machine Translation Evaluation"
+authors = ["Ricardo Rei, Craig Stewart, Catarina Farinha, Alon Lavie"]
+license = "Apache-2.0"
+readme = "README.md"
+homepage = "https://github.com/Unbabel/COMET"
+repository = "https://github.com/Unbabel/COMET"
+documentation = "https://unbabel.github.io/COMET/html/index.html"
+keywords = [
+    "Machine Translation", 
+    "Evaluation",
+    "Unbabel",
+    "COMET"
+]
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Environment :: Console',
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence',
+]
+packages = [
+    {include = "comet"},
+]
+include = [
+    "LICENSE",
+    "pyproject.toml",
+    "CONTRIBUTING.md"
+]
+
+[tool.poetry.scripts]
+comet = 'comet.cli:comet'
+
+[tool.poetry.dependencies]
+python = "^3.6.1"
+PyYAML = "5.3.*"
+pandas = "^1.0.0"
+scikit-learn = "0.24"
+torch = "<=1.6"
+numpy = "<1.20.0"
+scipy = "1.5.*"
+tensorboard = "2.2.0"
+fairseq = "0.9.0"
+transformers = "4.*"
+pytorch-lightning = "<=1.3"
+pytorch-nlp = "0.5.0"
+sentencepiece = "0.1.91"
+fsspec = "0.8.7"
+
+[tool.poetry.dev-dependencies]
+sphinx-markdown-tables = "0.0.15"
+coverage = "^5.5"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
