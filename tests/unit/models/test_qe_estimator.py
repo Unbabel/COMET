@@ -10,13 +10,14 @@ class TestQualityEstimator(unittest.TestCase):
 
     hparams = Namespace(
         **{
-            "encoder_model": "LASER",
-            "pretrained_model": None,
+            "encoder_model": "BERT",
+            "pretrained_model": "bert-base-multilingual-cased",
             "nr_frozen_epochs": 0,
             "loss": "mse",
+            "layer": 12,
             # FeedForward Definition
-            "pool": "default",
-            "hidden_sizes": "1024",
+            "pool": "avg",
+            "hidden_sizes": "768",
             "activations": "Tanh",
             "dropout": 0.1,
             "final_activation": False,

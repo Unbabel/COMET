@@ -12,7 +12,13 @@ import torch
 class TestCometRanker(unittest.TestCase):
 
     hparams = Namespace(
-        **{"encoder_model": "LASER", "pretrained_model": None, "nr_frozen_epochs": 0}
+        **{
+            "encoder_model": "BERT",
+            "pretrained_model": "bert-base-multilingual-cased",
+            "layer": 12,
+            "pool": "avg",
+            "nr_frozen_epochs": 0,
+        }
     )
     ranker = CometRanker(hparams)
 
@@ -85,17 +91,17 @@ class TestCometRanker(unittest.TestCase):
         self.assertTrue(model_output["ref_sentemb"].shape[0] == 1)
         self.assertTrue(model_output["pos_sentemb"].shape[0] == 1)
         self.assertTrue(model_output["neg_sentemb"].shape[0] == 1)
-        self.assertTrue(model_output["src_sentemb"].shape[1] == 1024)
-        self.assertTrue(model_output["ref_sentemb"].shape[1] == 1024)
-        self.assertTrue(model_output["pos_sentemb"].shape[1] == 1024)
-        self.assertTrue(model_output["neg_sentemb"].shape[1] == 1024)
+        self.assertTrue(model_output["src_sentemb"].shape[1] == 768)
+        self.assertTrue(model_output["ref_sentemb"].shape[1] == 768)
+        self.assertTrue(model_output["pos_sentemb"].shape[1] == 768)
+        self.assertTrue(model_output["neg_sentemb"].shape[1] == 768)
 
     def test_get_sentence_embedding(self):
         self.ranker.scalar_mix = None
-        self.ranker.layer = 0
+        self.ranker.layer = 12
 
         # tokens from ["hello world", "how are your?"]
-        tokens = torch.tensor([[29733, 4139, 1, 1], [2231, 137, 57374, 8]])
+        tokens = torch.tensor([[29733, 4139, 0, 0], [2231, 137, 57374, 8]])
         lengths = torch.tensor([2, 4])
 
         encoder_out = self.ranker.encoder(tokens, lengths)
@@ -114,7 +120,7 @@ class TestCometRanker(unittest.TestCase):
         )
         self.ranker.hparams = hparams
         # Max pooling is tested in test_utils.py
-        expected = max_pooling(tokens, encoder_out["wordemb"], 1)
+        expected = max_pooling(tokens, encoder_out["wordemb"], 0)
         sentemb = self.ranker.get_sentence_embedding(tokens, lengths)
         self.assertTrue(torch.equal(sentemb, expected))
 
@@ -126,7 +132,7 @@ class TestCometRanker(unittest.TestCase):
         self.ranker.hparams = hparams
         # AVG pooling is tested in test_utils.py
         expected = average_pooling(
-            tokens, encoder_out["wordemb"], encoder_out["mask"], 1
+            tokens, encoder_out["wordemb"], encoder_out["mask"], 0
         )
         sentemb = self.ranker.get_sentence_embedding(tokens, lengths)
         self.assertTrue(torch.equal(sentemb, expected))
