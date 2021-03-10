@@ -146,12 +146,8 @@ class Estimator(ModelBase):
             tokens = tokens[:, : lengths.max()]
 
         encoder_out = self.encoder(tokens, lengths)
-
-        # for LASER we dont care about the word embeddings
-        if self.hparams.encoder_model == "LASER":
-            pass
-
-        elif self.scalar_mix:
+        
+        if self.scalar_mix:
             embeddings = self.scalar_mix(encoder_out["all_layers"], encoder_out["mask"])
 
         elif self.layer >= 0 and self.layer < self.encoder.num_layers:
@@ -159,8 +155,8 @@ class Estimator(ModelBase):
 
         else:
             raise Exception("Invalid model layer {}.".format(self.layer))
-
-        if self.hparams.pool == "default" or self.hparams.encoder_model == "LASER":
+        
+        if self.hparams.pool == "default":
             sentemb = encoder_out["sentemb"]
 
         elif self.hparams.pool == "max":

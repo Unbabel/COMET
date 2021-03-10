@@ -19,11 +19,10 @@ Simple installation from PyPI
 pip install unbabel-comet
 ```
 
-To develop locally:
+To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
 ```bash
 git clone https://github.com/Unbabel/COMET
-pip install -r requirements.txt
-pip install -e .
+poetry install
 ```
 
 ## Scoring MT outputs:
@@ -129,10 +128,6 @@ comet download -d apequest --saving_path data/
 ```
 
 ## unittest:
-```bash
-pip install coverage
-```
-
 In order to run the toolkit tests you must run the following command:
 
 ```bash

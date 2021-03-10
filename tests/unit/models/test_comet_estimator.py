@@ -13,13 +13,14 @@ class TestCometEstimator(unittest.TestCase):
 
     hparams = Namespace(
         **{
-            "encoder_model": "LASER",
-            "pretrained_model": None,
+            "encoder_model": "BERT",
+            "pretrained_model": "bert-base-multilingual-cased",
             "nr_frozen_epochs": 0,
             "loss": "mse",
+            "layer": 12,
             # FeedForward Definition
-            "pool": "default",
-            "hidden_sizes": "1024",
+            "pool": "avg",
+            "hidden_sizes": "768",
             "activations": "Tanh",
             "dropout": 0.1,
             "final_activation": False,
@@ -79,63 +80,52 @@ class TestCometEstimator(unittest.TestCase):
 
     def test_get_sentence_embedding(self):
         self.estimator.scalar_mix = None
-        self.estimator.layer = 0
-
+        self.estimator.encoder.eval()
         # tokens from ["hello world", "how are your?"]
-        tokens = torch.tensor([[29733, 4139, 1, 1], [2231, 137, 57374, 8]])
+        tokens = torch.tensor([[29733, 4139, 0, 0], [2231, 137, 57374, 8]])
         lengths = torch.tensor([2, 4])
-        encoder_out = self.estimator.encoder(tokens, lengths)
 
+        encoder_out = self.estimator.encoder(tokens, lengths)
         # Expected sentence output with pool = 'max'
-        hparams = Namespace(
-            # LASER always used default... we need to pretend our encoder is another one
-            **{"encoder_model": "other", "pool": "max"}
-        )
+        hparams = Namespace(**{"pool": "max"})
         self.estimator.hparams = hparams
         # Max pooling is tested in test_utils.py
-        expected = max_pooling(tokens, encoder_out["wordemb"], 1)
+        expected = max_pooling(tokens, encoder_out["wordemb"], 0)
+        sentemb = self.estimator.get_sentence_embedding(tokens, lengths)
+        self.assertTrue(torch.equal(sentemb, expected))
         sentemb = self.estimator.get_sentence_embedding(tokens, lengths)
         self.assertTrue(torch.equal(sentemb, expected))
 
         # Expected sentence output with pool = 'avg'
-        hparams = Namespace(
-            # LASER always used default... we need to pretend our encoder is another one
-            **{"encoder_model": "other", "pool": "avg"}
-        )
+        hparams = Namespace(**{"pool": "avg"})
         self.estimator.hparams = hparams
         # AVG pooling is tested in test_utils.py
         expected = average_pooling(
-            tokens, encoder_out["wordemb"], encoder_out["mask"], 1
+            tokens, encoder_out["wordemb"], encoder_out["mask"], 0
         )
         sentemb = self.estimator.get_sentence_embedding(tokens, lengths)
         self.assertTrue(torch.equal(sentemb, expected))
 
         # Expected sentence output with pool = 'cls'
-        hparams = Namespace(
-            # LASER always used default... we need to pretend our encoder is another one
-            **{"encoder_model": "other", "pool": "cls"}
-        )
+        hparams = Namespace(**{"pool": "cls"})
         self.estimator.hparams = hparams
         expected = encoder_out["wordemb"][:, 0, :]
         sentemb = self.estimator.get_sentence_embedding(tokens, lengths)
         self.assertTrue(torch.equal(sentemb, expected))
 
         # Expected sentence output with pool = 'cls+avg'
-        hparams = Namespace(
-            # LASER always used default... we need to pretend our encoder is another one
-            **{"encoder_model": "other", "pool": "cls+avg"}
-        )
+        hparams = Namespace(**{"pool": "cls+avg"})
         self.estimator.hparams = hparams
         cls_embedding = encoder_out["wordemb"][:, 0, :]
         avg_embedding = average_pooling(
-            tokens, encoder_out["wordemb"], encoder_out["mask"], 1
+            tokens, encoder_out["wordemb"], encoder_out["mask"], 0
         )
         expected = torch.cat((cls_embedding, avg_embedding), dim=1)
         sentemb = self.estimator.get_sentence_embedding(tokens, lengths)
         self.assertTrue(torch.equal(sentemb, expected))
 
         # Expected sentence output with pool = 'default'
-        hparams = Namespace(**{"encoder_model": "LASER", "pool": "default"})
+        hparams = Namespace(**{"pool": "default"})
         self.estimator.hparams = hparams
         expected = encoder_out["sentemb"]
         sentemb = self.estimator.get_sentence_embedding(tokens, lengths)
