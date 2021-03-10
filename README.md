@@ -128,10 +128,6 @@ comet download -d apequest --saving_path data/
 ```
 
 ## unittest:
-```bash
-pip install coverage
-```
-
 In order to run the toolkit tests you must run the following command:
 
 ```bash
