@@ -12,11 +12,11 @@ import os
 
 import click
 import yaml
+from pytorch_lightning import seed_everything
 
 from comet.corpora import corpus2download, download_corpus
 from comet.models import download_model, load_checkpoint, model2download, str2model
 from comet.trainer import TrainerConfig, build_trainer
-from pytorch_lightning import seed_everything
 
 
 @click.group()
@@ -63,6 +63,13 @@ def train(config):
     trainer.fit(model)
 
 
+def check_model(ctx, param, reference):
+    """ Helper function that checks if the model requires references or not. """
+    if reference is None and "wmt-large-qe-estimator-1719" not in ctx.params["model"]:
+        raise click.ClickException("Error: Missing option '--reference' / '-r'.")
+    return reference
+
+
 @comet.command()
 @click.option(
     "--model",
@@ -70,6 +77,7 @@ def train(config):
     help="Name of the pretrained model OR path to a model checkpoint.",
     show_default=True,
     type=str,
+    is_eager=True,
 )
 @click.option(
     "--source",
@@ -88,9 +96,10 @@ def train(config):
 @click.option(
     "--reference",
     "-r",
-    required=True,
+    required=False,
     help="Reference segments.",
     type=click.File(),
+    callback=check_model,
 )
 @click.option(
     "--cuda/--cpu",
@@ -114,10 +123,13 @@ def train(config):
 def score(model, source, hypothesis, reference, cuda, batch_size, to_json):
     source = [s.strip() for s in source.readlines()]
     hypothesis = [s.strip() for s in hypothesis.readlines()]
-    reference = [s.strip() for s in reference.readlines()]
-    data = {"src": source, "mt": hypothesis, "ref": reference}
-    data = [dict(zip(data, t)) for t in zip(*data.values())]
+    if reference:
+        reference = [s.strip() for s in reference.readlines()]
+        data = {"src": source, "mt": hypothesis, "ref": reference}
+    else:
+        data = {"src": source, "mt": hypothesis}
 
+    data = [dict(zip(data, t)) for t in zip(*data.values())]
     model = load_checkpoint(model) if os.path.exists(model) else download_model(model)
     data, scores = model.predict(data, cuda, show_progress=True, batch_size=batch_size)
 
