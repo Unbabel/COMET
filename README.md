@@ -105,13 +105,6 @@ Instead of using pretrained models your can train your own model with the follow
 comet train -f {config_file_path}.yaml
 ```
 
-### Supported encoders:
-- [Learning Joint Multilingual Sentence Representations with Neural Machine Translation](https://arxiv.org/abs/1704.04154)
-- [Massively Multilingual Sentence Embeddings for Zero-Shot Cross-Lingual Transfer and Beyond](https://arxiv.org/abs/1812.10464)
-- [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/pdf/1810.04805.pdf)
-- [XLM-R: Unsupervised Cross-lingual Representation Learning at Scale](https://arxiv.org/pdf/1911.02116.pdf)
-
-
 ### Tensorboard:
 
 Launch tensorboard with:
