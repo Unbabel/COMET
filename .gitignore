@@ -1,9 +1,7 @@
 *.pkl
 *DS_Store 
-._data
-experiments/
 data/
-wmt-shared-task/wmt2020/
+lightning_logs/
 
 .vscode
 # Byte-compiled / optimized / DLL files

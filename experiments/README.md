@@ -1,1 +1,0 @@
-Folder used to save checkpoints and tensorboard logs.
