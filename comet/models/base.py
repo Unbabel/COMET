@@ -36,7 +36,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.encoder = str2encoder[self.hparams.encoder_model].from_pretrained(
             self.hparams.pretrained_model
         )
-
+        self.epoch_nr = 0
         if self.hparams.layer == "mix":
             self.layerwise_attention = LayerwiseAttention(
                 num_layers=self.encoder.num_layers,
@@ -102,11 +102,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 self.encoder.freeze_embeddings()
 
     def on_epoch_end(self):
-        """Hook used to unfreeze encoder during training."""
-        if self.current_epoch >= self.nr_frozen_epochs and self._frozen:
+        """Hook used to unfreeze encoder during training."""    
+        if self.epoch_nr >= self.nr_frozen_epochs and self._frozen:
             self.unfreeze_encoder()
             self._frozen = False
-
+        self.epoch_nr += 1
+    
     def get_sentence_embedding(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> torch.Tensor:
