@@ -5,7 +5,7 @@ Layer-Wise Attention Mechanism
     Computes a parameterised scalar mixture of N tensors, `mixture = gamma * sum(s_k * tensor_k)`
     where `s = softmax(w)`, with `w` and `gamma` scalar parameters.
 
-    If `do_layer_norm=True` then apply layer normalization to each tensor before weighting.
+    If `layer_norm=True` then apply layer normalization to each tensor before weighting.
 
     If `dropout > 0`, then for each scalar weight, adjust its softmax weight mass to 0 with
     the dropout probability (i.e., setting the unnormalized weight to -inf). This effectively
@@ -14,52 +14,50 @@ Layer-Wise Attention Mechanism
     Original implementation:
         - https://github.com/Hyperparticle/udify
 """
-from typing import List
+from typing import List, Optional
 
 import torch
 from torch.nn import Parameter, ParameterList
 
 
-class ScalarMixWithDropout(torch.nn.Module):
+class LayerwiseAttention(torch.nn.Module):
     def __init__(
         self,
-        mixture_size: int,
-        do_layer_norm: bool = False,
-        initial_scalar_parameters: list = None,
-        trainable: bool = True,
+        num_layers: int,
+        layer_norm: bool = False,
+        layer_weights: Optional[List[int]] = None,
         dropout: float = None,
-        dropout_value: float = -1e20,
     ) -> None:
-        super(ScalarMixWithDropout, self).__init__()
-        self.mixture_size = mixture_size
-        self.do_layer_norm = do_layer_norm
+        super(LayerwiseAttention, self).__init__()
+        self.num_layers = num_layers
+        self.layer_norm = layer_norm
         self.dropout = dropout
 
-        if initial_scalar_parameters is None:
-            initial_scalar_parameters = [0.0] * mixture_size
-        elif len(initial_scalar_parameters) != mixture_size:
+        if layer_weights is None:
+            layer_weights = [0.0] * num_layers
+        elif len(layer_weights) != num_layers:
             raise Exception(
-                "Length of initial_scalar_parameters {} differs \
-                from mixture_size {}".format(
-                    initial_scalar_parameters, mixture_size
+                "Length of layer_weights {} differs \
+                from num_layers {}".format(
+                    layer_weights, num_layers
                 )
             )
 
         self.scalar_parameters = ParameterList(
             [
                 Parameter(
-                    torch.FloatTensor([initial_scalar_parameters[i]]),
-                    requires_grad=trainable,
+                    torch.FloatTensor([layer_weights[i]]),
+                    requires_grad=True,
                 )
-                for i in range(mixture_size)
+                for i in range(num_layers)
             ]
         )
 
-        self.gamma = Parameter(torch.FloatTensor([1.0]), requires_grad=trainable)
+        self.gamma = Parameter(torch.FloatTensor([1.0]), requires_grad=True)
 
         if self.dropout:
             dropout_mask = torch.zeros(len(self.scalar_parameters))
-            dropout_fill = torch.empty(len(self.scalar_parameters)).fill_(dropout_value)
+            dropout_fill = torch.empty(len(self.scalar_parameters)).fill_(-1e20)
             self.register_buffer("dropout_mask", dropout_mask)
             self.register_buffer("dropout_fill", dropout_fill)
 
@@ -68,24 +66,16 @@ class ScalarMixWithDropout(torch.nn.Module):
         tensors: List[torch.Tensor],  # pylint: disable=arguments-differ
         mask: torch.Tensor = None,
     ) -> torch.Tensor:
-        """
-        Compute a weighted average of the `tensors`.  The input tensors an be any shape
-        with at least two dimensions, but must all be the same shape.
-        When `do_layer_norm=True`, the `mask` is required input.  If the `tensors` are
-        dimensioned  `(dim_0, ..., dim_{n-1}, dim_n)`, then the `mask` is dimensioned
-        `(dim_0, ..., dim_{n-1})`, as in the typical case with `tensors` of shape
-        `(batch_size, timesteps, dim)` and `mask` of shape `(batch_size, timesteps)`.
-        When `do_layer_norm=False` the `mask` is ignored.
-        """
-        if len(tensors) != self.mixture_size:
+
+        if len(tensors) != self.num_layers:
             raise Exception(
                 "{} tensors were passed, but the module was initialized to \
                 mix {} tensors.".format(
-                    len(tensors), self.mixture_size
+                    len(tensors), self.num_layers
                 )
             )
 
-        def _do_layer_norm(tensor, broadcast_mask, num_elements_not_masked):
+        def _layer_norm(tensor, broadcast_mask, num_elements_not_masked):
             tensor_masked = tensor * broadcast_mask
             mean = torch.sum(tensor_masked) / num_elements_not_masked
             variance = (
@@ -104,7 +94,7 @@ class ScalarMixWithDropout(torch.nn.Module):
         normed_weights = torch.nn.functional.softmax(weights, dim=0)
         normed_weights = torch.split(normed_weights, split_size_or_sections=1)
 
-        if not self.do_layer_norm:
+        if not self.layer_norm:
             pieces = []
             for weight, tensor in zip(normed_weights, tensors):
                 pieces.append(weight * tensor)
@@ -120,6 +110,6 @@ class ScalarMixWithDropout(torch.nn.Module):
             for weight, tensor in zip(normed_weights, tensors):
                 pieces.append(
                     weight
-                    * _do_layer_norm(tensor, broadcast_mask, num_elements_not_masked)
+                    * _layer_norm(tensor, broadcast_mask, num_elements_not_masked)
                 )
             return self.gamma * sum(pieces)
