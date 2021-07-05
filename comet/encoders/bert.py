@@ -19,7 +19,7 @@ class BERTEncoder(Encoder):
 
     def __init__(self, pretrained_model: str) -> None:
         super().__init__()
-        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model)
+        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model, use_fast=True)
         self.model = AutoModel.from_pretrained(pretrained_model)
         self.model.encoder.output_hidden_states = True
 

@@ -16,7 +16,7 @@ from .utils import average_pooling, max_pooling
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     def __init__(
         self,
-        nr_frozen_epochs: int = 0.4,
+        nr_frozen_epochs: Union[float, int] = 0.3,
         keep_embeddings_frozen: bool = False,
         optimizer: str = "AdamW",
         encoder_learning_rate: float = 1e-05,
@@ -27,7 +27,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         pool: str = "avg",
         layer: Union[str, int] = "mix",
         dropout: float = 0.1,
-        batch_size: int = 8,
+        batch_size: int = 4,
         train_data: Optional[str] = None,
         validation_data: Optional[str] = None,
     ) -> None:
@@ -81,6 +81,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
     def freeze_encoder(self) -> None:
         """Freezes the encoder layer."""
+        print("\nEncoder model frozen.")
         self.encoder.freeze()
 
     @property
@@ -238,7 +239,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.total_steps = self.epoch_total_steps * float(self.trainer.max_epochs)
         
         # Always validate the model with 2k examples from training to control overfit.
-        train_subset = np.random.choice(a=len(self.train_dataset), size=5)
+        train_subset = np.random.choice(a=len(self.train_dataset), size=2000)
         self.train_subset = Subset(self.train_dataset, train_subset)
         self.init_metrics()
 
@@ -259,12 +260,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
-                num_workers=multiprocessing.cpu_count(),
+                num_workers=min(4, multiprocessing.cpu_count()),
             ),
             DataLoader(
                 dataset=self.validation_dataset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
-                num_workers=multiprocessing.cpu_count(),
+                num_workers=min(4, multiprocessing.cpu_count()),
             ),
         ]

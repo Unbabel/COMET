@@ -5,16 +5,16 @@ regression_metric:
     keep_embeddings_frozen: True
     optimizer: AdamW
     encoder_learning_rate: 1.0e-05
-    learning_rate: 3.0e-05
+    learning_rate: 3.1e-05
     layerwise_decay: 0.95
     encoder_model: XLM-RoBERTa
     pretrained_model: xlm-roberta-large
     pool: avg
     layer: mix
     dropout: 0.1
-    batch_size: 2
-    train_data: data/2017-da.csv
-    validation_data: data/google-mqm_neg.csv
+    batch_size: 4
+    train_data: data/scores-1520.csv
+    validation_data: data/mqm.test.z_score.csv
     hidden_sizes:
       - 3072
       - 1024

@@ -45,25 +45,15 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    def check_lengths(
-        self, tokens: torch.Tensor, lengths: torch.Tensor
-    ) -> Tuple[torch.Tensor]:
-        """Checks if lengths are not exceeded and warns user if so."""
-        if lengths.max() > self.max_positions:
-            warnings.warn(
-                "Encoder max length exceeded ({} > {}).".format(
-                    lengths.max(), self.max_positions
-                ),
-                category=RuntimeWarning,
-            )
-            lengths[lengths > self.max_positions] = self.max_positions
-            tokens = tokens[:, : self.max_positions]
-
-        return tokens, lengths
-
     def prepare_sample(self, sample: List[str]) -> Dict[str, torch.Tensor]:
         """Receives a list of strings and applies model specific tokenization and vectorization."""
-        tokenizer_output = self.tokenizer(sample, return_tensors="pt", padding=True)
+        tokenizer_output = self.tokenizer(
+            sample, 
+            return_tensors="pt", 
+            padding=True, 
+            truncation=True, 
+            max_length=self.max_positions-2
+        )
         return tokenizer_output
 
     def freeze(self) -> None:

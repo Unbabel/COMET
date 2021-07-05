@@ -12,14 +12,14 @@ from .wmt_kendall import WMTKendall
 class RankingMetric(CometModel):
     def __init__(
         self,
-        nr_frozen_epochs: int = 0.1,
+        nr_frozen_epochs: Union[float, int] = 0.05,
         keep_embeddings_frozen: bool = False,
         optimizer: str = "AdamW",
         encoder_learning_rate: float = 1e-05,
         learning_rate: float = 3e-05,
         layerwise_decay: float = 0.95,
         encoder_model: str = "XLM-RoBERTa",
-        pretrained_model: str = "xlm-roberta-large",
+        pretrained_model: str = "xlm-roberta-base",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
         dropout: float = 0.1,

@@ -9,21 +9,21 @@ from comet.modules import FeedForward
 class ReferencelessRegression(RegressionMetric):
     def __init__(
         self,
-        nr_frozen_epochs: int = 0.4,
+        nr_frozen_epochs: Union[float, int],
         keep_embeddings_frozen: bool = False,
         optimizer: str = "AdamW",
         encoder_learning_rate: float = 1e-05,
-        learning_rate: float = 8e-05,
-        layerwise_decay: float = 0.78,
+        learning_rate: float = 3e-05,
+        layerwise_decay: float = 0.95,
         encoder_model: str = "XLM-RoBERTa",
-        pretrained_model: str = "xlm-roberta-large",
+        pretrained_model: str = "xlm-roberta-base",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
         dropout: float = 0.1,
-        batch_size: int = 8,
+        batch_size: int = 4,
         train_data: Optional[str] = None,
         validation_data: Optional[str] = None,
-        hidden_sizes: List[int] = [3072, 1536],
+        hidden_sizes: List[int] = [1024],
         activations: str = "Tanh",
     ) -> None:
         super(RegressionMetric, self).__init__(
@@ -43,14 +43,9 @@ class ReferencelessRegression(RegressionMetric):
             validation_data,
         )
         self.save_hyperparameters()
-        input_emb_sz = (
-            self.encoder.output_units * 4
-            if self.hparams.pool != "cls+avg"
-            else self.encoder.output_units * 2 * 4
-        )
 
-        self.ff = FeedForward(
-            in_dim=input_emb_sz,
+        self.estimator = FeedForward(
+            in_dim=self.encoder.output_units * 4,
             hidden_sizes=self.hparams.hidden_sizes,
             activations=self.hparams.activations,
             dropout=self.hparams.dropout,
@@ -101,7 +96,7 @@ class ReferencelessRegression(RegressionMetric):
         embedded_sequences = torch.cat(
             (mt_sentemb, src_sentemb, prod_src, diff_src), dim=1
         )
-        return {"score": self.ff(embedded_sequences)}
+        return {"score": self.estimator(embedded_sequences)}
 
     def read_csv(self, path: str) -> List[dict]:
         """Reads a comma separated value file.

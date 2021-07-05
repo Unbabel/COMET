@@ -5,6 +5,7 @@ from jsonargparse import ActionConfigFile, ArgumentParser, namespace_to_dict
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from pytorch_lightning.trainer.trainer import Trainer
+import json
 
 
 def train_command() -> None:
@@ -13,7 +14,7 @@ def train_command() -> None:
     )
     parser.add_argument(
         "--seed_everything",
-        type=Optional[int],
+        type=int,
         default=12,
         help="Set to an int to run seed_everything with this value before classes instantiation",
     )
@@ -36,13 +37,19 @@ def train_command() -> None:
     )
     trainer_args = namespace_to_dict(cfg.trainer.init_args)
     trainer_args["callbacks"] = [early_stop_callback, checkpoint_callback]
+    print ("TRAINER ARGUMENTS: ")
+    print (json.dumps(trainer_args, indent=4, default=lambda x: x.__dict__))
     trainer = Trainer(**trainer_args)
-
+    
+    print ("MODEL ARGUMENTS: ")
     if cfg.regression_metric is not None:
+        print (json.dumps(cfg.regression_metric.init_args, indent=4, default=lambda x: x.__dict__))
         model = RegressionMetric(**namespace_to_dict(cfg.regression_metric.init_args))
     elif cfg.referenceless_regression_metric is not None:
+        print (json.dumps(cfg.referenceless_regression_metric.init_args, indent=4, default=lambda x: x.__dict__))
         model = ReferencelessRegression(**namespace_to_dict(cfg.referenceless_regression_metric.init_args))
     elif cfg.ranking_metric is not None:
+        print (json.dumps(cfg.ranking_metric.init_args, indent=4, default=lambda x: x.__dict__))
         model = RankingMetric(**namespace_to_dict(cfg.ranking_metric.init_args))
     else:
         raise Exception("Model configurations missing!")

@@ -3,7 +3,7 @@ from typing import Dict
 import torch
 from comet.encoders.base import Encoder
 from comet.encoders.bert import BERTEncoder
-from transformers import XLMRobertaModel, XLMRobertaTokenizer
+from transformers import XLMRobertaModel, XLMRobertaTokenizerFast
 
 
 class XLMREncoder(BERTEncoder):
@@ -14,7 +14,7 @@ class XLMREncoder(BERTEncoder):
 
     def __init__(self, pretrained_model: str) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = XLMRobertaTokenizer.from_pretrained(pretrained_model)
+        self.tokenizer = XLMRobertaTokenizerFast.from_pretrained(pretrained_model)
         self.model = XLMRobertaModel.from_pretrained(
             pretrained_model, add_pooling_layer=False
         )

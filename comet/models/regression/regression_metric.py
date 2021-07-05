@@ -11,21 +11,21 @@ from transformers import AdamW
 class RegressionMetric(CometModel):
     def __init__(
         self,
-        nr_frozen_epochs: int = 0.4,
+        nr_frozen_epochs: Union[float, int],
         keep_embeddings_frozen: bool = False,
         optimizer: str = "AdamW",
         encoder_learning_rate: float = 1e-05,
-        learning_rate: float = 8e-05,
-        layerwise_decay: float = 0.78,
+        learning_rate: float = 3e-05,
+        layerwise_decay: float = 0.95,
         encoder_model: str = "XLM-RoBERTa",
-        pretrained_model: str = "xlm-roberta-large",
+        pretrained_model: str = "xlm-roberta-base",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
         dropout: float = 0.1,
-        batch_size: int = 8,
+        batch_size: int = 4,
         train_data: Optional[str] = None,
         validation_data: Optional[str] = None,
-        hidden_sizes: List[int] = [3072, 1536],
+        hidden_sizes: List[int] = [2304, 768],
         activations: str = "Tanh",
     ) -> None:
         super().__init__(
@@ -46,7 +46,7 @@ class RegressionMetric(CometModel):
         )
         self.save_hyperparameters()
         
-        self.ff = FeedForward(
+        self.estimator = FeedForward(
             in_dim=self.encoder.output_units * 6,
             hidden_sizes=self.hparams.hidden_sizes,
             activations=self.hparams.activations,
@@ -72,7 +72,7 @@ class RegressionMetric(CometModel):
             self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
         )
         top_layers_parameters = [
-            {"params": self.ff.parameters(), "lr": self.hparams.learning_rate}
+            {"params": self.estimator.parameters(), "lr": self.hparams.learning_rate}
         ]
         if self.layerwise_attention:
             layerwise_attn_params = [
@@ -147,7 +147,7 @@ class RegressionMetric(CometModel):
             (mt_sentemb, ref_sentemb, prod_ref, diff_ref, prod_src, diff_src),
             dim=1,
         )
-        return {"score": self.ff(embedded_sequences)}
+        return {"score": self.estimator(embedded_sequences)}
 
     def read_csv(self, path: str) -> List[dict]:
         """Reads a comma separated value file.

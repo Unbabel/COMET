@@ -2,7 +2,7 @@ class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
 init_args:
   monitor: val_pearson
   min_delta: 0.
-  patience: 1
+  patience: 5
   verbose: False
   mode: max
   strict: True
