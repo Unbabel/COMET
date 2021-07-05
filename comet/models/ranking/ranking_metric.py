@@ -42,6 +42,7 @@ class RankingMetric(CometModel):
             batch_size,
             train_data,
             validation_data,
+            "ranking_metric",
         )
         self.save_hyperparameters()
 

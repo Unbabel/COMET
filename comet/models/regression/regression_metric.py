@@ -43,6 +43,7 @@ class RegressionMetric(CometModel):
             batch_size,
             train_data,
             validation_data,
+            "regression_metric",
         )
         self.save_hyperparameters()
         

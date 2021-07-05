@@ -41,6 +41,7 @@ class ReferencelessRegression(RegressionMetric):
             batch_size,
             train_data,
             validation_data,
+            "referenceless_regression_metric",
         )
         self.save_hyperparameters()
 

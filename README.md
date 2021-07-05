@@ -38,7 +38,7 @@ echo -e "They were able to control the fire.\nSchools and kindergartens opened" 
 ```
 
 ```bash
-comet score -s src.de -h hyp.en -r ref.en
+comet-score -s src.de -t hyp.en -r ref.en
 ```
 
 You can export your results to a JSON file using the `--to_json` flag and select another model/metric with `--model`.

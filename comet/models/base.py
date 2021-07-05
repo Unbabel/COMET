@@ -30,6 +30,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         batch_size: int = 4,
         train_data: Optional[str] = None,
         validation_data: Optional[str] = None,
+        class_identifier: Optional[str] = None,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
