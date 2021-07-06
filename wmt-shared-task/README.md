@@ -1,1 +1,0 @@
-Python Scripts to reproduce `segment-level` and `document-level` results with WMT Metrics shared task data.
