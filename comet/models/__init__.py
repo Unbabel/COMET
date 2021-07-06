@@ -12,7 +12,7 @@ str2model = {
     "ranking_metric": RankingMetric
 }
 
-
+available_metrics = {}
 
 
 def load_from_checkpoint(checkpoint_path: str):
@@ -21,7 +21,7 @@ def load_from_checkpoint(checkpoint_path: str):
         with open(hparams_file) as yaml_file:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)
         model_class = str2model[hparams["class_identifier"]]
-        model = model_class.load_from_checkpoint(checkpoint_path)
+        model = model_class.load_from_checkpoint(checkpoint_path, **hparams)
         return model
     else:
         raise Exception("hparams.yaml file is missing!")

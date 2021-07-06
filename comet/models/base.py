@@ -7,10 +7,13 @@ import pytorch_lightning as ptl
 import torch
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
+from comet import logger
+
 from torch import nn
 from torch.utils.data import DataLoader, RandomSampler, Subset
 
 from .utils import average_pooling, max_pooling
+from os import path
 
 
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
@@ -30,10 +33,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         batch_size: int = 4,
         train_data: Optional[str] = None,
         validation_data: Optional[str] = None,
-        class_identifier: Optional[str] = None,
+        load_weights_from_checkpoint: Optional[str] = None,
+        class_identifier: Optional[str] = None,     
     ) -> None:
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(
+            ignore=["train_data", "validation_data", "load_weights_from_checkpoint"]
+        )
         self.encoder = str2encoder[self.hparams.encoder_model].from_pretrained(
             self.hparams.pretrained_model
         )
@@ -57,6 +63,32 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.encoder.freeze_embeddings()
 
         self.nr_frozen_epochs = self.hparams.nr_frozen_epochs
+
+        if load_weights_from_checkpoint is not None:
+            if path.exists(load_weights_from_checkpoint):
+                self.load_weights(load_weights_from_checkpoint)
+            else:
+                logger.warning(f"Path {load_weights_from_checkpoint} does not exist!")
+    
+
+    def load_weights(self, checkpoint: str) -> None:
+        """ Function that loads the weights from a given checkpoint file. 
+        Note:
+            If the checkpoint model architecture is different then `self`, only
+            the common parts will be loaded.
+
+        :param checkpoint: Path to the checkpoint containing the weights to be loaded.
+        """
+        logger.info(f"Loading weights from {checkpoint}.")
+        checkpoint = torch.load(checkpoint, map_location=lambda storage, loc: storage)
+        pretrained_dict = checkpoint["state_dict"]
+        model_dict = self.state_dict()
+        # 1. filter out unnecessary keys
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+        # 2. overwrite entries in the existing state dict
+        model_dict.update(pretrained_dict)
+        # 3. load the new state dict
+        self.load_state_dict(model_dict)
 
     @abc.abstractmethod
     def read_csv(self):
@@ -82,7 +114,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
     def freeze_encoder(self) -> None:
         """Freezes the encoder layer."""
-        print("\nEncoder model frozen.")
+        logger.info("Encoder model frozen.")
         self.encoder.freeze()
 
     @property
@@ -96,7 +128,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         """un-freezes the encoder layer."""
         if self._frozen:
             if self.trainer.is_global_zero:
-                print("\nEncoder model fine-tuning")
+                logger.info("Encoder model fine-tuning")
 
             self.encoder.unfreeze()
             self._frozen = False
@@ -230,19 +262,20 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     def setup(self, stage) -> None:
         """Data preparation function called before training by Lightning.
         Equivalent to the prepare_data in previous Lightning Versions"""
-        self.train_dataset = self.read_csv(self.hparams.train_data)
-        self.validation_dataset = self.read_csv(self.hparams.validation_data)
+        if stage in (None, 'fit'):
+            self.train_dataset = self.read_csv(self.hparams.train_data)
+            self.validation_dataset = self.read_csv(self.hparams.validation_data)
 
 
-        self.epoch_total_steps = len(self.train_dataset) // (
-            self.hparams.batch_size * max(1, self.trainer.num_gpus)
-        )
-        self.total_steps = self.epoch_total_steps * float(self.trainer.max_epochs)
-        
-        # Always validate the model with 2k examples from training to control overfit.
-        train_subset = np.random.choice(a=len(self.train_dataset), size=2000)
-        self.train_subset = Subset(self.train_dataset, train_subset)
-        self.init_metrics()
+            self.epoch_total_steps = len(self.train_dataset) // (
+                self.hparams.batch_size * max(1, self.trainer.num_gpus)
+            )
+            self.total_steps = self.epoch_total_steps * float(self.trainer.max_epochs)
+            
+            # Always validate the model with 2k examples from training to control overfit.
+            train_subset = np.random.choice(a=len(self.train_dataset), size=2000)
+            self.train_subset = Subset(self.train_dataset, train_subset)
+            self.init_metrics()
 
     def train_dataloader(self) -> DataLoader:
         """Function that loads the train set."""

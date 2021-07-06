@@ -9,7 +9,7 @@ from comet.modules import FeedForward
 class ReferencelessRegression(RegressionMetric):
     def __init__(
         self,
-        nr_frozen_epochs: Union[float, int],
+        nr_frozen_epochs: Union[float, int] = 0.3,
         keep_embeddings_frozen: bool = False,
         optimizer: str = "AdamW",
         encoder_learning_rate: float = 1e-05,
@@ -25,6 +25,7 @@ class ReferencelessRegression(RegressionMetric):
         validation_data: Optional[str] = None,
         hidden_sizes: List[int] = [1024],
         activations: str = "Tanh",
+        load_weights_from_checkpoint: Optional[str] = None,
     ) -> None:
         super(RegressionMetric, self).__init__(
             nr_frozen_epochs,
@@ -41,6 +42,7 @@ class ReferencelessRegression(RegressionMetric):
             batch_size,
             train_data,
             validation_data,
+            load_weights_from_checkpoint,
             "referenceless_regression_metric",
         )
         self.save_hyperparameters()

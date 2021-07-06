@@ -9,11 +9,7 @@ from comet.models import available_metrics, load_from_checkpoint
 from comet.download_utils import download_model
 from pytorch_lightning.trainer.trainer import Trainer
 
-import logging
 import json
-
-logging.getLogger().setLevel(logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 def score_command() -> None:
@@ -63,7 +59,7 @@ def score_command() -> None:
         collate_fn=lambda x: model.prepare_sample(x, inference=True),
         num_workers=multiprocessing.cpu_count(),
     )
-    trainer = Trainer(gpus=1, deterministic=True)
+    trainer = Trainer(gpus=cfg.gpus, deterministic=True)
     predictions = trainer.predict(
         model, 
         dataloaders=dataloader, 
@@ -74,11 +70,12 @@ def score_command() -> None:
     if isinstance(cfg.to_json, str):
         with open(cfg.to_json, "w") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)
-        logger.info("Predictions saved in: {}.".format(cfg.to_json))
+        print ("Predictions saved in: {}.".format(cfg.to_json))
     
     for i in range(len(predictions)):
         print ("Segment {} score: {:.3f}".format(i, predictions[i]))
-    logger.info(
+
+    print (
         "System score: {:.3f}".format(sum(predictions) / len(predictions))
     )
     

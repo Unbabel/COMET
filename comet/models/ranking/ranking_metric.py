@@ -26,6 +26,7 @@ class RankingMetric(CometModel):
         batch_size: int = 8,
         train_data: Optional[str] = None,
         validation_data: Optional[str] = None,
+        load_weights_from_checkpoint: Optional[str] = None,
     ) -> None:
         super().__init__(
             nr_frozen_epochs,
@@ -42,6 +43,7 @@ class RankingMetric(CometModel):
             batch_size,
             train_data,
             validation_data,
+            load_weights_from_checkpoint,
             "ranking_metric",
         )
         self.save_hyperparameters()

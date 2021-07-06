@@ -11,7 +11,7 @@ regression_metric:
     pretrained_model: xlm-roberta-large
     pool: avg
     layer: mix
-    dropout: 0.1
+    dropout: 0.15
     batch_size: 4
     train_data: data/scores-1520.csv
     validation_data: data/mqm.test.z_score.csv
