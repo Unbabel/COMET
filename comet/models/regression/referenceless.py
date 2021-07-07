@@ -29,7 +29,7 @@ from comet.modules import FeedForward
 
 class ReferencelessRegression(RegressionMetric):
     """ReferencelessRegression:
-    
+
     :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
     :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
     :param optimizer: Optimizer used during training.
@@ -48,6 +48,7 @@ class ReferencelessRegression(RegressionMetric):
     :param activations: Activation function to be used in the intermediate layers of the Feed Forward Regressor.
     :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
     """
+
     def __init__(
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,

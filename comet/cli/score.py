@@ -64,7 +64,7 @@ def score_command() -> None:
     )
     model = load_from_checkpoint(model_path)
     model.eval()
-    
+
     with open(cfg.sources()) as fp:
         sources = fp.readlines()
 

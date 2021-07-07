@@ -58,9 +58,9 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
 
     def prepare_sample(self, sample: List[str]) -> Dict[str, torch.Tensor]:
         """Receives a list of strings and applies model specific tokenization and vectorization.
-        
-        :param sample: List with text segments to be tokenized and padded. 
-        
+
+        :param sample: List with text segments to be tokenized and padded.
+
         :return: Dictionary with HF model inputs.
         """
         tokenizer_output = self.tokenizer(
@@ -92,7 +92,7 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         """
         :param lr: Learning rate for the highest encoder layer.
         :param decay: decay percentage for the lower layers.
-        
+
         :return: List with grouped model parameters with layer-wise decaying learning rate
         """
         pass

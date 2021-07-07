@@ -37,7 +37,7 @@ from .pooling_utils import average_pooling, max_pooling
 
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     """CometModel:
-    
+
     :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
     :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
     :param optimizer: Optimizer used during training.
@@ -55,6 +55,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
     :param class_identifier: This will be used to identify the model subclass on the hparams.yaml.
     """
+
     def __init__(
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
@@ -157,7 +158,9 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     def loss(self) -> None:
         return nn.MSELoss(reduction="sum")
 
-    def compute_loss(self, predictions: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def compute_loss(
+        self, predictions: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]
+    ) -> torch.Tensor:
         return self.loss(predictions["score"].view(-1), targets["score"])
 
     def unfreeze_encoder(self) -> None:
@@ -171,7 +174,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 self.encoder.freeze_embeddings()
 
     def on_train_epoch_end(self) -> None:
-        """ Hook used to unfreeze encoder during training. """
+        """Hook used to unfreeze encoder during training."""
         if self.epoch_nr >= self.nr_frozen_epochs and self._frozen:
             self.unfreeze_encoder()
             self._frozen = False
@@ -180,7 +183,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     def get_sentence_embedding(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> torch.Tensor:
-        """ Function that extracts sentence embeddings for
+        """Function that extracts sentence embeddings for
             a single sentence.
 
         :param tokens: sequences [batch_size x seq_len]
@@ -298,15 +301,15 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         return self(**batch)["score"].view(-1)
 
     def validation_epoch_end(self, *args, **kwargs) -> None:
-        """" Computes and logs metrics. """
+        """ " Computes and logs metrics."""
         self.log_dict(self.train_metrics.compute(), prog_bar=True)
         self.log_dict(self.val_metrics.compute(), prog_bar=True)
         self.train_metrics.reset()
         self.val_metrics.reset()
 
     def setup(self, stage) -> None:
-        """ Data preparation function called before training by Lightning.
-        
+        """Data preparation function called before training by Lightning.
+
         :param stage: either 'fit', 'validate', 'test', or 'predict'
         """
         if stage in (None, "fit"):

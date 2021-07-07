@@ -28,8 +28,12 @@ For more details run the following command:
 """
 import json
 
-from comet.models import (CometModel, RankingMetric, ReferencelessRegression,
-                          RegressionMetric)
+from comet.models import (
+    CometModel,
+    RankingMetric,
+    ReferencelessRegression,
+    RegressionMetric,
+)
 from jsonargparse import ActionConfigFile, ArgumentParser, namespace_to_dict
 from pytorch_lightning import seed_everything
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint

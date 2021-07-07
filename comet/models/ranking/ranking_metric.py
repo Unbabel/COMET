@@ -33,7 +33,7 @@ from .wmt_kendall import WMTKendall
 
 class RankingMetric(CometModel):
     """RankingMetric
-    
+
     :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
     :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
     :param optimizer: Optimizer used during training.
@@ -50,6 +50,7 @@ class RankingMetric(CometModel):
     :param validation_data: Path to a csv file containing the validation data.
     :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
     """
+
     def __init__(
         self,
         nr_frozen_epochs: Union[float, int] = 0.05,
