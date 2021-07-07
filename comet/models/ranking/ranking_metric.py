@@ -164,7 +164,8 @@ class RankingMetric(CometModel):
         src_attention_mask: torch.tensor,
         ref_attention_mask: torch.tensor,
         pos_attention_mask: torch.tensor,
-        neg_attention_mask: torch.tensor
+        neg_attention_mask: torch.tensor,
+        **kwargs
     ) -> Dict[str, torch.Tensor]:
         src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
         ref_sentemb = self.get_sentence_embedding(ref_input_ids, ref_attention_mask)

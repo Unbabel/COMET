@@ -174,7 +174,8 @@ class RegressionMetric(CometModel):
         mt_input_ids: torch.tensor,
         mt_attention_mask: torch.tensor,
         ref_input_ids: torch.tensor,
-        ref_attention_mask: torch.tensor
+        ref_attention_mask: torch.tensor,
+        **kwargs
     ) -> Dict[str, torch.Tensor]:
         src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
         mt_sentemb = self.get_sentence_embedding(mt_input_ids, mt_attention_mask)

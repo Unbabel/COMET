@@ -27,7 +27,9 @@ str2model = {
     "ranking_metric": RankingMetric,
 }
 
-available_metrics = {}
+available_metrics = {
+    "wmt21-base-estimator": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-base-estimator.tar.gz"
+}
 
 
 def load_from_checkpoint(checkpoint_path: str):
