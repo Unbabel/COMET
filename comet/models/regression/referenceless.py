@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2020 Unbabel
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+r"""
+ReferencelessRegression
+========================
+    Referenceless Regression Metric that learns to predict a quality assessment by looking at  
+source and translation.
+"""
 from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
@@ -7,6 +28,26 @@ from comet.modules import FeedForward
 
 
 class ReferencelessRegression(RegressionMetric):
+    """ReferencelessRegression:
+    
+    :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
+    :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
+    :param optimizer: Optimizer used during training.
+    :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.
+    :param learning_rate: Learning rate used to fine-tune the top layers.
+    :param layerwise_decay: Learning rate % decay from top-to-bottom encoder layers.
+    :param encoder_model: Encoder model to be used.
+    :param pretrained_model: Pretrained model from Hugging Face.
+    :param pool: Pooling strategy to derive a sentence embedding ['cls', 'max', 'avg'].
+    :param layer: Encoder layer to be used ('mix' for pooling info from all layers.)
+    :param dropout: Dropout used in the top-layers.
+    :param batch_size: Batch size used during training.
+    :param train_data: Path to a csv file containing the training data.
+    :param validation_data: Path to a csv file containing the validation data.
+    :param hidden_sizes: Hidden sizes for the Feed Forward regression on top of the Multilingual Encoder.
+    :param activations: Activation function to be used in the intermediate layers of the Feed Forward Regressor.
+    :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
+    """
     def __init__(
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
@@ -87,8 +128,7 @@ class ReferencelessRegression(RegressionMetric):
         src_input_ids: torch.tensor,
         src_attention_mask: torch.tensor,
         mt_input_ids: torch.tensor,
-        mt_attention_mask: torch.tensor,
-        **kwargs
+        mt_attention_mask: torch.tensor
     ) -> Dict[str, torch.Tensor]:
         src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
         mt_sentemb = self.get_sentence_embedding(mt_input_ids, mt_attention_mask)

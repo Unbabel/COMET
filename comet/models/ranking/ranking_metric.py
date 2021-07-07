@@ -1,15 +1,55 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2020 Unbabel
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+r"""
+Ranking Metric
+====================
+    Translation Ranking metric was introduced by [Rei, et al. 2020](https://aclanthology.org/2020.emnlp-main.213/)
+and it is trained on top of Direct Assessment Relative Ranks (DARR) to encode `good` translations closer to the 
+anchors (source & reference) than `worse`  translations.  
+"""
 from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
 import torch.nn.functional as F
 from comet.models.base import CometModel
-from torchmetrics import MetricCollection, RetrievalRecall, RetrievalPrecision
 from transformers import AdamW
+
 from .wmt_kendall import WMTKendall
 
 
 class RankingMetric(CometModel):
+    """RankingMetric
+    
+    :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
+    :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
+    :param optimizer: Optimizer used during training.
+    :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.
+    :param learning_rate: Learning rate used to fine-tune the top layers.
+    :param layerwise_decay: Learning rate % decay from top-to-bottom encoder layers.
+    :param encoder_model: Encoder model to be used.
+    :param pretrained_model: Pretrained model from Hugging Face.
+    :param pool: Pooling strategy to derive a sentence embedding ['cls', 'max', 'avg'].
+    :param layer: Encoder layer to be used ('mix' for pooling info from all layers.)
+    :param dropout: Dropout used in the top-layers.
+    :param batch_size: Batch size used during training.
+    :param train_data: Path to a csv file containing the training data.
+    :param validation_data: Path to a csv file containing the validation data.
+    :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
+    """
     def __init__(
         self,
         nr_frozen_epochs: Union[float, int] = 0.05,
@@ -76,7 +116,7 @@ class RankingMetric(CometModel):
             ]
             params = layer_parameters + layerwise_attn_params
         else:
-            params = layer_parameters 
+            params = layer_parameters
 
         optimizer = AdamW(
             params,
@@ -100,7 +140,7 @@ class RankingMetric(CometModel):
             ref_inputs = {"ref_" + k: v for k, v in ref_inputs.items()}
             src_inputs = {"src_" + k: v for k, v in src_inputs.items()}
             mt_inputs = {"mt_" + k: v for k, v in mt_inputs.items()}
-    
+
             return {**ref_inputs, **src_inputs, **mt_inputs}
 
         ref_inputs = self.encoder.prepare_sample(sample["ref"])
@@ -124,41 +164,36 @@ class RankingMetric(CometModel):
         src_attention_mask: torch.tensor,
         ref_attention_mask: torch.tensor,
         pos_attention_mask: torch.tensor,
-        neg_attention_mask: torch.tensor,
-        **kwargs
+        neg_attention_mask: torch.tensor
     ) -> Dict[str, torch.Tensor]:
         src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
         ref_sentemb = self.get_sentence_embedding(ref_input_ids, ref_attention_mask)
         pos_sentemb = self.get_sentence_embedding(pos_input_ids, pos_attention_mask)
         neg_sentemb = self.get_sentence_embedding(neg_input_ids, neg_attention_mask)
-        
-        loss = (
-            self.loss(src_sentemb, pos_sentemb, neg_sentemb) + 
-            self.loss(ref_sentemb, pos_sentemb, neg_sentemb)
+
+        loss = self.loss(src_sentemb, pos_sentemb, neg_sentemb) + self.loss(
+            ref_sentemb, pos_sentemb, neg_sentemb
         )
 
         distance_src_pos = F.pairwise_distance(pos_sentemb, src_sentemb)
         distance_ref_pos = F.pairwise_distance(pos_sentemb, ref_sentemb)
         # Harmonic mean between anchors and the positive example
-        distance_pos = (
-            (2 * distance_src_pos * distance_ref_pos) / 
-            (distance_src_pos + distance_ref_pos)
+        distance_pos = (2 * distance_src_pos * distance_ref_pos) / (
+            distance_src_pos + distance_ref_pos
         )
 
         # Harmonic mean between anchors and the negative example
         distance_src_neg = F.pairwise_distance(neg_sentemb, src_sentemb)
         distance_ref_neg = F.pairwise_distance(neg_sentemb, ref_sentemb)
-        distance_neg =(
-            (2 * distance_src_neg * distance_ref_neg) / 
-            (distance_src_neg + distance_ref_neg)
+        distance_neg = (2 * distance_src_neg * distance_ref_neg) / (
+            distance_src_neg + distance_ref_neg
         )
 
         return {
             "loss": loss,
             "distance_pos": distance_pos,
-            "distance_neg": distance_neg
+            "distance_neg": distance_neg,
         }
-
 
     def read_csv(self, path: str, regression: bool = False) -> List[dict]:
         """Reads a comma separated value file.
@@ -168,7 +203,7 @@ class RankingMetric(CometModel):
         :return: List of records as dictionaries
         """
         df = pd.read_csv(path)
-        
+
         if regression:
             df = df[["src", "mt", "ref", "score"]]
             df["src"] = df["src"].astype(str)
@@ -176,7 +211,7 @@ class RankingMetric(CometModel):
             df["ref"] = df["ref"].astype(str)
             df["score"] = df["score"].astype(float)
             return df.to_dict("records")
-        
+
         df = df[["src", "pos", "neg", "ref"]]
         df["src"] = df["src"].astype(str)
         df["pos"] = df["pos"].astype(str)
@@ -241,16 +276,24 @@ class RankingMetric(CometModel):
                 batch_prediction["distance_pos"], batch_prediction["distance_neg"]
             )
 
-    def predict_step(self, batch: Dict[str, torch.Tensor], batch_idx: int, dataloader_idx: Optional[int]) -> List[float]:
-        src_sentemb = self.get_sentence_embedding(batch["src_input_ids"], batch["src_attention_mask"])
-        ref_sentemb = self.get_sentence_embedding(batch["ref_input_ids"], batch["ref_attention_mask"])
-        mt_sentemb = self.get_sentence_embedding(batch["mt_input_ids"], batch["mt_attention_mask"])
-        
+    def predict_step(
+        self,
+        batch: Dict[str, torch.Tensor],
+        batch_idx: int,
+        dataloader_idx: Optional[int],
+    ) -> List[float]:
+        src_sentemb = self.get_sentence_embedding(
+            batch["src_input_ids"], batch["src_attention_mask"]
+        )
+        ref_sentemb = self.get_sentence_embedding(
+            batch["ref_input_ids"], batch["ref_attention_mask"]
+        )
+        mt_sentemb = self.get_sentence_embedding(
+            batch["mt_input_ids"], batch["mt_attention_mask"]
+        )
+
         src_distance = F.pairwise_distance(mt_sentemb, src_sentemb)
         ref_distance = F.pairwise_distance(mt_sentemb, ref_sentemb)
 
-        distances = (
-            (2 * ref_distance * src_distance) / 
-            (ref_distance + src_distance)
-        )
+        distances = (2 * ref_distance * src_distance) / (ref_distance + src_distance)
         return torch.ones_like(distances) / (1 + distances)

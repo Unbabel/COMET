@@ -1,16 +1,31 @@
-from urllib.parse import urlparse
+# -*- coding: utf-8 -*-
+# Copyright (C) 2020 Unbabel
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import logging
 import os
 import subprocess
 import urllib.request
 import zipfile
+from urllib.parse import urlparse
 
 from tqdm import tqdm
 
 from comet.models import available_metrics
 
-
 logger = logging.getLogger(__name__)
+
 
 def get_cache_folder():
     if "HOME" in os.environ:
@@ -23,7 +38,7 @@ def get_cache_folder():
 
 
 def _reporthook(t):
-    """ ``reporthook`` to use with ``urllib.request`` that prints the process of the download.
+    """``reporthook`` to use with ``urllib.request`` that prints the process of the download.
 
     Uses ``tqdm`` for progress bar.
 
@@ -55,7 +70,7 @@ def _reporthook(t):
 
 
 def _maybe_extract(compressed_filename, directory, extension=None):
-    """ Extract a compressed file to ``directory``.
+    """Extract a compressed file to ``directory``.
 
     Args:
         compressed_filename (str): Compressed file.
@@ -63,26 +78,26 @@ def _maybe_extract(compressed_filename, directory, extension=None):
         extension (str, optional): Extension of the file; Otherwise, attempts to extract extension
             from the filename.
     """
-    logger.info('Extracting {}'.format(compressed_filename))
+    logger.info("Extracting {}".format(compressed_filename))
 
     if extension is None:
         basename = os.path.basename(compressed_filename)
-        extension = basename.split('.', 1)[1]
+        extension = basename.split(".", 1)[1]
 
-    if 'zip' in extension:
+    if "zip" in extension:
         with zipfile.ZipFile(compressed_filename, "r") as zip_:
             zip_.extractall(directory)
-    elif 'tar.gz' in extension or 'tgz' in extension:
+    elif "tar.gz" in extension or "tgz" in extension:
         # `tar` is much faster than python's `tarfile` implementation
-        subprocess.call(['tar', '-C', directory, '-zxvf', compressed_filename])
-    elif 'tar' in extension:
-        subprocess.call(['tar', '-C', directory, '-xvf', compressed_filename])
+        subprocess.call(["tar", "-C", directory, "-zxvf", compressed_filename])
+    elif "tar" in extension:
+        subprocess.call(["tar", "-C", directory, "-xvf", compressed_filename])
 
-    logger.info('Extracted {}'.format(compressed_filename))
+    logger.info("Extracted {}".format(compressed_filename))
 
 
 def _get_filename_from_url(url):
-    """ Return a filename from a URL
+    """Return a filename from a URL
 
     Args:
         url (str): URL to extract filename from
@@ -95,7 +110,7 @@ def _get_filename_from_url(url):
 
 
 def _check_download(*filepaths):
-    """ Check if the downloaded files are found.
+    """Check if the downloaded files are found.
 
     Args:
         filepaths (list of str): Check if these filepaths exist
@@ -106,8 +121,10 @@ def _check_download(*filepaths):
     return all([os.path.isfile(filepath) for filepath in filepaths])
 
 
-def download_file_maybe_extract(url, directory, filename=None, extension=None, check_files=[]):
-    """ Download the file at ``url`` to ``directory``. Extract to ``directory`` if tar or zip.
+def download_file_maybe_extract(
+    url, directory, filename=None, extension=None, check_files=[]
+):
+    """Download the file at ``url`` to ``directory``. Extract to ``directory`` if tar or zip.
 
     Args:
         url (str or Path): Url of file.
@@ -138,16 +155,18 @@ def download_file_maybe_extract(url, directory, filename=None, extension=None, c
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
-    logger.info('Downloading {}'.format(filename))
+    logger.info("Downloading {}".format(filename))
 
     # Download
-    with tqdm(unit='B', unit_scale=True, miniters=1, desc=filename) as t:
+    with tqdm(unit="B", unit_scale=True, miniters=1, desc=filename) as t:
         urllib.request.urlretrieve(url, filename=filepath, reporthook=_reporthook(t))
 
-    _maybe_extract(compressed_filename=filepath, directory=directory, extension=extension)
+    _maybe_extract(
+        compressed_filename=filepath, directory=directory, extension=extension
+    )
 
     if not _check_download(*check_files):
-        raise ValueError('[DOWNLOAD FAILED] `*check_files` not found')
+        raise ValueError("[DOWNLOAD FAILED] `*check_files` not found")
 
     return filepath
 
@@ -155,20 +174,20 @@ def download_file_maybe_extract(url, directory, filename=None, extension=None, c
 def download_model(model: str, saving_directory: str = None) -> str:
     """
     Function that loads pretrained models from AWS.
-    
+
     :param model: Name of the model to be loaded.
     :param saving_directory: RELATIVE path to the saving folder (must end with /).
-    
+
     Return:
         - Path to model checkpoint.
     """
-    
+
     if saving_directory is None:
         saving_directory = get_cache_folder()
 
     if not saving_directory.endswith("/"):
         saving_directory += "/"
-    
+
     if not os.path.exists(saving_directory):
         os.makedirs(saving_directory)
 
@@ -178,10 +197,14 @@ def download_model(model: str, saving_directory: str = None) -> str:
             model += "/"
 
     elif model not in available_metrics.keys():
-        raise Exception(f"{model} is not in the `availale_metrics` or is a valid checkpoint folder.")
+        raise Exception(
+            f"{model} is not in the `availale_metrics` or is a valid checkpoint folder."
+        )
 
     elif available_metrics[model].startswith("https://"):
-        download_file_maybe_extract(available_metrics[model], directory=saving_directory)
+        download_file_maybe_extract(
+            available_metrics[model], directory=saving_directory
+        )
 
     else:
         raise Exception("Invalid model name!")
@@ -193,7 +216,7 @@ def download_model(model: str, saving_directory: str = None) -> str:
         os.remove(saving_directory + model + ".tar.gz")
     if os.path.exists(saving_directory + model + ".tar"):
         os.remove(saving_directory + model + ".tar")
-    
+
     checkpoints_folder = saving_directory + model + "/checkpoints"
     checkpoints = [
         file for file in os.listdir(checkpoints_folder) if file.endswith(".ckpt")

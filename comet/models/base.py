@@ -1,22 +1,60 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2020 Unbabel
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+r"""
+CometModel
+========================
+    Abstract Model class that implements some of the Pytorch Lightning logic. Extend this
+class to create new model and metrics within COMET.
+"""
 import abc
 import multiprocessing
+from os import path
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pytorch_lightning as ptl
 import torch
+from comet import logger
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
-from comet import logger
-
 from torch import nn
 from torch.utils.data import DataLoader, RandomSampler, Subset
 
-from .utils import average_pooling, max_pooling
-from os import path
+from .pooling_utils import average_pooling, max_pooling
 
 
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
+    """CometModel:
+    
+    :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
+    :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
+    :param optimizer: Optimizer used during training.
+    :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.
+    :param learning_rate: Learning rate used to fine-tune the top layers.
+    :param layerwise_decay: Learning rate % decay from top-to-bottom encoder layers.
+    :param encoder_model: Encoder model to be used.
+    :param pretrained_model: Pretrained model from Hugging Face.
+    :param pool: Pooling strategy to derive a sentence embedding ['cls', 'max', 'avg'].
+    :param layer: Encoder layer to be used ('mix' for pooling info from all layers.)
+    :param dropout: Dropout used in the top-layers.
+    :param batch_size: Batch size used during training.
+    :param train_data: Path to a csv file containing the training data.
+    :param validation_data: Path to a csv file containing the validation data.
+    :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
+    :param class_identifier: This will be used to identify the model subclass on the hparams.yaml.
+    """
     def __init__(
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
@@ -34,7 +72,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         train_data: Optional[str] = None,
         validation_data: Optional[str] = None,
         load_weights_from_checkpoint: Optional[str] = None,
-        class_identifier: Optional[str] = None,     
+        class_identifier: Optional[str] = None,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(
@@ -69,10 +107,9 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 self.load_weights(load_weights_from_checkpoint)
             else:
                 logger.warning(f"Path {load_weights_from_checkpoint} does not exist!")
-    
 
     def load_weights(self, checkpoint: str) -> None:
-        """ Function that loads the weights from a given checkpoint file. 
+        """Function that loads the weights from a given checkpoint file.
         Note:
             If the checkpoint model architecture is different then `self`, only
             the common parts will be loaded.
@@ -113,19 +150,17 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         pass
 
     def freeze_encoder(self) -> None:
-        """Freezes the encoder layer."""
         logger.info("Encoder model frozen.")
         self.encoder.freeze()
 
     @property
-    def loss(self):
+    def loss(self) -> None:
         return nn.MSELoss(reduction="sum")
 
-    def compute_loss(self, predictions, targets):
+    def compute_loss(self, predictions: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]) -> torch.Tensor:
         return self.loss(predictions["score"].view(-1), targets["score"])
 
     def unfreeze_encoder(self) -> None:
-        """un-freezes the encoder layer."""
         if self._frozen:
             if self.trainer.is_global_zero:
                 logger.info("Encoder model fine-tuning")
@@ -135,17 +170,17 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             if self.hparams.keep_embeddings_frozen:
                 self.encoder.freeze_embeddings()
 
-    def on_epoch_end(self):
-        """Hook used to unfreeze encoder during training."""    
+    def on_train_epoch_end(self) -> None:
+        """ Hook used to unfreeze encoder during training. """
         if self.epoch_nr >= self.nr_frozen_epochs and self._frozen:
             self.unfreeze_encoder()
             self._frozen = False
         self.epoch_nr += 1
-    
+
     def get_sentence_embedding(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> torch.Tensor:
-        """Auxiliar function that extracts sentence embeddings for
+        """ Function that extracts sentence embeddings for
             a single sentence.
 
         :param tokens: sequences [batch_size x seq_len]
@@ -193,15 +228,14 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self,
         batch: Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]],
         batch_nb: int,
-    ) -> Dict[str, torch.Tensor]:
+    ) -> torch.Tensor:
         """
-        Runs one training step.
-        This usually consists in the forward function followed by the loss function.
+        Runs one training step and logs the training loss.
 
         :param batch: The output of your prepare_sample function.
         :param batch_nb: Integer displaying which batch this is.
 
-        :returns: dictionary containing the loss and the metrics to be added to the lightning logger.
+        :returns: Loss value
         """
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
@@ -223,20 +257,18 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         batch: Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]],
         batch_nb: int,
         dataloader_idx: int,
-    ) -> Dict[str, torch.Tensor]:
+    ) -> None:
         """
-        Similar to the training step but with the model in eval mode.
+        Runs one validation step and logs metrics.
 
         :param batch: The output of your prepare_sample function.
         :param batch_nb: Integer displaying which batch this is.
         :param dataloader_idx: Integer displaying which dataloader this is.
-
-        :returns: dictionary passed to the validation_end function.
         """
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
         loss_value = self.compute_loss(batch_prediction, batch_target)
-        
+
         self.log("val_loss", loss_value, on_step=True, on_epoch=True)
 
         # TODO: REMOVE if condition after torchmetrics bug fix
@@ -250,28 +282,42 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                     batch_prediction["score"].view(-1), batch_target["score"]
                 )
 
-    def predict_step(self, batch: Dict[str, torch.Tensor], batch_idx: int, dataloader_idx: Optional[int]) -> List[float]:
+    def predict_step(
+        self,
+        batch: Dict[str, torch.Tensor],
+        batch_idx: int,
+        dataloader_idx: Optional[int],
+    ) -> torch.Tensor:
+        """
+        Runs one prediction step and returns the predicted values.
+
+        :param batch: The output of your prepare_sample function.
+        :param batch_nb: Integer displaying which batch this is.
+        :param dataloader_idx: Integer displaying which dataloader this is.
+        """
         return self(**batch)["score"].view(-1)
 
     def validation_epoch_end(self, *args, **kwargs) -> None:
+        """" Computes and logs metrics. """
         self.log_dict(self.train_metrics.compute(), prog_bar=True)
         self.log_dict(self.val_metrics.compute(), prog_bar=True)
         self.train_metrics.reset()
         self.val_metrics.reset()
 
     def setup(self, stage) -> None:
-        """Data preparation function called before training by Lightning.
-        Equivalent to the prepare_data in previous Lightning Versions"""
-        if stage in (None, 'fit'):
+        """ Data preparation function called before training by Lightning.
+        
+        :param stage: either 'fit', 'validate', 'test', or 'predict'
+        """
+        if stage in (None, "fit"):
             self.train_dataset = self.read_csv(self.hparams.train_data)
             self.validation_dataset = self.read_csv(self.hparams.validation_data)
-
 
             self.epoch_total_steps = len(self.train_dataset) // (
                 self.hparams.batch_size * max(1, self.trainer.num_gpus)
             )
             self.total_steps = self.epoch_total_steps * float(self.trainer.max_epochs)
-            
+
             # Always validate the model with 2k examples from training to control overfit.
             train_subset = np.random.choice(a=len(self.train_dataset), size=2000)
             self.train_subset = Subset(self.train_dataset, train_subset)
@@ -294,12 +340,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
-                num_workers=min(4, multiprocessing.cpu_count()),
+                num_workers=min(8, multiprocessing.cpu_count()),
             ),
             DataLoader(
                 dataset=self.validation_dataset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
-                num_workers=min(4, multiprocessing.cpu_count()),
+                num_workers=min(8, multiprocessing.cpu_count()),
             ),
         ]
