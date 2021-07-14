@@ -28,7 +28,10 @@ str2model = {
 }
 
 available_metrics = {
-    "wmt21-small-da-152012": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-small-da-152012.tar.gz"
+    "wmt20-large-da-171912": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt20-large-da-171912.tar.gz",
+    "wmt21-small-da-152012": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-small-da-152012.tar.gz",
+    "wmt21-large-da-1520": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-large-da-1520.tar.gz",
+    "refless-wmt21-large-da-1520": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/refless-wmt21-large-da-1520.tar.gz",
 }
 
 

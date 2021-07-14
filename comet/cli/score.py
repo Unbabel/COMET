@@ -53,7 +53,7 @@ def score_command() -> None:
         "--model",
         type=Union[str, Path_fr],
         required=False,
-        default="wmt21-large-estimator",
+        default="wmt21-large-da-1520",
     )
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--gpus", type=int, default=1)
