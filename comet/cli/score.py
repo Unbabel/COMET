@@ -47,7 +47,7 @@ def score_command() -> None:
     parser = ArgumentParser(description="Command for scoring MT systems.")
     parser.add_argument("-s", "--sources", type=Path_fr, required=True)
     parser.add_argument("-t", "--translations", type=Path_fr, required=True)
-    parser.add_argument("-r", "--references", type=Path_fr, required=True)
+    parser.add_argument("-r", "--references", type=Path_fr)
     parser.add_argument("--to_json", type=Union[bool, str], default=False)
     parser.add_argument(
         "--model",
@@ -57,7 +57,11 @@ def score_command() -> None:
     )
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--gpus", type=int, default=1)
+    parser.add_argument("--mc_dropout", type=bool, default=False)
     cfg = parser.parse_args()
+    
+    if (cfg.references is None) and ("refless" not in cfg.model):
+        parser.error("{} requires -r/--references.".format(cfg.model))
 
     model_path = (
         download_model(cfg.model) if cfg.model in available_metrics else cfg.model
@@ -71,12 +75,14 @@ def score_command() -> None:
     with open(cfg.translations()) as fp:
         translations = fp.readlines()
 
-    with open(cfg.references()) as fp:
-        references = fp.readlines()
-
-    data = {"src": sources, "mt": translations, "ref": references}
+    if "refless" in cfg.model:
+        data = {"src": sources, "mt": translations}
+    else:
+        with open(cfg.references()) as fp:
+            references = fp.readlines()
+        data = {"src": sources, "mt": translations, "ref": references}
+    
     data = [dict(zip(data, t)) for t in zip(*data.values())]
-
     dataloader = DataLoader(
         dataset=data,
         batch_size=cfg.batch_size,
