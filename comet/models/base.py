@@ -109,6 +109,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             else:
                 logger.warning(f"Path {load_weights_from_checkpoint} does not exist!")
 
+        self.mc_dropout = False # Flag used to control usage of MC Dropout
+
+    def set_mc_dropout(self, value: bool):
+        self.mc_dropout = value
+
     def load_weights(self, checkpoint: str) -> None:
         """Function that loads the weights from a given checkpoint file.
         Note:
@@ -298,6 +303,15 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         :param batch_nb: Integer displaying which batch this is.
         :param dataloader_idx: Integer displaying which dataloader this is.
         """
+        if self.mc_dropout:
+            self.train()
+            mcd_outputs = torch.stack(
+                [self(**batch)["score"].view(-1) for _ in range(self.mc_dropout)]
+            )
+            mcd_mean = mcd_outputs.mean(dim=0)
+            mcd_std = mcd_outputs.std(dim=0)
+            return mcd_mean, mcd_std
+    
         return self(**batch)["score"].view(-1)
 
     def validation_epoch_end(self, *args, **kwargs) -> None:

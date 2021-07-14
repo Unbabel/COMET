@@ -55,9 +55,9 @@ def score_command() -> None:
         required=False,
         default="wmt21-large-da-1520",
     )
-    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
-    parser.add_argument("--mc_dropout", type=bool, default=False)
+    parser.add_argument("--mc_dropout", type=Union[bool, int], default=False)
     cfg = parser.parse_args()
     
     if (cfg.references is None) and ("refless" not in cfg.model):
@@ -70,16 +70,16 @@ def score_command() -> None:
     model.eval()
 
     with open(cfg.sources()) as fp:
-        sources = fp.readlines()
+        sources = [l.strip() for l in fp.readlines()]
 
     with open(cfg.translations()) as fp:
-        translations = fp.readlines()
+        translations = [l.strip() for l in fp.readlines()]
 
     if "refless" in cfg.model:
         data = {"src": sources, "mt": translations}
     else:
         with open(cfg.references()) as fp:
-            references = fp.readlines()
+            references = [l.strip() for l in fp.readlines()]
         data = {"src": sources, "mt": translations, "ref": references}
     
     data = [dict(zip(data, t)) for t in zip(*data.values())]
@@ -89,18 +89,43 @@ def score_command() -> None:
         collate_fn=lambda x: model.prepare_sample(x, inference=True),
         num_workers=multiprocessing.cpu_count(),
     )
-    trainer = Trainer(gpus=cfg.gpus, deterministic=True)
-    predictions = trainer.predict(
-        model, dataloaders=dataloader, return_predictions=True
-    )
-    predictions = torch.cat(predictions, dim=0).tolist()
+    trainer = Trainer(gpus=cfg.gpus, deterministic=True, logger=False)
+    
+    if cfg.mc_dropout:
+        model.set_mc_dropout(cfg.mc_dropout)
+        predictions = trainer.predict(
+            model, dataloaders=dataloader, return_predictions=True
+        )
+        mean_scores = [out[0] for out in predictions]
+        std_scores = [out[1] for out in predictions]
+        mean_scores = torch.cat(mean_scores, dim=0).tolist()
+        std_scores = torch.cat(std_scores, dim=0).tolist()
 
-    if isinstance(cfg.to_json, str):
-        with open(cfg.to_json, "w") as outfile:
-            json.dump(data, outfile, ensure_ascii=False, indent=4)
-        print("Predictions saved in: {}.".format(cfg.to_json))
+        for i, (mean, std, sample) in enumerate(zip(mean_scores, std_scores, data)):
+            print("Segment {}\tscore: {:.3f}\tvariance: {:.3f}".format(i, mean, std))
+            sample["COMET"] = mean
+            sample["variance"] = std
+        
+        print("System score: {:.3f}".format(sum(mean_scores) / len(mean_scores)))
+        if isinstance(cfg.to_json, str):
+            with open(cfg.to_json, "w") as outfile:
+                json.dump(data, outfile, ensure_ascii=False, indent=4)
+            print("Predictions saved in: {}.".format(cfg.to_json))
+        
+    else:
+        predictions = trainer.predict(
+            model, dataloaders=dataloader, return_predictions=True
+        )
+        predictions = torch.cat(predictions, dim=0).tolist()
+        
+        for i, (score, sample) in enumerate(zip(predictions, data)):
+            print("Segment {} score: {:.3f}".format(i, score))
+            sample["COMET"] = score
 
-    for i in range(len(predictions)):
-        print("Segment {} score: {:.3f}".format(i, predictions[i]))
+        print("System score: {:.3f}".format(sum(predictions) / len(predictions)))
+        if isinstance(cfg.to_json, str):
+            with open(cfg.to_json, "w") as outfile:
+                json.dump(data, outfile, ensure_ascii=False, indent=4)
+            print("Predictions saved in: {}.".format(cfg.to_json))
 
-    print("System score: {:.3f}".format(sum(predictions) / len(predictions)))
+        
