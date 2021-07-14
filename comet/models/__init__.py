@@ -28,11 +28,19 @@ str2model = {
 }
 
 available_metrics = {
-    "wmt21-base-estimator": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-base-estimator.tar.gz"
+    "wmt21-small-da-152012": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-small-da-152012.tar.gz"
 }
 
 
 def load_from_checkpoint(checkpoint_path: str):
+    """ Loads models from a checkpoint path. 
+    :param checkpoint_path: Path to a model checkpoint.
+
+    :return: Returns a COMET model.
+    """
+    if not os.path.exists(checkpoint_path):
+        raise Exception(f"Invalid checkpoint path: {checkpoint_path}")
+
     hparams_file = "/".join(checkpoint_path.split("/")[:-2] + ["hparams.yaml"])
     if os.path.exists(hparams_file):
         with open(hparams_file) as yaml_file:

@@ -6,13 +6,13 @@ from comet.encoders.xlmr import XLMREncoder
 
 class TestXLMREncoder(unittest.TestCase):
 
-    xlmr = XLMREncoder.from_pretrained("xlm-roberta-base")
+    xlmr = XLMREncoder.from_pretrained("Unbabel/xlm-roberta-comet-small")
 
     def test_num_layers(self):
-        self.assertEqual(self.xlmr.num_layers, 13)
+        self.assertEqual(self.xlmr.num_layers, 7)
 
     def test_output_units(self):
-        self.assertEqual(self.xlmr.output_units, 768)
+        self.assertEqual(self.xlmr.output_units, 384)
 
     def test_max_positions(self):
         self.assertEqual(self.xlmr.max_positions, 514)

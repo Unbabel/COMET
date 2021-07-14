@@ -10,14 +10,14 @@ from comet.models import load_from_checkpoint
 class TestDownloadModel(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(os.path.join(DATA_PATH, "wmt21-base-estimator"))
+        shutil.rmtree(os.path.join(DATA_PATH, "wmt21-small-da-152012"))
 
     def test_download_from_s3(self):
-        data_path = download_model("wmt21-base-estimator", saving_directory=DATA_PATH)
+        data_path = download_model("wmt21-small-da-152012", saving_directory=DATA_PATH)
         self.assertTrue(
-            os.path.exists(os.path.join(DATA_PATH, "wmt21-base-estimator/hparams.yaml"))
+            os.path.exists(os.path.join(DATA_PATH, "wmt21-small-da-152012/hparams.yaml"))
         )
         self.assertTrue(
-            os.path.exists(os.path.join(DATA_PATH, "wmt21-base-estimator/checkpoints/"))
+            os.path.exists(os.path.join(DATA_PATH, "wmt21-small-da-152012/checkpoints/"))
         )
         model = load_from_checkpoint(data_path)
