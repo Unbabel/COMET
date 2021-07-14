@@ -41,17 +41,38 @@ echo -e "They were able to control the fire.\nSchools and kindergartens opened" 
 comet-score -s src.de -t hyp.en -r ref.en
 ```
 
-You can export your results to a JSON file using the `--to_json` flag and select another model/metric with `--model`.
+You can select another model/metric with the --model flag and for reference-less (QE-as-a-metric) models you dont need to pass a reference.
 
 ```bash
-comet score -s src.de -h hyp.en -r ref.en --model wmt-large-hter-estimator --to_json segments.json
+comet-score -s src.de -t hyp.en -r ref.en --model refless-wmt21-large-da-1520
 ```
 
-### Via Python:
+Following our work on [Uncertainty-Aware MT Evaluation]() you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric as less confidence is that prediction.
+
+```bash
+comet-score -s src.de -t hyp.en -r ref.en --mc_dropout 100
+```
+
+## Languages Covered:
+
+All the above mentioned models are build on top of XLM-R which cover the following languages:
+
+Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, Belarusian, Bengali, Bengali Romanized, Bosnian, Breton, Bulgarian, Burmese, Burmese, Catalan, Chinese (Simplified), Chinese (Traditional), Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Georgian, German, Greek, Gujarati, Hausa, Hebrew, Hindi, Hindi Romanized, Hungarian, Icelandic, Indonesian, Irish, Italian, Japanese, Javanese, Kannada, Kazakh, Khmer, Korean, Kurdish (Kurmanji), Kyrgyz, Lao, Latin, Latvian, Lithuanian, Macedonian, Malagasy, Malay, Malayalam, Marathi, Mongolian, Nepali, Norwegian, Oriya, Oromo, Pashto, Persian, Polish, Portuguese, Punjabi, Romanian, Russian, Sanskri, Scottish, Gaelic, Serbian, Sindhi, Sinhala, Slovak, Slovenian, Somali, Spanish, Sundanese, Swahili, Swedish, Tamil, Tamil Romanized, Telugu, Telugu Romanized, Thai, Turkish, Ukrainian, Urdu, Urdu Romanized, Uyghur, Uzbek, Vietnamese, Welsh, Western, Frisian, Xhosa, Yiddish.
+
+**Thus, results for language pairs containing uncovered languages are unreliable!**
+
+### Scoring within Python:
+
+COMET implements the [Pytorch-Lightning model interface](https://pytorch-lightning.readthedocs.io/en/1.3.8/common/lightning_module.html) which means that you'll need to initialize a trainer in order to run inference.
 
 ```python
-from comet.models import download_model
-model = download_model("wmt-large-da-estimator-1719")
+from comet import download_model, load_from_checkpoint
+from pytorch_lightning.trainer.trainer import Trainer
+from torch.utils.data import DataLoader
+
+model = load_from_checkpoint(
+  download_model("wmt21-small-da-152012")
+)
 data = [
     {
         "src": "Dem Feuer konnte Einhalt geboten werden",
@@ -64,68 +85,49 @@ data = [
         "ref": "Schools and kindergartens opened"
     }
 ]
-model.predict(data, cuda=True, show_progress=True)
-```
-
-### Simple Pythonic way to convert list or segments to model inputs:
-
-```python
-source = ["Dem Feuer konnte Einhalt geboten werden", "Schulen und Kindergärten wurden eröffnet."]
-hypothesis = ["The fire could be stopped", "Schools and kindergartens were open"]
-reference = ["They were able to control the fire.", "Schools and kindergartens opened"]
-
-data = {"src": source, "mt": hypothesis, "ref": reference}
 data = [dict(zip(data, t)) for t in zip(*data.values())]
-
-model.predict(data, cuda=True, show_progress=True)
+dataloader = DataLoader(
+  dataset=data,
+  batch_size=16,
+  collate_fn=lambda x: model.prepare_sample(x, inference=True),
+  num_workers=4,
+)
+trainer = Trainer(gpus=1, deterministic=True, logger=False)
+predictions = trainer.predict(
+  model, dataloaders=dataloader, return_predictions=True
+)
+predictions = torch.cat(predictions, dim=0).tolist()
 ```
 
 **Note:** Using the python interface you will get a list of segment-level scores. You can obtain the corpus-level score by averaging the segment-level scores
 
 ## Model Zoo:
 
+:TODO: Update model zoo after the shared task.
+
 | Model              |               Description                        |
 | :--------------------- | :------------------------------------------------ |
-| ↑`wmt-large-da-estimator-1719` | **RECOMMENDED:** Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19 |
-| ↑`wmt-base-da-estimator-1719` | Estimator model build on top of XLM-R (base) trained on DA from WMT17, WMT18 and WMT19 |
-| ↓`wmt-large-hter-estimator` | Estimator model build on top of XLM-R (large) trained to regress on HTER. |
-| ↓`wmt-base-hter-estimator` | Estimator model build on top of XLM-R (base) trained to regress on HTER. |
-| ↑`emnlp-base-da-ranker`    | Translation ranking model that uses XLM-R to encode sentences. This model was trained with WMT17 and WMT18 Direct Assessments Relative Ranks (DARR). |
+| ↑`wmt21-large-da-1520` | **RECOMMENDED:** Regression model build on top of XLM-R (large) trained on DA from WMT15, to WMT20 |
+| ↑`wmt21-small-da-152012` | Same as the model above but trained on a small version of XLM-R that was distilled from XLM-R large |
 
 #### QE-as-a-metric:
 
 | Model              |               Description                        |
 | -------------------- | -------------------------------- |
-| `wmt-large-qe-estimator-1719` | Quality Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19. |
-
-#### Languages Covered:
-
-All the above mentioned models are build on top of XLM-R which cover the following languages:
-
-Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, Belarusian, Bengali, Bengali Romanized, Bosnian, Breton, Bulgarian, Burmese, Burmese, Catalan, Chinese (Simplified), Chinese (Traditional), Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Georgian, German, Greek, Gujarati, Hausa, Hebrew, Hindi, Hindi Romanized, Hungarian, Icelandic, Indonesian, Irish, Italian, Japanese, Javanese, Kannada, Kazakh, Khmer, Korean, Kurdish (Kurmanji), Kyrgyz, Lao, Latin, Latvian, Lithuanian, Macedonian, Malagasy, Malay, Malayalam, Marathi, Mongolian, Nepali, Norwegian, Oriya, Oromo, Pashto, Persian, Polish, Portuguese, Punjabi, Romanian, Russian, Sanskri, Scottish, Gaelic, Serbian, Sindhi, Sinhala, Slovak, Slovenian, Somali, Spanish, Sundanese, Swahili, Swedish, Tamil, Tamil Romanized, Telugu, Telugu Romanized, Thai, Turkish, Ukrainian, Urdu, Urdu Romanized, Uyghur, Uzbek, Vietnamese, Welsh, Western, Frisian, Xhosa, Yiddish.
-
-**Thus, results for language pairs containing uncovered languages are unreliable!**
+| `refless-wmt21-large-da-1520` | Reference-less model trained on top of XLM-R large with DAs from WMT15 to WMT20. |
 
 ## Train your own Metric: 
 
 Instead of using pretrained models your can train your own model with the following command:
 ```bash
-comet train -f {config_file_path}.yaml
+comet-train -cfg configs/models/{your_model_config}.yaml
 ```
 
 ### Tensorboard:
 
 Launch tensorboard with:
 ```bash
-tensorboard --logdir="experiments/"
-```
-
-## Download Command: 
-
-To download public available corpora to train your new models you can use the `download` command. For example to download the APEQUEST HTER corpus just run the following command:
-
-```bash
-comet download -d apequest --saving_path data/
+tensorboard --logdir="lightning_logs/"
 ```
 
 ## unittest:
