@@ -3,6 +3,6 @@ pandas>=1.1.5
 tensorboard==2.2.0
 transformers==4.6.1
 pytorch-lightning==1.3.5
-sentencepiece==0.1.91
+sentencepiece==0.1.95
 jsonargparse==3.13.1
 torch>=1.6
