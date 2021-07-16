@@ -31,6 +31,7 @@ class TestRegressionMetric(unittest.TestCase):
             default_root_dir=DATA_PATH,
             logger=False,
             weights_summary=None,
+            progress_bar_refresh_rate=0
         )
         model = RegressionMetric(
             encoder_model="BERT",
