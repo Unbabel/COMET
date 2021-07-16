@@ -25,4 +25,6 @@ jobs:
         run: |
           pip install coverage
           coverage run --source=comet -m unittest discover
+      - name: Coverage Report
+        run: |
           coverage report -m
