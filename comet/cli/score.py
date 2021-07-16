@@ -54,6 +54,7 @@ def score_command() -> None:
         type=Union[str, Path_fr],
         required=False,
         default="wmt21-large-da-1520",
+        choices=available_metrics.keys(),
     )
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
@@ -119,7 +120,7 @@ def score_command() -> None:
         predictions = torch.cat(predictions, dim=0).tolist()
         
         for i, (score, sample) in enumerate(zip(predictions, data)):
-            print("Segment {} score: {:.3f}".format(i, score))
+            print("Segment {}\tscore: {:.3f}".format(i, score))
             sample["COMET"] = score
 
         print("System score: {:.3f}".format(sum(predictions) / len(predictions)))

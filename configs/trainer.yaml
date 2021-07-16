@@ -29,14 +29,14 @@ init_args:
   overfit_batches: 0.0
   plugins: null
   precision: 32
-  max_epochs: 1
+  max_epochs: 3
   min_epochs: 1
   max_steps: null
   min_steps: null
   max_time: null
   num_nodes: 1
   num_processes: 1
-  num_sanity_val_steps: 2
+  num_sanity_val_steps: 10
   reload_dataloaders_every_epoch: False
   replace_sampler_ddp: True
   resume_from_checkpoint: null

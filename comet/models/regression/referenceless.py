@@ -151,7 +151,7 @@ class ReferencelessRegression(RegressionMetric):
         :return: List of records as dictionaries
         """
         df = pd.read_csv(path)
-        df = df[["src", "mt", "ref", "score"]]
+        df = df[["src", "mt", "score"]]
         df["src"] = df["src"].astype(str)
         df["mt"] = df["mt"].astype(str)
         df["score"] = df["score"].astype(float)

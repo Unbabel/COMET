@@ -286,7 +286,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "jsonargparse"
-version = "3.16.1"
+version = "3.13.1"
 description = "Parsing of command line options, yaml/jsonnet config files and/or environment variables based on argparse."
 category = "main"
 optional = false
@@ -296,7 +296,7 @@ python-versions = ">=3.5"
 PyYAML = ">=3.13"
 
 [package.extras]
-all = ["docstring-parser (>=0.7.3)", "jsonschema (>=3.2.0)", "jsonnet (>=0.13.0)", "validators (>=0.14.2)", "requests (>=2.18.4)", "argcomplete (>=1.12.1)", "reconplogger (>=4.4.0)", "typing-extensions (>=3.10.0.0)", "fsspec (>=0.8.4)", "ruyaml (>=0.20.0)"]
+all = ["docstring-parser (>=0.7.3)", "jsonschema (>=3.2.0)", "jsonnet (>=0.13.0)", "validators (>=0.14.2)", "requests (>=2.18.4)", "argcomplete (>=1.12.1)", "reconplogger (>=4.4.0)", "fsspec (>=0.8.4)", "ruyaml (>=0.20.0)"]
 argcomplete = ["argcomplete (>=1.12.1)"]
 dev = ["coverage (>=4.5.1)", "responses (>=0.12.0)", "pylint (>=1.8.3)", "pycodestyle (>=2.5.0)", "mypy (>=0.701)", "bump2version (>=0.5.11)", "twine (>=3.1.1)"]
 doc = ["Sphinx (>=1.7.9)", "sphinx-rtd-theme (>=0.4.3)", "autodocsumm (>=0.1.10)", "sphinx-autodoc-typehints (>=1.11.1)"]
@@ -308,7 +308,6 @@ ruyaml = ["ruyaml (>=0.20.0)"]
 signatures = ["docstring-parser (>=0.7.3)"]
 test = ["coverage (>=4.5.1)", "responses (>=0.12.0)"]
 test_no_urls = ["coverage (>=4.5.1)"]
-typing_extensions = ["typing-extensions (>=3.10.0.0)"]
 urls = ["validators (>=0.14.2)", "requests (>=2.18.4)"]
 
 [[package]]
@@ -781,7 +780,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6.1"
-content-hash = "b0c3328b631c88933b4ce233f58d7f360293f6385521851d4bdee0bb347d3479"
+content-hash = "fda4fef47b8a3e2bd767243b8a6fa46a844c38757ca41bbbdc913d682570b664"
 
 [metadata.files]
 absl-py = [
@@ -1009,8 +1008,8 @@ joblib = [
     {file = "joblib-1.0.1.tar.gz", hash = "sha256:9c17567692206d2f3fb9ecf5e991084254fe631665c450b443761c4186a613f7"},
 ]
 jsonargparse = [
-    {file = "jsonargparse-3.16.1-py3-none-any.whl", hash = "sha256:8afdee0f92d7a6c3ca57cc08aff14ccac18bfdc9dbfee5ff84eb2343b9792a7f"},
-    {file = "jsonargparse-3.16.1.tar.gz", hash = "sha256:329bd53f61fbec60b972996fd0d26fb3593dc9187062ab63bf442258c63f3ead"},
+    {file = "jsonargparse-3.13.1-py3-none-any.whl", hash = "sha256:b58188b98f2ac2b1f5007ece7ea821628883ce3f3ee448eb17c72d9d3b8ec893"},
+    {file = "jsonargparse-3.13.1.tar.gz", hash = "sha256:705693e9911223bf928fe4a7ed9538f24d9229c55ef5c3d3e9a8bad0e7982cf2"},
 ]
 markdown = [
     {file = "Markdown-3.3.4-py3-none-any.whl", hash = "sha256:96c3ba1261de2f7547b46a00ea8463832c921d3f9d6aba3f255a6f71386db20c"},

@@ -1,5 +1,5 @@
-regression_metric:
-  class_path: comet.models.RegressionMetric
+referenceless_regression_metric:
+  class_path: comet.models.ReferencelessRegression
   init_args:
     nr_frozen_epochs: 0.3
     keep_embeddings_frozen: True
@@ -16,7 +16,7 @@ regression_metric:
     train_data: data/scores-1520.csv
     validation_data: data/mqm.test.csv
     hidden_sizes:
-      - 3072
+      - 2048
       - 1024
     
 trainer: ../trainer.yaml

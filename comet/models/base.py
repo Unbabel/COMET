@@ -19,6 +19,7 @@ CometModel
 class to create new model and metrics within COMET.
 """
 import abc
+import logging
 import multiprocessing
 from os import path
 from typing import Dict, List, Optional, Tuple, Union
@@ -26,13 +27,14 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pytorch_lightning as ptl
 import torch
-from comet import logger
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
 from torch import nn
 from torch.utils.data import DataLoader, RandomSampler, Subset
 
 from .pooling_utils import average_pooling, max_pooling
+
+logger = logging.getLogger(__name__)
 
 
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
@@ -290,11 +292,18 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                     batch_prediction["score"].view(-1), batch_target["score"]
                 )
 
+    def on_predict_start(self) -> None:
+        """Called when predict begins."""
+        if self.mc_dropout:
+            self.train()
+        else:
+            self.eval()
+
     def predict_step(
         self,
         batch: Dict[str, torch.Tensor],
-        batch_idx: int,
-        dataloader_idx: Optional[int],
+        batch_idx: Optional[int] = None,
+        dataloader_idx: Optional[int] = None,
     ) -> torch.Tensor:
         """
         Runs one prediction step and returns the predicted values.
@@ -304,14 +313,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         :param dataloader_idx: Integer displaying which dataloader this is.
         """
         if self.mc_dropout:
-            self.train()
             mcd_outputs = torch.stack(
                 [self(**batch)["score"].view(-1) for _ in range(self.mc_dropout)]
             )
             mcd_mean = mcd_outputs.mean(dim=0)
             mcd_std = mcd_outputs.std(dim=0)
             return mcd_mean, mcd_std
-    
+        
         return self(**batch)["score"].view(-1)
 
     def validation_epoch_end(self, *args, **kwargs) -> None:
