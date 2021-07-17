@@ -60,7 +60,7 @@ def score_command() -> None:
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument("--mc_dropout", type=Union[bool, int], default=False)
     cfg = parser.parse_args()
-    
+
     if (cfg.references is None) and ("refless" not in cfg.model):
         parser.error("{} requires -r/--references.".format(cfg.model))
 
@@ -82,7 +82,7 @@ def score_command() -> None:
         with open(cfg.references()) as fp:
             references = [l.strip() for l in fp.readlines()]
         data = {"src": sources, "mt": translations, "ref": references}
-    
+
     data = [dict(zip(data, t)) for t in zip(*data.values())]
     dataloader = DataLoader(
         dataset=data,
@@ -91,7 +91,7 @@ def score_command() -> None:
         num_workers=multiprocessing.cpu_count(),
     )
     trainer = Trainer(gpus=cfg.gpus, deterministic=True, logger=False)
-    
+
     if cfg.mc_dropout:
         model.set_mc_dropout(cfg.mc_dropout)
         predictions = trainer.predict(
@@ -106,19 +106,19 @@ def score_command() -> None:
             print("Segment {}\tscore: {:.3f}\tvariance: {:.3f}".format(i, mean, std))
             sample["COMET"] = mean
             sample["variance"] = std
-        
+
         print("System score: {:.3f}".format(sum(mean_scores) / len(mean_scores)))
         if isinstance(cfg.to_json, str):
             with open(cfg.to_json, "w") as outfile:
                 json.dump(data, outfile, ensure_ascii=False, indent=4)
             print("Predictions saved in: {}.".format(cfg.to_json))
-        
+
     else:
         predictions = trainer.predict(
             model, dataloaders=dataloader, return_predictions=True
         )
         predictions = torch.cat(predictions, dim=0).tolist()
-        
+
         for i, (score, sample) in enumerate(zip(predictions, data)):
             print("Segment {}\tscore: {:.3f}".format(i, score))
             sample["COMET"] = score
@@ -128,5 +128,3 @@ def score_command() -> None:
             with open(cfg.to_json, "w") as outfile:
                 json.dump(data, outfile, ensure_ascii=False, indent=4)
             print("Predictions saved in: {}.".format(cfg.to_json))
-
-        

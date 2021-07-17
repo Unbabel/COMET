@@ -66,6 +66,7 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 COMET implements the [Pytorch-Lightning model interface](https://pytorch-lightning.readthedocs.io/en/1.3.8/common/lightning_module.html) which means that you'll need to initialize a trainer in order to run inference.
 
 ```python
+import torch
 from comet import download_model, load_from_checkpoint
 from pytorch_lightning.trainer.trainer import Trainer
 from torch.utils.data import DataLoader

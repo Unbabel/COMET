@@ -32,7 +32,7 @@ class TestReferencelessRegression(unittest.TestCase):
             default_root_dir=DATA_PATH,
             logger=False,
             weights_summary=None,
-            progress_bar_refresh_rate=0
+            progress_bar_refresh_rate=0,
         )
         model = ReferencelessRegression(
             encoder_model="BERT",

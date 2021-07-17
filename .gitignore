@@ -2,6 +2,7 @@
 *DS_Store 
 data/
 lightning_logs/
+wmt21/
 
 .vscode
 # Byte-compiled / optimized / DLL files
