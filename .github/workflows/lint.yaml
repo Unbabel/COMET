@@ -20,5 +20,5 @@ jobs:
           flake8 --max-line-length 88 --extend-ignore E203 --exclude .git,docs
       - name: Run Black
         run: |
-          black ./
+          black ./ --check
       
