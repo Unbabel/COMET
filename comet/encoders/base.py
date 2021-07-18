@@ -24,10 +24,7 @@ import torch.nn as nn
 
 
 class Encoder(nn.Module, metaclass=abc.ABCMeta):
-    """Base class for an encoder model.
-
-    :param output_units: Number of output features that will be passed to the Estimator.
-    """
+    """Base class for an encoder model."""
 
     @property
     @abc.abstractmethod
@@ -57,7 +54,7 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     def prepare_sample(self, sample: List[str]) -> Dict[str, torch.Tensor]:
-        """Receives a list of strings and applies model specific tokenization and vectorization.
+        """Receives a list of strings and applies tokenization and vectorization.
 
         :param sample: List with text segments to be tokenized and padded.
 
@@ -84,7 +81,7 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def freeze_embeddings(self) -> None:
-        """Frezees the embedding layer of the encoder to save some memory while training."""
+        """Frezees the embedding layer."""
         pass
 
     @abc.abstractmethod
@@ -93,7 +90,7 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         :param lr: Learning rate for the highest encoder layer.
         :param decay: decay percentage for the lower layers.
 
-        :return: List with grouped model parameters with layer-wise decaying learning rate
+        :return: List of model parameters with layer-wise decay learning rate
         """
         pass
 

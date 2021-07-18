@@ -16,8 +16,8 @@
 r"""
 ReferencelessRegression
 ========================
-    Referenceless Regression Metric that learns to predict a quality assessment by looking at  
-source and translation.
+    Referenceless Regression Metric that learns to predict a quality assessment by
+    looking at source and translation.
 """
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -30,8 +30,8 @@ from comet.modules import FeedForward
 class ReferencelessRegression(RegressionMetric):
     """ReferencelessRegression:
 
-    :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
-    :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
+    :param nr_frozen_epochs: Number of epochs (% of epoch) that the encoder is frozen.
+    :param keep_embeddings_frozen: Keeps the encoder frozen during training.
     :param optimizer: Optimizer used during training.
     :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.
     :param learning_rate: Learning rate used to fine-tune the top layers.
@@ -44,9 +44,9 @@ class ReferencelessRegression(RegressionMetric):
     :param batch_size: Batch size used during training.
     :param train_data: Path to a csv file containing the training data.
     :param validation_data: Path to a csv file containing the validation data.
-    :param hidden_sizes: Hidden sizes for the Feed Forward regression on top of the Multilingual Encoder.
-    :param activations: Activation function to be used in the intermediate layers of the Feed Forward Regressor.
-    :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
+    :param hidden_sizes: Hidden sizes for the Feed Forward regression.
+    :param activations: Feed Forward activation function.
+    :param load_weights_from_checkpoint: Path to a checkpoint file.
     """
 
     def __init__(

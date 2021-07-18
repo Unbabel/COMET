@@ -61,13 +61,16 @@ class BERTEncoder(Encoder):
         return BERTEncoder(pretrained_model)
 
     def freeze_embeddings(self) -> None:
-        """Frezees the embedding layer of the network to save some memory while training."""
+        """Frezees the embedding layer."""
         for param in self.model.embeddings.parameters():
             param.requires_grad = False
 
     def layerwise_lr(self, lr: float, decay: float):
         """
-        :return: List with grouped model parameters with layer-wise decaying learning rate
+        :param lr: Learning rate for the highest encoder layer.
+        :param decay: decay percentage for the lower layers.
+
+        :return: List of model parameters with layer-wise decay learning rate
         """
         # Embedding Layer
         opt_parameters = [
@@ -79,10 +82,10 @@ class BERTEncoder(Encoder):
         # All layers
         opt_parameters += [
             {
-                "params": self.model.encoder.layer[l].parameters(),
-                "lr": lr * decay ** l,
+                "params": self.model.encoder.layer[i].parameters(),
+                "lr": lr * decay ** i,
             }
-            for l in range(self.num_layers - 2, 0, -1)
+            for i in range(self.num_layers - 2, 0, -1)
         ]
         return opt_parameters
 
@@ -90,7 +93,10 @@ class BERTEncoder(Encoder):
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor, **kwargs
     ) -> Dict[str, torch.Tensor]:
         last_hidden_states, pooler_output, all_layers = self.model(
-            input_ids, attention_mask, output_hidden_states=True, return_dict=False
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=True,
+            return_dict=False,
         )
         return {
             "sentemb": pooler_output,

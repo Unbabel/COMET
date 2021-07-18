@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" 
+"""
 
 Command for training new Metrics.
 =================================
@@ -23,7 +23,7 @@ e.g:
 
 For more details run the following command:
 ```
-    comet-train --help 
+    comet-train --help
 ```
 """
 import json
@@ -46,7 +46,7 @@ def train_command() -> None:
         "--seed_everything",
         type=int,
         default=12,
-        help="Set to an int to run seed_everything with this value before classes instantiation",
+        help="Training Seed.",
     )
     parser.add_argument("--cfg", action=ActionConfigFile)
     parser.add_class_arguments(CometModel, "model")

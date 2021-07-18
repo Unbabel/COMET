@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" 
+"""
 Command for scoring MT systems.
 ===============================
 
@@ -71,16 +71,16 @@ def score_command() -> None:
     model.eval()
 
     with open(cfg.sources()) as fp:
-        sources = [l.strip() for l in fp.readlines()]
+        sources = [line.strip() for line in fp.readlines()]
 
     with open(cfg.translations()) as fp:
-        translations = [l.strip() for l in fp.readlines()]
+        translations = [line.strip() for line in fp.readlines()]
 
     if "refless" in cfg.model:
         data = {"src": sources, "mt": translations}
     else:
         with open(cfg.references()) as fp:
-            references = [l.strip() for l in fp.readlines()]
+            references = [line.strip() for line in fp.readlines()]
         data = {"src": sources, "mt": translations, "ref": references}
 
     data = [dict(zip(data, t)) for t in zip(*data.values())]

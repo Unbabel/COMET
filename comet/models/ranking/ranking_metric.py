@@ -16,9 +16,11 @@
 r"""
 Ranking Metric
 ====================
-    Translation Ranking metric was introduced by [Rei, et al. 2020](https://aclanthology.org/2020.emnlp-main.213/)
-and it is trained on top of Direct Assessment Relative Ranks (DARR) to encode `good` translations closer to the 
-anchors (source & reference) than `worse`  translations.  
+    Translation Ranking metric was introduced by
+        [Rei, et al. 2020](https://aclanthology.org/2020.emnlp-main.213/)
+    and it is trained on top of Direct Assessment Relative Ranks (DARR) to encode
+    `good` translations closer to the anchors (source & reference) than `worse`
+    translations.
 """
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -34,8 +36,8 @@ from .wmt_kendall import WMTKendall
 class RankingMetric(CometModel):
     """RankingMetric
 
-    :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
-    :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
+    :param nr_frozen_epochs: Number of epochs (% of epoch) that the encoder is frozen.
+    :param keep_embeddings_frozen: Keeps the encoder frozen during training.
     :param optimizer: Optimizer used during training.
     :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.
     :param learning_rate: Learning rate used to fine-tune the top layers.
@@ -48,7 +50,7 @@ class RankingMetric(CometModel):
     :param batch_size: Batch size used during training.
     :param train_data: Path to a csv file containing the training data.
     :param validation_data: Path to a csv file containing the validation data.
-    :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
+    :param load_weights_from_checkpoint: Path to a checkpoint file.
     """
 
     def __init__(
@@ -100,11 +102,7 @@ class RankingMetric(CometModel):
     def configure_optimizers(
         self,
     ) -> Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
-        """
-        Function for setting up the optimizers and the schedulers to be used during training.
-
-        :returns: List with as many optimizers as we need and a list with the respective schedulers.
-        """
+        """Sets the optimizers to be used during training."""
         layer_parameters = self.encoder.layerwise_lr(
             self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
         )
@@ -233,7 +231,8 @@ class RankingMetric(CometModel):
         :param batch: The output of your prepare_sample function.
         :param batch_nb: Integer displaying which batch this is.
 
-        :returns: dictionary containing the loss and the metrics to be added to the lightning logger.
+        :returns: dictionary containing the loss and the metrics to be added to the
+            lightning logger.
         """
         batch_prediction = self.forward(**batch)
         loss_value = batch_prediction["loss"]

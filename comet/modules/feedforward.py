@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-Feed Forward 
+Feed Forward
 ==============
     Feed Forward Neural Network module that can be used for classification or regression
 """

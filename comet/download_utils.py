@@ -18,6 +18,7 @@ import os
 import subprocess
 import urllib.request
 import zipfile
+from typing import List
 from urllib.parse import urlparse
 
 from tqdm import tqdm
@@ -38,28 +39,23 @@ def get_cache_folder():
 
 
 def _reporthook(t):
-    """``reporthook`` to use with ``urllib.request`` that prints the process of the download.
+    """``reporthook`` to use with ``urllib.request`` that prints the
+        process of the download.
 
     Uses ``tqdm`` for progress bar.
 
     **Reference:**
     https://github.com/tqdm/tqdm
 
-    Args:
-        t (tqdm.tqdm) Progress bar.
-
-    Example:
-        >>> with tqdm(unit='B', unit_scale=True, miniters=1, desc=filename) as t:  # doctest: +SKIP
-        ...   urllib.request.urlretrieve(file_url, filename=full_path, reporthook=reporthook(t))
     """
     last_b = [0]
 
-    def inner(b=1, bsize=1, tsize=None):
+    def inner(b: int = 1, bsize: int = 1, tsize: int = None):
         """
-        Args:
-            b (int, optional): Number of blocks just transferred [default: 1].
-            bsize (int, optional): Size of each block (in tqdm units) [default: 1].
-            tsize (int, optional): Total size (in tqdm units). If [default: None] remains unchanged.
+        :param b: Number of blocks just transferred [default: 1].
+        :param bsize: Size of each block (in tqdm units) [default: 1].
+        :param tsize: Total size (in tqdm units).
+            If [default: None] remains unchanged.
         """
         if tsize is not None:
             t.total = tsize
@@ -69,14 +65,13 @@ def _reporthook(t):
     return inner
 
 
-def _maybe_extract(compressed_filename, directory, extension=None):
+def _maybe_extract(compressed_filename: str, directory: str, extension: str = None):
     """Extract a compressed file to ``directory``.
 
-    Args:
-        compressed_filename (str): Compressed file.
-        directory (str): Extract to directory.
-        extension (str, optional): Extension of the file; Otherwise, attempts to extract extension
-            from the filename.
+    :param compressed_filename: Compressed file.
+    :param directory: Extract to directory.
+    :param extension: Extension of the file; Otherwise, attempts to
+        extract extension from the filename.
     """
     logger.info("Extracting {}".format(compressed_filename))
 
@@ -122,25 +117,25 @@ def _check_download(*filepaths):
 
 
 def download_file_maybe_extract(
-    url, directory, filename=None, extension=None, check_files=[]
+    url: str,
+    directory: str,
+    filename: str = None,
+    extension: str = None,
+    check_files: List[str] = [],
 ):
-    """Download the file at ``url`` to ``directory``. Extract to ``directory`` if tar or zip.
+    """Download the file at ``url`` to ``directory``.
+        Extract to ``directory`` if tar or zip.
 
-    Args:
-        url (str or Path): Url of file.
-        directory (str): Directory to download to.
-        filename (str, optional): Name of the file to download; Otherwise, a filename is extracted
-            from the url.
-        extension (str, optional): Extension of the file; Otherwise, attempts to extract extension
-            from the filename.
-        check_files (list of str or Path): Check if these files exist, ensuring the download
-            succeeded. If these files exist before the download, the download is skipped.
+    :param url: Url of file (str or Path).
+    :param directory: Directory to download to.
+    :param filename: Name of the file to download; Otherwise, a filename is extracted
+        from the url.
+    :param extension: Extension of the file; Otherwise, attempts to extract extension
+        from the filename.
+    :param check_files: Check if these files exist, ensuring the download
+        succeeded. If these files exist before the download, the download is skipped.
 
-    Returns:
-        (str): Filename of download file.
-
-    Raises:
-        ValueError: Error if one of the ``check_files`` are not found following the download.
+    :return: Filename of download file.
     """
     if filename is None:
         filename = _get_filename_from_url(url)

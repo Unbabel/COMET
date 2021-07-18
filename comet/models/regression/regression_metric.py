@@ -16,8 +16,8 @@
 r"""
 RegressionMetric
 ========================
-    Regression Metric that learns to predict a quality assessment by looking at.  
-source, translation and reference.
+    Regression Metric that learns to predict a quality assessment by looking
+    at source, translation and reference.
 """
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -32,8 +32,8 @@ from transformers import AdamW
 class RegressionMetric(CometModel):
     """RegressionMetric:
 
-    :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
-    :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
+    :param nr_frozen_epochs: Number of epochs (% of epoch) that the encoder is frozen.
+    :param keep_embeddings_frozen: Keeps the encoder frozen during training.
     :param optimizer: Optimizer used during training.
     :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.
     :param learning_rate: Learning rate used to fine-tune the top layers.
@@ -46,9 +46,9 @@ class RegressionMetric(CometModel):
     :param batch_size: Batch size used during training.
     :param train_data: Path to a csv file containing the training data.
     :param validation_data: Path to a csv file containing the validation data.
-    :param hidden_sizes: Hidden sizes for the Feed Forward regression on top of the Multilingual Encoder.
-    :param activations: Activation function to be used in the intermediate layers of the Feed Forward Regressor.
-    :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
+    :param hidden_sizes: Hidden sizes for the Feed Forward regression.
+    :param activations: Feed Forward activation function.
+    :param load_weights_from_checkpoint: Path to a checkpoint file.
     """
 
     def __init__(
@@ -108,11 +108,7 @@ class RegressionMetric(CometModel):
     def configure_optimizers(
         self,
     ) -> Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
-        """
-        Function for setting up the optimizers and the schedulers to be used during training.
-
-        :returns: List with as many optimizers as we need and a list with the respective schedulers.
-        """
+        """Sets the optimizers to be used during training."""
         layer_parameters = self.encoder.layerwise_lr(
             self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
         )

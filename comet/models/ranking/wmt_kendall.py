@@ -14,10 +14,10 @@
 # limitations under the License.
 
 r"""
-WMT Kendall Tau 
+WMT Kendall Tau
 ====================
-    Kendall Tau like formulation used to measure agreement between relative ranks produced
-by humans and relative ranks produced by metrics.  
+    Kendall Tau like formulation used to measure agreement between relative ranks
+    produced by humans and relative ranks produced by metrics.
 """
 import torch
 from torchmetrics import Metric

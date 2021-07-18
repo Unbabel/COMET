@@ -52,7 +52,10 @@ class XLMREncoder(BERTEncoder):
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor, **kwargs
     ) -> Dict[str, torch.Tensor]:
         last_hidden_states, _, all_layers = self.model(
-            input_ids, attention_mask, output_hidden_states=True, return_dict=False
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=True,
+            return_dict=False,
         )
         return {
             "sentemb": last_hidden_states[:, 0, :],

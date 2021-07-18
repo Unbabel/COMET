@@ -15,8 +15,8 @@
 r"""
 CometModel
 ========================
-    Abstract Model class that implements some of the Pytorch Lightning logic. Extend this
-class to create new model and metrics within COMET.
+    Abstract Model class that implements some of the Pytorch Lightning logic.
+    Extend this class to create new model and metrics within COMET.
 """
 import abc
 import logging
@@ -40,8 +40,8 @@ logger = logging.getLogger(__name__)
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     """CometModel:
 
-    :param nr_frozen_epochs: Number of epochs (% of epoch) that we keep the encoder frozen.
-    :param keep_embeddings_frozen: Flag that keeps the encoder frozen during the entire training.
+    :param nr_frozen_epochs: Number of epochs (% of epoch) that the encoder is frozen.
+    :param keep_embeddings_frozen: Keeps the encoder frozen during training.
     :param optimizer: Optimizer used during training.
     :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.
     :param learning_rate: Learning rate used to fine-tune the top layers.
@@ -54,8 +54,8 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     :param batch_size: Batch size used during training.
     :param train_data: Path to a csv file containing the training data.
     :param validation_data: Path to a csv file containing the validation data.
-    :param load_weights_from_checkpoint: Path to a checkpoint file with weights to be loaded.
-    :param class_identifier: This will be used to identify the model subclass on the hparams.yaml.
+    :param load_weights_from_checkpoint: Path to a checkpoint file.
+    :param class_identifier: subclass identifier.
     """
 
     def __init__(
@@ -343,7 +343,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             )
             self.total_steps = self.epoch_total_steps * float(self.trainer.max_epochs)
 
-            # Always validate the model with 2k examples from training to control overfit.
+            # Always validate the model with 2k examples to control overfit.
             train_subset = np.random.choice(a=len(self.train_dataset), size=2000)
             self.train_subset = Subset(self.train_dataset, train_subset)
             self.init_metrics()
