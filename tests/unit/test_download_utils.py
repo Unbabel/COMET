@@ -24,4 +24,4 @@ class TestDownloadModel(unittest.TestCase):
                 os.path.join(DATA_PATH, "wmt21-small-da-152012/checkpoints/")
             )
         )
-        model = load_from_checkpoint(data_path)
+        load_from_checkpoint(data_path)
