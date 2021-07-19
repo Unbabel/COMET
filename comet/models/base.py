@@ -163,7 +163,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
     @property
     def loss(self) -> None:
-        return nn.MSELoss(reduction="sum")
+        return nn.MSELoss()
 
     def compute_loss(
         self, predictions: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]
@@ -182,10 +182,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
     def on_train_epoch_end(self) -> None:
         """Hook used to unfreeze encoder during training."""
+        self.epoch_nr += 1
         if self.epoch_nr >= self.nr_frozen_epochs and self._frozen:
             self.unfreeze_encoder()
             self._frozen = False
-        self.epoch_nr += 1
 
     def get_sentence_embedding(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
