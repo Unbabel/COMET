@@ -36,7 +36,7 @@ available_metrics = {
 }
 
 
-def load_from_checkpoint(checkpoint_path: str):
+def load_from_checkpoint(checkpoint_path: str) -> CometModel:
     """Loads models from a checkpoint path.
     :param checkpoint_path: Path to a model checkpoint.
 

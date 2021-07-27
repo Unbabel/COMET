@@ -39,6 +39,7 @@ from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
+from pytorch_lightning import seed_everything
 from pytorch_lightning.trainer.trainer import Trainer
 from torch.utils.data import DataLoader
 
@@ -59,8 +60,15 @@ def score_command() -> None:
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument("--mc_dropout", type=Union[bool, int], default=False)
+    parser.add_argument(
+        "--seed_everything",
+        help="Prediction seed.",
+        type=int,
+        default=12,
+    )
     cfg = parser.parse_args()
-
+    seed_everything(cfg.seed_everything)
+    
     if (cfg.references is None) and ("refless" not in cfg.model):
         parser.error("{} requires -r/--references.".format(cfg.model))
 
