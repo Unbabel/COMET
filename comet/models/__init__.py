@@ -29,7 +29,12 @@ str2model = {
 }
 
 available_metrics = {
-    "wmt21-small-da-152012": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-small-da-152012.tar.gz"
+    "wmt21-comet-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-mqm.tar.gz",
+    "refless-wmt21-comet-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/refless-wmt21-comet-mqm.tar.gz",
+    "wmt21-cometinho-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-mqm.tar.gz",
+    "wmt21-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-da.tar.gz",
+    "refless-wmt21-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/refless-wmt21-comet-da.tar.gz",
+    "wmt21-cometinho-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-da.tar.gz",
 }
 
 
