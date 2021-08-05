@@ -72,7 +72,7 @@ from pytorch_lightning.trainer.trainer import Trainer
 from torch.utils.data import DataLoader
 
 model = load_from_checkpoint(
-  download_model("wmt21-small-da-152012")
+  download_model("wmt21-cometinho-mqm")
 )
 data = [
     {
