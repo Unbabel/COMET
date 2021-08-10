@@ -54,7 +54,7 @@ def score_command() -> None:
         "--model",
         type=Union[str, Path_fr],
         required=False,
-        default="wmt21-large-da-1520",
+        default="wmt20-comet-da",
         choices=available_metrics.keys(),
     )
     parser.add_argument("--batch_size", type=int, default=8)

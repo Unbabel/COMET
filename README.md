@@ -8,7 +8,6 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-
 ## Quick Installation
 
 Detailed usage examples and instructions can be found in the [Full Documentation](https://unbabel.github.io/COMET/html/index.html).
@@ -41,10 +40,10 @@ echo -e "They were able to control the fire.\nSchools and kindergartens opened" 
 comet-score -s src.de -t hyp.en -r ref.en
 ```
 
-You can select another model/metric with the --model flag and for reference-less (QE-as-a-metric) models you dont need to pass a reference.
+You can select another model/metric with the --model flag and for reference-free (QE-as-a-metric) models you don't need to pass a reference.
 
 ```bash
-comet-score -s src.de -t hyp.en -r ref.en --model refless-wmt21-large-da-1520
+comet-score -s src.de -t hyp.en -r ref.en --model wmt21-comet-qe-da
 ```
 
 Following the work on [Uncertainty-Aware MT Evaluation]() you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric as less confidence is that prediction.
@@ -72,7 +71,7 @@ from pytorch_lightning.trainer.trainer import Trainer
 from torch.utils.data import DataLoader
 
 model = load_from_checkpoint(
-  download_model("wmt21-small-da-152012")
+  download_model("wmt20-comet-da")
 )
 data = [
     {
@@ -108,14 +107,26 @@ predictions = torch.cat(predictions, dim=0).tolist()
 
 | Model              |               Description                        |
 | :--------------------- | :------------------------------------------------ |
-| ↑`wmt21-large-da-1520` | **RECOMMENDED:** Regression model build on top of XLM-R (large) trained on DA from WMT15, to WMT20 |
-| ↑`wmt21-small-da-152012` | Same as the model above but trained on a small version of XLM-R that was distilled from XLM-R large |
+| `wmt20-comet-da` | **DEFAULT:** Regression model build on top of XLM-R (large) trained on DA from WMT17, to WMT19. This model was presented at the WMT20 Metrics shared task: [rei et al, 2020](https://aclanthology.org/2020.wmt-1.101.pdf). |
+| `emnlp20-comet-rank` | Translation Ranking model build on top of XLM-R (base) trained with DARR from WMT17 and WMT18. This model was presented at EMNLP20: [rei et al, 2020](https://aclanthology.org/2020.emnlp-main.213.pdf). |
+| `wmt21-comet-da` | Regression model build on top of XLM-R (large) trained on DA from WMT15, to WMT20. This model was presented at the WMT21 Metrics shared task. |
+| `wmt21-comet-mqm` | Regression model build on top of XLM-R (large) trained to maximize correlation with MQM annotations from [freitag et al, 2020](https://arxiv.org/pdf/2104.14478.pdf). |
 
-#### QE-as-a-metric:
+### QE-as-a-metric:
+The following models can be used to assess translation quality without the need of references! 
 
 | Model              |               Description                        |
 | -------------------- | -------------------------------- |
-| `refless-wmt21-large-da-1520` | Reference-less model trained on top of XLM-R large with DAs from WMT15 to WMT20. |
+| `wmt21-comet-qe-da` | Reference-free Regression model build on top of XLM-R (large) trained on DA from WMT15, to WMT20. This model was presented at the WMT21 Metrics shared task. |
+| `wmt21-comet-qe-mqm` | Reference-free Regression model build on top of XLM-R (large) trained to maximize correlation with MQM annotations from [freitag et al, 2020](https://arxiv.org/pdf/2104.14478.pdf). |
+
+### Lightweight models:
+One of the remaining redeeming qualities of automated metrics such as BLEU is that they are incredibly lightweight. For that reason we have been developing COMETinho's, lightweight versions of the previous models.
+
+| Model              |               Description                        |
+| :--------------------- | :------------------------------------------------ |
+| `wmt21-cometinho-da` | Regression model build on top of XLM-R (large) trained on DA from WMT15, to WMT20. This model was presented at the WMT21 Metrics shared task. |
+| `wmt21-cometinho-mqm` | Regression model build on top of XLM-R (large) trained to maximize correlation with MQM annotations from [freitag et al, 2020](https://arxiv.org/pdf/2104.14478.pdf). |
 
 ## Train your own Metric: 
 
@@ -141,49 +152,6 @@ coverage report -m
 
 ## Publications
 
-```
-@inproceedings{rei-etal-2020-comet,
-    title = "{COMET}: A Neural Framework for {MT} Evaluation",
-    author = "Rei, Ricardo  and
-      Stewart, Craig  and
-      Farinha, Ana C  and
-      Lavie, Alon",
-    booktitle = "Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)",
-    month = nov,
-    year = "2020",
-    address = "Online",
-    publisher = "Association for Computational Linguistics",
-    url = "https://www.aclweb.org/anthology/2020.emnlp-main.213",
-    pages = "2685--2702",
-}
-```
-
-```
-@inproceedings{rei-EtAl:2020:WMT,
-  author    = {Rei, Ricardo  and  Stewart, Craig  and  Farinha, Ana C  and  Lavie, Alon},
-  title     = {Unbabel's Participation in the WMT20 Metrics Shared Task},
-  booktitle      = {Proceedings of the Fifth Conference on Machine Translation},
-  month          = {November},
-  year           = {2020},
-  address        = {Online},
-  publisher      = {Association for Computational Linguistics},
-  pages     = {909--918},
-}
-```
-
-```
-@inproceedings{stewart-etal-2020-comet,
-    title = "{COMET} - Deploying a New State-of-the-art {MT} Evaluation Metric in Production",
-    author = "Stewart, Craig  and
-      Rei, Ricardo  and
-      Farinha, Catarina  and
-      Lavie, Alon",
-    booktitle = "Proceedings of the 14th Conference of the Association for Machine Translation in the Americas (Volume 2: User Track)",
-    month = oct,
-    year = "2020",
-    address = "Virtual",
-    publisher = "Association for Machine Translation in the Americas",
-    url = "https://www.aclweb.org/anthology/2020.amta-user.4",
-    pages = "78--109",
-}
-```
+- [COMET: A Neural Framework for MT Evaluation](https://www.aclweb.org/anthology/2020.emnlp-main.213)
+- [Unbabel's Participation in the WMT20 Metrics Shared Task](https://aclanthology.org/2020.wmt-1.101/)
+- [COMET - Deploying a New State-of-the-art MT Evaluation Metric in Production](https://www.aclweb.org/anthology/2020.amta-user.4)
