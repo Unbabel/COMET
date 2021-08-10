@@ -108,7 +108,7 @@ predictions = torch.cat(predictions, dim=0).tolist()
 
 | Model              |               Description                        |
 | :--------------------- | :------------------------------------------------ |
-| `wmt20-comet-da` | **DEFAULT:** Regression model build on top of XLM-R (large) trained on DA from WMT17, to WMT19. This model was presented at the WMT20 Metrics shared task: [rei et al, 2020](https://aclanthology.org/2020.wmt-1.101.pdf). |
+| `wmt20-comet-da` | **DEFAULT:** Regression model build on top of XLM-R (large) trained on DA from WMT17, to WMT19. This model was presented at the WMT20 Metrics shared task: [rei et al, 2020](https://aclanthology.org/2020.wmt-1.101.pdf). Same as `wmt-large-da-estimator-1719` from previous versions. |
 | `emnlp20-comet-rank` | Translation Ranking model build on top of XLM-R (base) trained with DARR from WMT17 and WMT18. This model was presented at EMNLP20: [rei et al, 2020](https://aclanthology.org/2020.emnlp-main.213.pdf). |
 | `wmt21-comet-da` | Regression model build on top of XLM-R (large) trained on DA from WMT15, to WMT20. This model was presented at the WMT21 Metrics shared task. |
 | `wmt21-comet-mqm` | Regression model build on top of XLM-R (large) trained to maximize correlation with MQM annotations from [freitag et al, 2020](https://arxiv.org/pdf/2104.14478.pdf). |

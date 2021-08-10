@@ -21,10 +21,3 @@ jobs:
           python -m pip install --upgrade pip
           pip install scikit-learn==0.24 scipy==1.5
           pip install -r requirements.txt
-      #- name: Testing
-      #  run: |
-      #    pip install coverage
-      #    coverage run --source=comet -m unittest discover
-      #- name: Coverage Report
-      #  run: |
-      #    coverage report -m
