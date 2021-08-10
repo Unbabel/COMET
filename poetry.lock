@@ -670,7 +670,7 @@ numpy = "*"
 
 [[package]]
 name = "torchmetrics"
-version = "0.4.1"
+version = "0.5.0"
 description = "PyTorch native Metrics"
 category = "main"
 optional = false
@@ -682,7 +682,9 @@ packaging = "*"
 torch = ">=1.3.1"
 
 [package.extras]
+all = ["scipy", "torchvision", "torch-fidelity", "jiwer (>=2.2.0)", "nltk (>=3.6)", "rouge-score (>=0.0.4)", "bert-score (==0.3.10)"]
 image = ["scipy", "torchvision", "torch-fidelity"]
+text = ["jiwer (>=2.2.0)", "nltk (>=3.6)", "rouge-score (>=0.0.4)", "bert-score (==0.3.10)"]
 
 [[package]]
 name = "tqdm"
@@ -817,7 +819,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6.1"
-content-hash = "71f7ec51d316b9f815be69b55b179204f5f44f1acb009003e4b6004741995c6a"
+content-hash = "069b77a786b7f8f095b2f3c7583cc92620a1253bda4e1800b51d6adad7fbb359"
 
 [metadata.files]
 absl-py = [
@@ -1475,8 +1477,8 @@ torch = [
     {file = "torch-1.6.0-cp38-none-macosx_10_9_x86_64.whl", hash = "sha256:4f9a4ad7947cef566afb0a323d99009fe8524f0b0f2ca1fb7ad5de0400381a5b"},
 ]
 torchmetrics = [
-    {file = "torchmetrics-0.4.1-py3-none-any.whl", hash = "sha256:70c83f0fc804a4fe00a9e72dbd2960ff76e39ef62570a19bbdce0c15a1ee0d71"},
-    {file = "torchmetrics-0.4.1.tar.gz", hash = "sha256:2fc50f812210c33b8c2649dbb1482e3c47e93cae33e4b3d0427fb830384effbd"},
+    {file = "torchmetrics-0.5.0-py3-none-any.whl", hash = "sha256:5c6cfacbc127f53ae37c563d802a1dbfe5132e99865048c2bf5e1878e2a126d0"},
+    {file = "torchmetrics-0.5.0.tar.gz", hash = "sha256:b03e348a386d8e96a52695d37943ab279a8912ef2c4002770be68b97cab855d9"},
 ]
 tqdm = [
     {file = "tqdm-4.61.2-py2.py3-none-any.whl", hash = "sha256:5aa445ea0ad8b16d82b15ab342de6b195a722d75fc1ef9934a46bba6feafbc64"},
