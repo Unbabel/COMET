@@ -68,7 +68,7 @@ def score_command() -> None:
     )
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
-    
+
     if (cfg.references is None) and ("refless" not in cfg.model):
         parser.error("{} requires -r/--references.".format(cfg.model))
 
