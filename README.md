@@ -14,8 +14,9 @@ Detailed usage examples and instructions can be found in the [Full Documentation
 
 Simple installation from PyPI
 
+Pre-release of version 1.0:
 ```bash
-pip install unbabel-comet
+pip install unbabel-comet==1.0.0rc2
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
