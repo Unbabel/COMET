@@ -82,11 +82,19 @@ def _maybe_extract(compressed_filename: str, directory: str, extension: str = No
     if "zip" in extension:
         with zipfile.ZipFile(compressed_filename, "r") as zip_:
             zip_.extractall(directory)
+
     elif "tar.gz" in extension or "tgz" in extension:
         # `tar` is much faster than python's `tarfile` implementation
-        subprocess.call(["tar", "-C", directory, "-zxvf", compressed_filename])
+        with open(os.devnull, "w") as devnull:
+            subprocess.call(
+                ["tar", "-C", directory, "-zxvf", compressed_filename], stdout=devnull
+            )
+
     elif "tar" in extension:
-        subprocess.call(["tar", "-C", directory, "-xvf", compressed_filename])
+        with open(os.devnull, "w") as devnull:
+            subprocess.call(
+                ["tar", "-C", directory, "-xvf", compressed_filename], stdout=devnull
+            )
 
     logger.info("Extracted {}".format(compressed_filename))
 

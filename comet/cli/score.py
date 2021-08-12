@@ -32,6 +32,7 @@ optional arguments:
 """
 import json
 import multiprocessing
+import sys
 from typing import Union
 
 import torch
@@ -40,8 +41,27 @@ from comet.models import available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
+from pytorch_lightning.callbacks import ProgressBar
 from pytorch_lightning.trainer.trainer import Trainer
 from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+
+class PredictProgressBar(ProgressBar):
+    """Default Lightning Progress bar writes to stdout, we replace stdout with stderr"""
+
+    def init_predict_tqdm(self) -> tqdm:
+        bar = tqdm(
+            desc="Predicting",
+            initial=self.train_batch_idx,
+            position=(2 * self.process_position),
+            disable=self.is_disabled,
+            leave=True,
+            dynamic_ncols=True,
+            file=sys.stderr,
+            smoothing=0,
+        )
+        return bar
 
 
 def score_command() -> None:
@@ -98,7 +118,10 @@ def score_command() -> None:
         collate_fn=lambda x: model.prepare_sample(x, inference=True),
         num_workers=multiprocessing.cpu_count(),
     )
-    trainer = Trainer(gpus=cfg.gpus, deterministic=True, logger=False)
+    prog_bar = PredictProgressBar()
+    trainer = Trainer(
+        gpus=cfg.gpus, deterministic=True, logger=False, callbacks=[prog_bar]
+    )
 
     if cfg.mc_dropout:
         model.set_mc_dropout(cfg.mc_dropout)
