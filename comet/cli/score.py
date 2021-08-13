@@ -31,37 +31,13 @@ optional arguments:
 
 """
 import json
-import multiprocessing
-import sys
 from typing import Union
 
-import torch
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
-from pytorch_lightning.callbacks import ProgressBar
-from pytorch_lightning.trainer.trainer import Trainer
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-
-
-class PredictProgressBar(ProgressBar):
-    """Default Lightning Progress bar writes to stdout, we replace stdout with stderr"""
-
-    def init_predict_tqdm(self) -> tqdm:
-        bar = tqdm(
-            desc="Predicting",
-            initial=self.train_batch_idx,
-            position=(2 * self.process_position),
-            disable=self.is_disabled,
-            leave=True,
-            dynamic_ncols=True,
-            file=sys.stderr,
-            smoothing=0,
-        )
-        return bar
 
 
 def score_command() -> None:
@@ -112,49 +88,28 @@ def score_command() -> None:
         data = {"src": sources, "mt": translations, "ref": references}
 
     data = [dict(zip(data, t)) for t in zip(*data.values())]
-    dataloader = DataLoader(
-        dataset=data,
-        batch_size=cfg.batch_size,
-        collate_fn=lambda x: model.prepare_sample(x, inference=True),
-        num_workers=multiprocessing.cpu_count(),
-    )
-    prog_bar = PredictProgressBar()
-    trainer = Trainer(
-        gpus=cfg.gpus, deterministic=True, logger=False, callbacks=[prog_bar]
-    )
-
     if cfg.mc_dropout:
-        model.set_mc_dropout(cfg.mc_dropout)
-        predictions = trainer.predict(
-            model, dataloaders=dataloader, return_predictions=True
+        mean_scores, std_scores, sys_score = model.predict(
+            data, cfg.batch_size, cfg.gpus, cfg.mc_dropout
         )
-        mean_scores = [out[0] for out in predictions]
-        std_scores = [out[1] for out in predictions]
-        mean_scores = torch.cat(mean_scores, dim=0).tolist()
-        std_scores = torch.cat(std_scores, dim=0).tolist()
-
         for i, (mean, std, sample) in enumerate(zip(mean_scores, std_scores, data)):
-            print("Segment {}\tscore: {:.3f}\tvariance: {:.3f}".format(i, mean, std))
+            print("Segment {}\tscore: {:.4f}\tvariance: {:.4f}".format(i, mean, std))
             sample["COMET"] = mean
             sample["variance"] = std
 
-        print("System score: {:.3f}".format(sum(mean_scores) / len(mean_scores)))
+        print("System score: {:.4f}".format(sys_score))
         if isinstance(cfg.to_json, str):
             with open(cfg.to_json, "w") as outfile:
                 json.dump(data, outfile, ensure_ascii=False, indent=4)
             print("Predictions saved in: {}.".format(cfg.to_json))
 
     else:
-        predictions = trainer.predict(
-            model, dataloaders=dataloader, return_predictions=True
-        )
-        predictions = torch.cat(predictions, dim=0).tolist()
-
+        predictions, sys_score = model.predict(data, cfg.batch_size, cfg.gpus)
         for i, (score, sample) in enumerate(zip(predictions, data)):
-            print("Segment {}\tscore: {:.3f}".format(i, score))
+            print("Segment {}\tscore: {:.4f}".format(i, score))
             sample["COMET"] = score
 
-        print("System score: {:.3f}".format(sum(predictions) / len(predictions)))
+        print("System score: {:.4f}".format(sys_score))
         if isinstance(cfg.to_json, str):
             with open(cfg.to_json, "w") as outfile:
                 json.dump(data, outfile, ensure_ascii=False, indent=4)

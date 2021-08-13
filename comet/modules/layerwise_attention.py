@@ -99,7 +99,14 @@ class LayerwiseAttention(torch.nn.Module):
             )
             return (tensor - mean) / torch.sqrt(variance + 1e-12)
 
-        weights = torch.cat([parameter for parameter in self.scalar_parameters])
+        # BUG: Pytorch bug fix when Parameters are not well copied across GPUs
+        # https://github.com/pytorch/pytorch/issues/36035
+        if len([parameter for parameter in self.scalar_parameters]) != self.num_layers:
+            weights = torch.tensor(self.weights, device=tensors[0].device)
+            gamma = torch.tensor(self.gamma_value, device=tensors[0].device)
+        else:
+            weights = torch.cat([parameter for parameter in self.scalar_parameters])
+            gamma = self.gamma
 
         if self.training and self.dropout:
             weights = torch.where(
@@ -113,7 +120,7 @@ class LayerwiseAttention(torch.nn.Module):
             pieces = []
             for weight, tensor in zip(normed_weights, tensors):
                 pieces.append(weight * tensor)
-            return self.gamma * sum(pieces)
+            return gamma * sum(pieces)
 
         else:
             mask_float = mask.float()
@@ -127,4 +134,4 @@ class LayerwiseAttention(torch.nn.Module):
                     weight
                     * _layer_norm(tensor, broadcast_mask, num_elements_not_masked)
                 )
-            return self.gamma * sum(pieces)
+            return gamma * sum(pieces)

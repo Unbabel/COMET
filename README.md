@@ -66,14 +66,10 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 COMET implements the [Pytorch-Lightning model interface](https://pytorch-lightning.readthedocs.io/en/1.3.8/common/lightning_module.html) which means that you'll need to initialize a trainer in order to run inference.
 
 ```python
-import torch
 from comet import download_model, load_from_checkpoint
-from pytorch_lightning.trainer.trainer import Trainer
-from torch.utils.data import DataLoader
 
-model = load_from_checkpoint(
-  download_model("wmt20-comet-da")
-)
+model_path = download_model("wmt20-comet-da")
+model = load_from_checkpoint(model_path)
 data = [
     {
         "src": "Dem Feuer konnte Einhalt geboten werden",
@@ -86,18 +82,7 @@ data = [
         "ref": "Schools and kindergartens opened"
     }
 ]
-data = [dict(zip(data, t)) for t in zip(*data.values())]
-dataloader = DataLoader(
-  dataset=data,
-  batch_size=16,
-  collate_fn=lambda x: model.prepare_sample(x, inference=True),
-  num_workers=4,
-)
-trainer = Trainer(gpus=1, deterministic=True, logger=False)
-predictions = trainer.predict(
-  model, dataloaders=dataloader, return_predictions=True
-)
-predictions = torch.cat(predictions, dim=0).tolist()
+predictions, system_score = model.predict(data, batch_size=8, gpus=1)
 ```
 
 **Note:** Using the python interface you will get a list of segment-level scores. You can obtain the corpus-level score by averaging the segment-level scores
@@ -133,7 +118,7 @@ One of the remaining redeeming qualities of automated metrics such as BLEU is th
 
 Instead of using pretrained models your can train your own model with the following command:
 ```bash
-comet-train -cfg configs/models/{your_model_config}.yaml
+comet-train --cfg configs/models/{your_model_config}.yaml
 ```
 
 ### Tensorboard:

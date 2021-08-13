@@ -21,6 +21,7 @@ CometModel
 import abc
 import logging
 import multiprocessing
+import sys
 from os import path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -31,6 +32,7 @@ from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
 from torch import nn
 from torch.utils.data import DataLoader, RandomSampler, Subset
+from tqdm import tqdm
 
 from .pooling_utils import average_pooling, max_pooling
 
@@ -200,9 +202,24 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         """
         encoder_out = self.encoder(input_ids, attention_mask)
         if self.layerwise_attention:
-            embeddings = self.layerwise_attention(
-                encoder_out["all_layers"], attention_mask
-            )
+            # HACK: LayerNorm is applied at the MiniBatch. This means that for big batch sizes the variance
+            # and norm within the batch will create small differences in the final score
+            # If we are predicting we split the data into equal size batches to minimize this variance.
+            if not self.training:
+                n_splits = len(torch.split(encoder_out["all_layers"][-1], 8))
+                embeddings = []
+                for split in range(n_splits):
+                    all_layers = []
+                    for layer in range(len(encoder_out["all_layers"])):
+                        layer_embs = torch.split(encoder_out["all_layers"][layer], 8)
+                        all_layers.append(layer_embs[split])
+                    split_attn = torch.split(attention_mask, 8)[split]
+                    embeddings.append(self.layerwise_attention(all_layers, split_attn))
+                embeddings = torch.vstack(embeddings)
+            else:
+                embeddings = self.layerwise_attention(
+                    encoder_out["all_layers"], attention_mask
+                )
 
         elif self.hparams.layer >= 0 and self.hparams.layer < self.encoder.num_layers:
             embeddings = encoder_out["all_layers"][self.hparams.layer]
@@ -374,3 +391,84 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 num_workers=min(8, multiprocessing.cpu_count()),
             ),
         ]
+
+    def predict(
+        self,
+        samples: List[Dict[str, str]],
+        batch_size: int = 8,
+        gpus: int = 1,
+        mc_dropout: Union[int, bool] = False,
+    ) -> Union[Tuple[List[float], float], Tuple[List[float], List[float], float]]:
+        """Function that receives a list of samples (dictionaries with translations, sources and/or references)
+        and returns segment level scores and a system level score. If `mc_dropout` is set, it also returns for each
+        segment score, a confidence value.
+
+        :param samples: List with dictionaries with source, translations and/or references.
+        :param batch_size: Batch size used during inference.
+        :gpus: Number of GPUs to be used.
+
+        :return: List with segment-level scores and a system-score or segment-level scores, segment-level
+            confidence and a system-score.
+        """
+
+        class PredictProgressBar(ptl.callbacks.ProgressBar):
+            """Default Lightning Progress bar writes to stdout, we replace stdout with stderr"""
+
+            def init_predict_tqdm(self) -> tqdm:
+                bar = tqdm(
+                    desc="Predicting",
+                    initial=self.train_batch_idx,
+                    position=(2 * self.process_position),
+                    disable=self.is_disabled,
+                    leave=True,
+                    dynamic_ncols=True,
+                    file=sys.stderr,
+                    smoothing=0,
+                )
+                return bar
+
+        # HACK: Workaround pytorch bug that prevents ParameterList to be used in DP
+        # https://github.com/pytorch/pytorch/issues/36035
+        if self.layerwise_attention is not None and gpus > 1:
+            self.layerwise_attention.gamma_value = float(
+                self.layerwise_attention.gamma[0]
+            )
+            self.layerwise_attention.weights = [
+                float(parameter[0])
+                for parameter in self.layerwise_attention.scalar_parameters
+            ]
+
+        self.eval()
+        dataloader = DataLoader(
+            dataset=samples,
+            batch_size=batch_size,
+            collate_fn=lambda x: self.prepare_sample(x, inference=True),
+            num_workers=multiprocessing.cpu_count(),
+        )
+
+        prog_bar = PredictProgressBar()
+        trainer = ptl.Trainer(
+            gpus=gpus,
+            deterministic=True,
+            logger=False,
+            callbacks=[prog_bar],
+            accelerator="dp" if gpus > 1 else None,
+        )
+
+        if mc_dropout:
+            self.set_mc_dropout(mc_dropout)
+            predictions = trainer.predict(
+                self, dataloaders=dataloader, return_predictions=True
+            )
+            mean_scores = [out[0] for out in predictions]
+            std_scores = [out[1] for out in predictions]
+            mean_scores = torch.cat(mean_scores, dim=0).tolist()
+            std_scores = torch.cat(std_scores, dim=0).tolist()
+            return mean_scores, std_scores, sum(mean_scores) / len(mean_scores)
+
+        else:
+            predictions = trainer.predict(
+                self, dataloaders=dataloader, return_predictions=True
+            )
+            predictions = torch.cat(predictions, dim=0).tolist()
+            return predictions, sum(predictions) / len(predictions)
