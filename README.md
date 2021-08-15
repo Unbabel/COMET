@@ -85,34 +85,20 @@ data = [
 predictions, system_score = model.predict(data, batch_size=8, gpus=1)
 ```
 
-**Note:** Using the python interface you will get a list of segment-level scores. You can obtain the corpus-level score by averaging the segment-level scores
-
 ## Model Zoo:
 
 | Model              |               Description                        |
 | :--------------------- | :------------------------------------------------ |
 | `wmt20-comet-da` | **DEFAULT:** Regression model build on top of XLM-R (large) trained on DA from WMT17, to WMT19. This model was presented at the WMT20 Metrics shared task: [rei et al, 2020](https://aclanthology.org/2020.wmt-1.101.pdf). Same as `wmt-large-da-estimator-1719` from previous versions. |
 | `emnlp20-comet-rank` | Translation Ranking model build on top of XLM-R (base) trained with DARR from WMT17 and WMT18. This model was presented at EMNLP20: [rei et al, 2020](https://aclanthology.org/2020.emnlp-main.213.pdf). |
-| `wmt21-comet-da` | Regression model build on top of XLM-R (large) trained on DA from WMT15, to WMT20. This model was presented at the WMT21 Metrics shared task. |
-| `wmt21-comet-mqm` | Regression model build on top of XLM-R (large) trained to maximize correlation with MQM annotations from [freitag et al, 2020](https://arxiv.org/pdf/2104.14478.pdf). |
 
 **Note:** Scores between models are not comparable! each model learns its own distribution and the scale might differ.
 
 ### QE-as-a-metric:
-The following models can be used to assess translation quality without the need of references! 
-
-| Model              |               Description                        |
-| -------------------- | -------------------------------- |
-| `wmt21-comet-qe-da` | Reference-free Regression model build on top of XLM-R (large) trained on DA from WMT15, to WMT20. This model was presented at the WMT21 Metrics shared task. |
-| `wmt21-comet-qe-mqm` | Reference-free Regression model build on top of XLM-R (large) trained to maximize correlation with MQM annotations from [freitag et al, 2020](https://arxiv.org/pdf/2104.14478.pdf). |
+TODO
 
 ### Lightweight models:
-One of the remaining redeeming qualities of automated metrics such as BLEU is that they are incredibly lightweight. For that reason we have been developing COMETinho's, lightweight versions of the previous models.
-
-| Model              |               Description                        |
-| :--------------------- | :------------------------------------------------ |
-| `wmt21-cometinho-da` | Regression model build on top of XLM-R (large) trained on DA from WMT15, to WMT20. This model was presented at the WMT21 Metrics shared task. |
-| `wmt21-cometinho-mqm` | Regression model build on top of XLM-R (large) trained to maximize correlation with MQM annotations from [freitag et al, 2020](https://arxiv.org/pdf/2104.14478.pdf). |
+TODO
 
 ## Train your own Metric: 
 
