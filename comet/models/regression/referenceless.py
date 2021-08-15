@@ -67,6 +67,7 @@ class ReferencelessRegression(RegressionMetric):
         validation_data: Optional[str] = None,
         hidden_sizes: List[int] = [1024],
         activations: str = "Tanh",
+        final_activation: Optional[str] = None,
         load_weights_from_checkpoint: Optional[str] = None,
     ) -> None:
         super(RegressionMetric, self).__init__(
@@ -94,6 +95,7 @@ class ReferencelessRegression(RegressionMetric):
             hidden_sizes=self.hparams.hidden_sizes,
             activations=self.hparams.activations,
             dropout=self.hparams.dropout,
+            final_activation=self.hparams.final_activation,
         )
 
     def prepare_sample(
