@@ -69,6 +69,7 @@ class RegressionMetric(CometModel):
         validation_data: Optional[str] = None,
         hidden_sizes: List[int] = [2304, 768],
         activations: str = "Tanh",
+        final_activation: Optional[str] = None,
         load_weights_from_checkpoint: Optional[str] = None,
     ) -> None:
         super().__init__(
@@ -96,6 +97,7 @@ class RegressionMetric(CometModel):
             hidden_sizes=self.hparams.hidden_sizes,
             activations=self.hparams.activations,
             dropout=self.hparams.dropout,
+            final_activation=self.hparams.final_activation,
         )
 
     def init_metrics(self):
