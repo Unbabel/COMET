@@ -82,36 +82,25 @@ data = [
         "ref": "Schools and kindergartens opened"
     }
 ]
-predictions, system_score = model.predict(data, batch_size=8, gpus=1)
+seg_scores, sys_score = model.predict(data, batch_size=8, gpus=1)
 ```
 
-## Model Zoo:
+## COMET Models:
 
-| Model              |               Description                        |
-| :--------------------- | :------------------------------------------------ |
-| `wmt20-comet-da` | **RECOMMENDED:** Regression model build on top of XLM-R (large) trained on DA from WMT17, to WMT19. This model was presented at the WMT20 Metrics shared task: [rei et al, 2020](https://aclanthology.org/2020.wmt-1.101.pdf). Same as `wmt-large-da-estimator-1719` from previous versions. |
-| `emnlp20-comet-rank` | Translation Ranking model build on top of XLM-R (base) trained with DARR from WMT17 and WMT18. This model was presented at EMNLP20: [rei et al, 2020](https://aclanthology.org/2020.emnlp-main.213.pdf). |
+We recommend the two following models to evaluate your translations:
 
-**Note:** Scores between models are not comparable! each model learns its own distribution and the scale might differ.
+- `wmt20-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. 
+- `wmt20-comet-qe-da`: **Reference-FREE** Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. 
 
-### QE-as-a-metric:
+This two models were developed to participate on the WMT20 Metrics shared task [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf). This two metric/models are to the date, the best performing metrics at segment-level in the MQM data released recently by Google [(Freitag et al. 2020)](https://arxiv.org/pdf/2104.14478.pdf). Also, in a large-scale study performed by Microsoft Research this two metrics ranked 1st and 2nd in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf).
 
-| Model              |               Description                        |
-| :--------------------- | :------------------------------------------------ |
-| `wmt20-comet-qe-da` | Reference-free Regression model build on top of XLM-R (large) trained on DA from WMT17, to WMT19. This model was presented at the WMT20 Metrics shared task: [rei et al, 2020](https://aclanthology.org/2020.wmt-1.101.pdf). Same as `wmt-large-qe-estimator-1719` from previous versions. |
+For more information about the available COMET models we invite you to read our metrics descriptions [here](METRICS.md)
 
 ## Train your own Metric: 
 
 Instead of using pretrained models your can train your own model with the following command:
 ```bash
 comet-train --cfg configs/models/{your_model_config}.yaml
-```
-
-### Tensorboard:
-
-Launch tensorboard with:
-```bash
-tensorboard --logdir="lightning_logs/"
 ```
 
 ## unittest:
