@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "unbabel-comet"
-version = "1.0.0rc3"
+version = "1.0.0rc4"
 description = "High-quality Machine Translation Evaluation"
 authors = ["Ricardo Rei, Craig Stewart, Catarina Farinha, Alon Lavie"]
 license = "Apache-2.0"
@@ -32,6 +32,7 @@ include = [
 [tool.poetry.scripts]
 comet-train = 'comet.cli.train:train_command'
 comet-score = 'comet.cli.score:score_command'
+comet-compare = 'comet.cli.compare:compare_command'
 
 [tool.poetry.dependencies]
 python = "^3.6.1"

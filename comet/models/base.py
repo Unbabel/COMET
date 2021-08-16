@@ -215,7 +215,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                         all_layers.append(layer_embs[split])
                     split_attn = torch.split(attention_mask, 8)[split]
                     embeddings.append(self.layerwise_attention(all_layers, split_attn))
-                embeddings = torch.cat(embeddings, dim=1)
+                embeddings = torch.cat(embeddings, dim=0)
             else:
                 embeddings = self.layerwise_attention(
                     encoder_out["all_layers"], attention_mask

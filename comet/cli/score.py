@@ -45,17 +45,28 @@ def score_command() -> None:
     parser.add_argument("-s", "--sources", type=Path_fr, required=True)
     parser.add_argument("-t", "--translations", type=Path_fr, required=True)
     parser.add_argument("-r", "--references", type=Path_fr)
-    parser.add_argument("--to_json", type=Union[bool, str], default=False)
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--gpus", type=int, default=1)
+    parser.add_argument(
+        "--to_json",
+        type=Union[bool, str],
+        default=False,
+        help="Exports results to a json file.",
+    )
     parser.add_argument(
         "--model",
         type=Union[str, Path_fr],
         required=False,
         default="wmt20-comet-da",
         choices=available_metrics.keys(),
+        help="COMET model to be used.",
     )
-    parser.add_argument("--batch_size", type=int, default=8)
-    parser.add_argument("--gpus", type=int, default=1)
-    parser.add_argument("--mc_dropout", type=Union[bool, int], default=False)
+    parser.add_argument(
+        "--mc_dropout",
+        type=Union[bool, int],
+        default=False,
+        help="Number of inference runs for each sample in MC Dropout.",
+    )
     parser.add_argument(
         "--seed_everything",
         help="Prediction seed.",
