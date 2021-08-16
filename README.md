@@ -98,7 +98,7 @@ We recommend the two following models to evaluate your translations:
 - `wmt20-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-da-estimator-1719` from previous versions.
 - `wmt20-comet-qe-da`: **Reference-FREE** Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-qe-estimator-1719` from previous versions.
 
-This two models were developed to participate on the WMT20 Metrics shared task [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf). This two metric/models are to the date, the best performing metrics at segment-level in the MQM data released recently by Google [(Freitag et al. 2020)](https://arxiv.org/pdf/2104.14478.pdf). Also, in a large-scale study performed by Microsoft Research this two metrics ranked 1st and 2nd in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf).
+These two models were developed to participate on the WMT20 Metrics shared task [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf) and to the date, these are the best performing metrics at segment-level in the recently released Google MQM data [(Freitag et al. 2020)](https://arxiv.org/pdf/2104.14478.pdf). Also, in a large-scale study performed by Microsoft Research these two metrics are ranked 1st and 2nd in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf).
 
 For more information about the available COMET models we invite you to read our metrics descriptions [here](METRICS.md)
 
