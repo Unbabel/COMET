@@ -16,7 +16,7 @@ Simple installation from PyPI
 
 Pre-release of version 1.0:
 ```bash
-pip install unbabel-comet==1.0.0rc3
+pip install unbabel-comet==1.0.0rc4
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
