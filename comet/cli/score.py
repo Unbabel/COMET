@@ -76,7 +76,7 @@ def score_command() -> None:
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
 
-    if (cfg.references is None) and ("refless" not in cfg.model):
+    if (cfg.references is None) and ("comet-qe" not in cfg.model):
         parser.error("{} requires -r/--references.".format(cfg.model))
 
     model_path = (
@@ -91,7 +91,7 @@ def score_command() -> None:
     with open(cfg.translations()) as fp:
         translations = [line.strip() for line in fp.readlines()]
 
-    if "refless" in cfg.model:
+    if "comet-qe" in cfg.model:
         data = {"src": sources, "mt": translations}
     else:
         with open(cfg.references()) as fp:
