@@ -79,7 +79,9 @@ def score_command() -> None:
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
 
-    if (cfg.references is None) and (not any([i in cfg.model for i in _REFLESS_MODELS])):
+    if (cfg.references is None) and (
+        not any([i in cfg.model for i in _REFLESS_MODELS])
+    ):
         parser.error("{} requires -r/--references.".format(cfg.model))
 
     model_path = (
