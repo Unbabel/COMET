@@ -47,7 +47,7 @@ You can select another model/metric with the --model flag and for reference-free
 comet-score -s src.de -t hyp.en --model wmt20-comet-qe-da
 ```
 
-Following the work on [Uncertainty-Aware MT Evaluation]() you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric is less confident in that prediction.
+Following the work on [Uncertainty-Aware MT Evaluation](https://arxiv.org/abs/2109.06352) you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric is less confident in that prediction.
 
 ```bash
 comet-score -s src.de -t hyp.en -r ref.en --mc_dropout 30
