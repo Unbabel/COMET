@@ -40,6 +40,9 @@ from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 
 
+_REFLESS_MODELS = ["comet-qe"]
+
+
 def score_command() -> None:
     parser = ArgumentParser(description="Command for scoring MT systems.")
     parser.add_argument("-s", "--sources", type=Path_fr, required=True)
@@ -76,7 +79,9 @@ def score_command() -> None:
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
 
-    if (cfg.references is None) and ("comet-qe" not in cfg.model):
+    if (cfg.references is None) and (
+        not any([i in cfg.model for i in _REFLESS_MODELS])
+    ):
         parser.error("{} requires -r/--references.".format(cfg.model))
 
     model_path = (

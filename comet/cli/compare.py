@@ -44,6 +44,7 @@ import json
 from typing import Union
 
 import numpy as np
+from comet.cli.score import _REFLESS_MODELS
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser
@@ -94,7 +95,9 @@ def compare_command() -> None:
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
 
-    if (cfg.references is None) and ("refless" not in cfg.model):
+    if (cfg.references is None) and (
+        not any([i in cfg.model for i in _REFLESS_MODELS])
+    ):
         parser.error("{} requires -r/--references.".format(cfg.model))
 
     model_path = (
