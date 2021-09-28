@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "unbabel-comet"
-version = "1.0.0rc5"
+version = "1.0.0rc6"
 description = "High-quality Machine Translation Evaluation"
 authors = ["Ricardo Rei, Craig Stewart, Catarina Farinha, Alon Lavie"]
 license = "Apache-2.0"
@@ -35,13 +35,13 @@ comet-score = 'comet.cli.score:score_command'
 comet-compare = 'comet.cli.compare:compare_command'
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
+python = "^3.6.2"
 sentencepiece = "^0.1.96"
 pandas = "1.1.5"
-transformers = "^4.8.2"
+transformers = ">=4.8, <4.11"
 pytorch-lightning = "1.3.5"
 jsonargparse = "3.13.1"
-torch = "1.6.0"
+torch = ">=1.6.0, <1.8.0"
 torchmetrics = "0.5"
 
 [tool.poetry.dev-dependencies]

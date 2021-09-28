@@ -14,9 +14,10 @@ Detailed usage examples and instructions can be found in the [Full Documentation
 
 Simple installation from PyPI
 
-Pre-release of version 1.0:
+_We are planing to release version 1.0.0 in November. Meanwhile we recommend you to use our Pre-release of version and open issues if you find something unexpected:_
+
 ```bash
-pip install unbabel-comet==1.0.0rc5
+pip install unbabel-comet==1.0.0rc6
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
@@ -124,3 +125,5 @@ coverage report -m
 - [Unbabel's Participation in the WMT20 Metrics Shared Task](https://aclanthology.org/2020.wmt-1.101/)
 
 - [COMET - Deploying a New State-of-the-art MT Evaluation Metric in Production](https://www.aclweb.org/anthology/2020.amta-user.4)
+
+- [Uncertainty-Aware Machine Translation Evaluation](https://arxiv.org/pdf/2109.06352.pdf)
