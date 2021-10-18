@@ -21,7 +21,6 @@ CometModel
 import abc
 import logging
 import multiprocessing
-import sys
 from os import path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -32,12 +31,12 @@ from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
 from torch import nn
 from torch.utils.data import DataLoader, RandomSampler, Subset
-from tqdm import tqdm
 
 from .pooling_utils import average_pooling, max_pooling
+from .predict_pbar import PredictProgressBar
+
 
 logger = logging.getLogger(__name__)
-
 
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     """CometModel:
@@ -392,12 +391,19 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             ),
         ]
 
+    def prepare_for_inference(self, sample):
+        """ Ideally this should be a lamba function but for some reason python does not copy local lambda functions.
+        This functions replaces `collate_fn=lambda x: self.prepare_sample(x, inference=True)` from line 434.
+        """
+        return self.prepare_sample(sample, inference=True)
+
     def predict(
         self,
         samples: List[Dict[str, str]],
         batch_size: int = 8,
         gpus: int = 1,
         mc_dropout: Union[int, bool] = False,
+        progress_bar: bool = True
     ) -> Union[Tuple[List[float], float], Tuple[List[float], List[float], float]]:
         """Function that receives a list of samples (dictionaries with translations, sources and/or references)
         and returns segment level scores and a system level score. If `mc_dropout` is set, it also returns for each
@@ -410,23 +416,6 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         :return: List with segment-level scores and a system-score or segment-level scores, segment-level
             confidence and a system-score.
         """
-
-        class PredictProgressBar(ptl.callbacks.ProgressBar):
-            """Default Lightning Progress bar writes to stdout, we replace stdout with stderr"""
-
-            def init_predict_tqdm(self) -> tqdm:
-                bar = tqdm(
-                    desc="Predicting",
-                    initial=self.train_batch_idx,
-                    position=(2 * self.process_position),
-                    disable=self.is_disabled,
-                    leave=True,
-                    dynamic_ncols=True,
-                    file=sys.stderr,
-                    smoothing=0,
-                )
-                return bar
-
         # HACK: Workaround pytorch bug that prevents ParameterList to be used in DP
         # https://github.com/pytorch/pytorch/issues/36035
         if self.layerwise_attention is not None and gpus > 1:
@@ -442,18 +431,27 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         dataloader = DataLoader(
             dataset=samples,
             batch_size=batch_size,
-            collate_fn=lambda x: self.prepare_sample(x, inference=True),
+            #collate_fn=lambda x: self.prepare_sample(x, inference=True),
+            collate_fn=self.prepare_for_inference,
             num_workers=multiprocessing.cpu_count(),
         )
-
-        prog_bar = PredictProgressBar()
-        trainer = ptl.Trainer(
-            gpus=gpus,
-            deterministic=True,
-            logger=False,
-            callbacks=[prog_bar],
-            accelerator="dp" if gpus > 1 else None,
-        )
+        
+        if progress_bar:
+            trainer = ptl.Trainer(
+                gpus=gpus,
+                deterministic=True,
+                logger=False,
+                callbacks=[PredictProgressBar()],
+                accelerator="dp" if gpus > 1 else None,
+            )
+        else:
+            trainer = ptl.Trainer(
+                gpus=gpus,
+                deterministic=True,
+                logger=False,
+                progress_bar_refresh_rate=0,
+                accelerator="dp" if gpus > 1 else None,
+            )
 
         if mc_dropout:
             self.set_mc_dropout(mc_dropout)
