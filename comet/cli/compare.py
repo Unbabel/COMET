@@ -51,6 +51,11 @@ from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 
+_REFLESS_MODELS = ["comet-qe"]  # All reference-free metrics are named with 'comet-qe'
+# Due to small numerical differences in scores we consider that any system comparison 
+# with a difference bellow EPS to be considered a tie.
+EPS = 0.0005                    
+
 
 def compare_command() -> None:
     parser = ArgumentParser(description="Command for comparing two MT systems.")
@@ -115,7 +120,7 @@ def compare_command() -> None:
     with open(cfg.system_y()) as fp:
         system_y = [line.strip() for line in fp.readlines()]
 
-    if "refless" in cfg.model:
+    if "comet-qe" in cfg.model:
         system_x = {"src": sources, "mt": system_x}
         system_y = {"src": sources, "mt": system_y}
     else:
@@ -139,13 +144,14 @@ def compare_command() -> None:
         )
         data.append(
             {
-                "src": system_x[0]["src"],
-                "system_x": {"mt": system_x[0]["mt"], "score": x_score},
-                "system_y": {"mt": system_y[0]["mt"], "score": y_score},
-                "ref": system_y[0]["ref"],
+                "src": system_x[i]["src"],
+                "system_x": {"mt": system_x[i]["mt"], "score": x_score},
+                "system_y": {"mt": system_y[i]["mt"], "score": y_score},
             }
         )
-
+        if "comet-qe" not in cfg.model:
+            data[-1]["ref"] = system_y[i]["ref"]
+   
     n = len(sources)
     ids = list(range(n))
     sample_size = max(int(n * cfg.sample_ratio), 1)
@@ -157,13 +163,13 @@ def compare_command() -> None:
         subsample_ids = np.random.choice(ids, size=sample_size, replace=True)
         subsample_x_scr = sum([x_seg_scores[i] for i in subsample_ids]) / sample_size
         subsample_y_scr = sum([y_seg_scores[i] for i in subsample_ids]) / sample_size
-
-        if subsample_x_scr > subsample_y_scr:
-            win_count[0] += 1
-        elif subsample_y_scr > subsample_x_scr:
-            win_count[1] += 1
-        else:
+        
+        if abs(subsample_x_scr - subsample_y_scr) < EPS: # TIE
             win_count[2] += 1
+        elif subsample_x_scr > subsample_y_scr:  # X WIN
+            win_count[0] += 1
+        else: # subsample_y_scr > subsample_x_scr: # Y WIN
+            win_count[1] += 1
 
         x_sys_scores.append(subsample_x_scr)
         y_sys_scores.append(subsample_y_scr)
