@@ -17,7 +17,7 @@ Simple installation from PyPI
 _We are planing to release version 1.0.0 in November. Meanwhile we recommend you to use our Pre-release of version and open issues if you find something unexpected:_
 
 ```bash
-pip install unbabel-comet==1.0.0rc8
+pip install unbabel-comet==1.0.0rc9
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
