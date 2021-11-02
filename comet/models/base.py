@@ -24,6 +24,8 @@ import multiprocessing
 from os import path
 from typing import Dict, List, Optional, Tuple, Union
 
+from functools import lru_cache
+
 import numpy as np
 import pytorch_lightning as ptl
 import torch
@@ -188,6 +190,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.unfreeze_encoder()
             self._frozen = False
 
+    @lru_cache(maxsize=1024)
     def get_sentence_embedding(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> torch.Tensor:
