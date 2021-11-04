@@ -32,11 +32,26 @@ import torch
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
 from torch import nn
-from torch.utils.data import DataLoader, RandomSampler, Subset
+from torch.utils.data import DataLoader, Sampler, RandomSampler, Subset
 
 from .pooling_utils import average_pooling, max_pooling
 from .predict_pbar import PredictProgressBar
 
+
+class OrderedSampler(Sampler[int]):
+    """
+    Sampler that returns the indices in a deterministic order.
+    """
+    def __init__(self, indices: List[int]):
+        self.indices = indices
+
+    def __iter__(self):
+        return iter(self.indices)
+
+    def __len__(self):
+        return len(self.indices)
+
+        
 
 logger = logging.getLogger(__name__)
 
@@ -406,7 +421,9 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         batch_size: int = 8,
         gpus: int = 1,
         mc_dropout: Union[int, bool] = False,
-        progress_bar: bool = True
+        progress_bar: bool = True,
+        num_workers: int = None,
+        sort_by_mtlen: bool = False,
     ) -> Union[Tuple[List[float], float], Tuple[List[float], List[float], float]]:
         """Function that receives a list of samples (dictionaries with translations, sources and/or references)
         and returns segment level scores and a system level score. If `mc_dropout` is set, it also returns for each
@@ -430,13 +447,22 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 for parameter in self.layerwise_attention.scalar_parameters
             ]
 
+        # TODO: ideally this should be based on the actual token_ids
+        # but that would require fundamentally changing the way dataloader is
+        # setup, so currently raw chars are used as an approximation
+        sampler = None
+        if sort_by_mtlen:
+            sort_ids = np.argsort([len(sample["mt"]) for sample in samples])
+            sampler = OrderedSampler(sort_ids)
+
         self.eval()
         dataloader = DataLoader(
             dataset=samples,
             batch_size=batch_size,
             #collate_fn=lambda x: self.prepare_sample(x, inference=True),
+            sampler=sampler,
             collate_fn=self.prepare_for_inference,
-            num_workers=multiprocessing.cpu_count(),
+            num_workers=num_workers or multiprocessing.cpu_count(),
         )
         
         if progress_bar:
@@ -465,6 +491,15 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             std_scores = [out[1] for out in predictions]
             mean_scores = torch.cat(mean_scores, dim=0).tolist()
             std_scores = torch.cat(std_scores, dim=0).tolist()
+            if sort_by_mtlen:
+                unsorted_mean_scores = [None for _ in range(len(samples))]
+                unsorted_std_scores = [None for _ in range(len(samples))]
+                for idx, mean_score, std_score  in zip(sort_ids, mean_scores, std_scores):
+                    unsorted_mean_scores[idx] = mean_score
+                    unsorted_std_scores[idx] = std_score
+                mean_scores = unsorted_mean_scores
+                std_scores = unsorted_std_scores
+
             return mean_scores, std_scores, sum(mean_scores) / len(mean_scores)
 
         else:
@@ -472,4 +507,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 self, dataloaders=dataloader, return_predictions=True
             )
             predictions = torch.cat(predictions, dim=0).tolist()
+            if sort_by_mtlen:
+                unsorted_predictions = [None for _ in range(len(samples))]
+                for idx, prediction in zip(sort_ids, predictions):
+                    unsorted_predictions[idx] = prediction
+                predictions = unsorted_predictions
+
             return predictions, sum(predictions) / len(predictions)
