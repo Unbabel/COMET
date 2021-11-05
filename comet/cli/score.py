@@ -50,6 +50,7 @@ def score_command() -> None:
     parser.add_argument("-r", "--references", type=Path_fr)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
+    parser.add_argument("--model_storage_path", help="path to the directory where models will be stored.")
     parser.add_argument(
         "--to_json",
         type=Union[bool, str],
@@ -85,7 +86,7 @@ def score_command() -> None:
         parser.error("{} requires -r/--references.".format(cfg.model))
 
     model_path = (
-        download_model(cfg.model) if cfg.model in available_metrics else cfg.model
+        download_model(cfg.model, saving_directory=args.model_storage_path) if cfg.model in available_metrics else cfg.model
     )
     model = load_from_checkpoint(model_path)
     model.eval()
