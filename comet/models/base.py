@@ -35,8 +35,8 @@ from torch.utils.data import DataLoader, RandomSampler, Subset
 from .pooling_utils import average_pooling, max_pooling
 from .predict_pbar import PredictProgressBar
 
-
 logger = logging.getLogger(__name__)
+
 
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     """CometModel:
@@ -339,7 +339,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         return self(**batch)["score"].view(-1)
 
     def validation_epoch_end(self, *args, **kwargs) -> None:
-        """ " Computes and logs metrics."""
+        """Computes and logs metrics."""
         self.log_dict(self.train_metrics.compute(), prog_bar=True)
         self.log_dict(self.val_metrics.compute(), prog_bar=True)
         self.train_metrics.reset()
@@ -392,7 +392,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         ]
 
     def prepare_for_inference(self, sample):
-        """ Ideally this should be a lamba function but for some reason python does not copy local lambda functions.
+        """Ideally this should be a lamba function but for some reason python does not copy local lambda functions.
         This functions replaces `collate_fn=lambda x: self.prepare_sample(x, inference=True)` from line 434.
         """
         return self.prepare_sample(sample, inference=True)
@@ -403,7 +403,8 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         batch_size: int = 8,
         gpus: int = 1,
         mc_dropout: Union[int, bool] = False,
-        progress_bar: bool = True
+        progress_bar: bool = True,
+        accelerator: str = "ddp",
     ) -> Union[Tuple[List[float], float], Tuple[List[float], List[float], float]]:
         """Function that receives a list of samples (dictionaries with translations, sources and/or references)
         and returns segment level scores and a system level score. If `mc_dropout` is set, it also returns for each
@@ -431,18 +432,17 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         dataloader = DataLoader(
             dataset=samples,
             batch_size=batch_size,
-            #collate_fn=lambda x: self.prepare_sample(x, inference=True),
             collate_fn=self.prepare_for_inference,
             num_workers=multiprocessing.cpu_count(),
         )
-        
+        accelerator = accelerator if gpus > 1 else None
         if progress_bar:
             trainer = ptl.Trainer(
                 gpus=gpus,
                 deterministic=True,
                 logger=False,
                 callbacks=[PredictProgressBar()],
-                accelerator="dp" if gpus > 1 else None,
+                accelerator=accelerator,
             )
         else:
             trainer = ptl.Trainer(
@@ -450,7 +450,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 deterministic=True,
                 logger=False,
                 progress_bar_refresh_rate=0,
-                accelerator="dp" if gpus > 1 else None,
+                accelerator=accelerator,
             )
 
         if mc_dropout:

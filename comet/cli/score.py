@@ -22,25 +22,58 @@ optional arguments:
   -t TRANSLATIONS, --translations TRANSLATIONS
                         (required, type: Path_fr)
   -r REFERENCES, --references REFERENCES
-                        (required, type: Path_fr)
-  --to_json TO_JSON     (type: Union[bool, str], default: False)
-  --model MODEL         (type: Union[str, Path_fr], default: wmt21-large-estimator)
+                        (type: Path_fr, default: null)
   --batch_size BATCH_SIZE
-                        (type: int, default: 32)
+                        (type: int, default: 8)
   --gpus GPUS           (type: int, default: 1)
-
+  --accelerator {dp,ddp,ddp_cpu}
+                        Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
+  --disable_bar         Disables progress bar. (default: True)
+  --to_json TO_JSON     Exports results to a json file. (type: Union[bool, str], default: False)
+  --model {emnlp20-comet-rank,wmt20-comet-da,wmt20-comet-qe-da,wmt21-comet-mqm,wmt21-cometinho-da,wmt21-comet-qe-mqm}
+                        COMET model to be used. (type: Union[str, Path_fr], default: wmt20-comet-da)
+  --mc_dropout MC_DROPOUT
+                        Number of inference runs for each sample in MC Dropout. (type: Union[bool, int], default: False)
+  --seed_everything SEED_EVERYTHING
+                        Prediction seed. (type: int, default: 12)
 """
 import json
-from typing import Union
+from typing import Dict, List, Optional, Union
 
+import torch
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 
-
 _REFLESS_MODELS = ["comet-qe"]
+
+
+def print_scores(
+    seg_scores: List[float],
+    sys_score: float,
+    data: List[Dict[str, str]],
+    std_scores: Optional[List[float]] = None,
+    save_predictions: Union[str, bool] = False,
+) -> None:
+    for i, (score, sample) in enumerate(zip(seg_scores, data)):
+        sample["COMET"] = score
+        if std_scores:
+            sample["variance"] = std_scores[i]
+            print(
+                "Segment {}\tscore: {:.4f}\tvariance: {:.4f}".format(
+                    i, score, std_scores[i]
+                )
+            )
+        else:
+            print("Segment {}\tscore: {:.4f}".format(i, score))
+
+    print("System score: {:.4f}".format(sys_score))
+    if isinstance(save_predictions, str):
+        with open(save_predictions, "w") as outfile:
+            json.dump(data, outfile, ensure_ascii=False, indent=4)
+        print("Predictions saved in: {}.".format(save_predictions))
 
 
 def score_command() -> None:
@@ -50,6 +83,16 @@ def score_command() -> None:
     parser.add_argument("-r", "--references", type=Path_fr)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
+    parser.add_argument(
+        "--accelerator",
+        type=str,
+        default="ddp",
+        choices=["dp", "ddp"],
+        help="Pytorch Lightnining accelerator for multi-GPU.",
+    )
+    parser.add_argument(
+        "--disable_bar", action="store_false", help="Disables progress bar."
+    )
     parser.add_argument(
         "--to_json",
         type=Union[bool, str],
@@ -104,29 +147,63 @@ def score_command() -> None:
         data = {"src": sources, "mt": translations, "ref": references}
 
     data = [dict(zip(data, t)) for t in zip(*data.values())]
-    if cfg.mc_dropout:
-        mean_scores, std_scores, sys_score = model.predict(
-            data, cfg.batch_size, cfg.gpus, cfg.mc_dropout
-        )
-        for i, (mean, std, sample) in enumerate(zip(mean_scores, std_scores, data)):
-            print("Segment {}\tscore: {:.4f}\tvariance: {:.4f}".format(i, mean, std))
-            sample["COMET"] = mean
-            sample["variance"] = std
 
-        print("System score: {:.4f}".format(sys_score))
-        if isinstance(cfg.to_json, str):
-            with open(cfg.to_json, "w") as outfile:
-                json.dump(data, outfile, ensure_ascii=False, indent=4)
-            print("Predictions saved in: {}.".format(cfg.to_json))
+    if cfg.mc_dropout:
+        gather_mean = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
+        gather_std = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
+
+        mean_scores, std_scores, sys_score = model.predict(
+            data,
+            cfg.batch_size,
+            cfg.gpus,
+            cfg.mc_dropout,
+            cfg.disable_bar,
+            cfg.accelerator,
+        )
+        if cfg.gpus > 1 and cfg.accelerator == "ddp":
+            torch.distributed.all_gather_object(gather_mean, mean_scores)
+            torch.distributed.all_gather_object(gather_std, std_scores)
+            torch.distributed.barrier()  # Waits for all processes
+
+            if torch.distributed.get_rank() == 0:
+                mean_scores = [
+                    o[i] for i in range(len(gather_mean[0])) for o in gather_mean
+                ]
+                std_scores = [
+                    o[i] for i in range(len(gather_std[0])) for o in gather_std
+                ]
+                sys_score = sum(mean_scores) / len(mean_scores)
+                print_scores(
+                    mean_scores,
+                    sys_score,
+                    data,
+                    std_scores=std_scores,
+                    save_predictions=cfg.to_json,
+                )
+        else:
+            print_scores(
+                mean_scores,
+                sys_score,
+                data,
+                std_scores=std_scores,
+                save_predictions=cfg.to_json,
+            )
 
     else:
-        predictions, sys_score = model.predict(data, cfg.batch_size, cfg.gpus)
-        for i, (score, sample) in enumerate(zip(predictions, data)):
-            print("Segment {}\tscore: {:.4f}".format(i, score))
-            sample["COMET"] = score
-
-        print("System score: {:.4f}".format(sys_score))
-        if isinstance(cfg.to_json, str):
-            with open(cfg.to_json, "w") as outfile:
-                json.dump(data, outfile, ensure_ascii=False, indent=4)
-            print("Predictions saved in: {}.".format(cfg.to_json))
+        gather_outputs = [
+            None for _ in range(cfg.gpus)
+        ]  # Only necessary for multigpu DDP
+        seg_scores, sys_score = model.predict(
+            data, cfg.batch_size, cfg.gpus, False, cfg.disable_bar, cfg.accelerator
+        )
+        if cfg.gpus > 1 and cfg.accelerator == "ddp":
+            torch.distributed.all_gather_object(gather_outputs, seg_scores)
+            torch.distributed.barrier()  # Waits for all processes
+            if torch.distributed.get_rank() == 0:
+                seg_scores = [
+                    o[i] for i in range(len(gather_outputs[0])) for o in gather_outputs
+                ]
+                sys_score = sum(seg_scores) / len(seg_scores)
+                print_scores(seg_scores, sys_score, data, save_predictions=cfg.to_json)
+        else:
+            print_scores(seg_scores, sys_score, data, save_predictions=cfg.to_json)

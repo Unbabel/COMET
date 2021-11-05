@@ -44,6 +44,7 @@ import json
 from typing import Union
 
 import numpy as np
+import torch
 from comet.cli.score import _REFLESS_MODELS
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
@@ -52,12 +53,15 @@ from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 
 _REFLESS_MODELS = ["comet-qe"]  # All reference-free metrics are named with 'comet-qe'
-# Due to small numerical differences in scores we consider that any system comparison 
+# Due to small numerical differences in scores we consider that any system comparison
 # with a difference bellow EPS to be considered a tie.
-EPS = 0.0005                    
+
+# Some COMET models use layer normalization accross the mini-batch.
+# Sometimes we observe very small 'noisy' differences in scores because of that.
+EPS = 0.0001
 
 
-def compare_command() -> None:
+def compare_command() -> Union[None, int]:
     parser = ArgumentParser(description="Command for comparing two MT systems.")
     parser.add_argument("-s", "--sources", type=Path_fr, required=True)
     parser.add_argument("-x", "--system_x", type=Path_fr, required=True)
@@ -65,6 +69,16 @@ def compare_command() -> None:
     parser.add_argument("-r", "--references", type=Path_fr)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
+    parser.add_argument(
+        "--accelerator",
+        type=str,
+        default="ddp",
+        choices=["dp", "ddp"],
+        help="Pytorch Lightnining accelerator for multi-GPU.",
+    )
+    parser.add_argument(
+        "--disable_bar", action="store_false", help="Disables progress bar."
+    )
     parser.add_argument(
         "--num_splits",
         type=int,
@@ -132,9 +146,24 @@ def compare_command() -> None:
     system_x = [dict(zip(system_x, t)) for t in zip(*system_x.values())]
     system_y = [dict(zip(system_y, t)) for t in zip(*system_y.values())]
 
-    x_seg_scores, _ = model.predict(system_x, cfg.batch_size, cfg.gpus)
-    y_seg_scores, _ = model.predict(system_y, cfg.batch_size, cfg.gpus)
+    seperator_index = len(system_x)
+    data = system_x + system_y
+    seg_scores, _ = model.predict(
+        data, cfg.batch_size, cfg.gpus, False, cfg.disable_bar, cfg.accelerator
+    )
+    gather_outputs = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
+    if cfg.gpus > 1 and cfg.accelerator == "ddp":
+        torch.distributed.all_gather_object(gather_outputs, seg_scores)
+        torch.distributed.barrier()  # Waits for all processes
+        if torch.distributed.get_rank() == 0:
+            seg_scores = [
+                o[i] for i in range(len(gather_outputs[0])) for o in gather_outputs
+            ]
+        else:
+            return 0
 
+    x_seg_scores = seg_scores[:seperator_index]
+    y_seg_scores = seg_scores[seperator_index:]
     data = []
     for i, (x_score, y_score) in enumerate(zip(x_seg_scores, y_seg_scores)):
         print(
@@ -151,7 +180,7 @@ def compare_command() -> None:
         )
         if "comet-qe" not in cfg.model:
             data[-1]["ref"] = system_y[i]["ref"]
-   
+
     n = len(sources)
     ids = list(range(n))
     sample_size = max(int(n * cfg.sample_ratio), 1)
@@ -163,12 +192,12 @@ def compare_command() -> None:
         subsample_ids = np.random.choice(ids, size=sample_size, replace=True)
         subsample_x_scr = sum([x_seg_scores[i] for i in subsample_ids]) / sample_size
         subsample_y_scr = sum([y_seg_scores[i] for i in subsample_ids]) / sample_size
-        
-        if abs(subsample_x_scr - subsample_y_scr) < EPS: # TIE
+
+        if abs(subsample_x_scr - subsample_y_scr) < EPS:  # TIE
             win_count[2] += 1
         elif subsample_x_scr > subsample_y_scr:  # X WIN
             win_count[0] += 1
-        else: # subsample_y_scr > subsample_x_scr: # Y WIN
+        else:  # subsample_y_scr > subsample_x_scr: # Y WIN
             win_count[1] += 1
 
         x_sys_scores.append(subsample_x_scr)
