@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (C) 2020 Unbabel
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -130,3 +132,7 @@ def score_command() -> None:
             with open(cfg.to_json, "w") as outfile:
                 json.dump(data, outfile, ensure_ascii=False, indent=4)
             print("Predictions saved in: {}.".format(cfg.to_json))
+
+
+if __name__ == "__main__":
+    score_command()

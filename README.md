@@ -23,7 +23,14 @@ pip install unbabel-comet==1.0.0rc9
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
 ```bash
 git clone https://github.com/Unbabel/COMET
+cd COMET
 poetry install
+```
+
+Alternately, for development, you can run the CLI tools directly, e.g.,
+
+```bash
+PYTHONPATH=. ./comet/cli/score.py
 ```
 
 ## Scoring MT outputs:

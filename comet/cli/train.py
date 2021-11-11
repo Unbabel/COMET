@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (C) 2020 Unbabel
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -103,3 +105,7 @@ def train_command() -> None:
         raise Exception("Model configurations missing!")
 
     trainer.fit(model)
+
+
+if __name__ == "__main__":
+    train_command()
