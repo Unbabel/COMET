@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (C) 2020 Unbabel
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,13 +20,16 @@ Command for comparing two MT systems.
 optional arguments:
   -h, --help            Show this help message and exit.
   -s SOURCES, --sources SOURCES
-                        (required, type: Path_fr)
+                        (required unless using -d, type: Path_fr)
   -x SYSTEM_X, --system_x SYSTEM_X
                         (required, type: Path_fr)
   -y SYSTEM_Y, --system_y SYSTEM_Y
                         (required, type: Path_fr)
   -r REFERENCES, --references REFERENCES
-                        (type: Path_fr, default: null)
+                        (type: Path_fr, default: None)
+  -d SACREBLEU_TESTSET, --sacrebleu_dataset SACREBLEU_TESTSET
+                        (optional, use in place of -s and -r, type: str
+                         format TESTSET:LANGPAIR, e.g., wmt20:en-de)
   --batch_size BATCH_SIZE
                         (type: int, default: 8)
   --gpus GPUS           (type: int, default: 1)
@@ -37,7 +42,7 @@ optional arguments:
                         COMET model to be used. (type: Union[str, Path_fr], default: wmt20-comet-da)
   --seed_everything SEED_EVERYTHING
                         Prediction seed. (type: int, default: 12)
-                        
+
 """
 
 import json
@@ -54,15 +59,16 @@ from pytorch_lightning import seed_everything
 _REFLESS_MODELS = ["comet-qe"]  # All reference-free metrics are named with 'comet-qe'
 # Due to small numerical differences in scores we consider that any system comparison 
 # with a difference bellow EPS to be considered a tie.
-EPS = 0.0005                    
+EPS = 0.0005
 
 
 def compare_command() -> None:
     parser = ArgumentParser(description="Command for comparing two MT systems.")
-    parser.add_argument("-s", "--sources", type=Path_fr, required=True)
+    parser.add_argument("-s", "--sources", type=Path_fr)
     parser.add_argument("-x", "--system_x", type=Path_fr, required=True)
     parser.add_argument("-y", "--system_y", type=Path_fr, required=True)
     parser.add_argument("-r", "--references", type=Path_fr)
+    parser.add_argument("-d", "--sacrebleu_dataset", type=str)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
@@ -100,10 +106,28 @@ def compare_command() -> None:
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
 
+    if cfg.sources is None and cfg.sacrebleu_dataset is None:
+        parser.error(f"You must specify a source (-s) or a sacrebleu dataset (-d)")
+
+    if (cfg.sacrebleu_dataset is not None):
+        if cfg.references is not None or cfg.sources is not None:
+            parser.error(f"Cannot use sacrebleu datasets (-d) with manually-specified datasets (-s and -r)")
+
+        try:
+            testset, langpair = cfg.sacrebleu_dataset.rsplit(":", maxsplit=1)
+            cfg.sources = Path_fr(get_source_file(testset, langpair))
+            cfg.references = Path_fr(get_reference_files(testset, langpair)[0])
+        except ValueError:
+            parser.error("SacreBLEU testset format must be TESTSET:LANGPAIR, e.g., wmt20:de-en")
+        except Exception as e:
+            import sys
+            print("SacreBLEU error:", e, file=sys.stderr)
+            sys.exit(1)
+
     if (cfg.references is None) and (
         not any([i in cfg.model for i in _REFLESS_MODELS])
     ):
-        parser.error("{} requires -r/--references.".format(cfg.model))
+        parser.error("{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model))
 
     model_path = (
         download_model(cfg.model) if cfg.model in available_metrics else cfg.model
@@ -191,3 +215,7 @@ def compare_command() -> None:
         with open(cfg.to_json, "w") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)
         print("Predictions saved in: {}.".format(cfg.to_json))
+
+
+if __name__ == "__main__":
+    compare_command()
