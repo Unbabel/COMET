@@ -443,7 +443,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         mc_dropout: Union[int, bool] = False,
         progress_bar: bool = True,
         num_workers: int = None,
-        sort_by_mtlen: bool = False,
+        length_batching: bool = True,
     ) -> Union[Tuple[List[float], float], Tuple[List[float], List[float], float]]:
         """Function that receives a list of samples (dictionaries with translations, sources and/or references)
         and returns segment level scores and a system level score. If `mc_dropout` is set, it also returns for each
@@ -451,7 +451,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
         :param samples: List with dictionaries with source, translations and/or references.
         :param batch_size: Batch size used during inference.
-        :gpus: Number of GPUs to be used.
+        :param gpus: Number of GPUs to be used.
+        :param mc_dropout: Number of inference steps to run using MCD. Its disabled by default!
+        :param progress_bar: Flag that turns on and off the predict progress bar.
+        :param num_workers: Number of workers to use when loading data from dataloaders.
+        :param length_batching: If set to true, reduces padding by sorting samples by MT length.
 
         :return: List with segment-level scores and a system-score or segment-level scores, segment-level
             confidence and a system-score.
@@ -471,7 +475,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         # but that would require fundamentally changing the way dataloader is
         # setup, so currently raw chars are used as an approximation
         sampler = None
-        if sort_by_mtlen:
+        if length_batching:
             sort_ids = np.argsort([len(sample["mt"]) for sample in samples])
             sampler = OrderedSampler(sort_ids)
 
@@ -479,7 +483,6 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         dataloader = DataLoader(
             dataset=samples,
             batch_size=batch_size,
-            # collate_fn=lambda x: self.prepare_sample(x, inference=True),
             sampler=sampler,
             collate_fn=self.prepare_for_inference,
             num_workers=num_workers or multiprocessing.cpu_count(),
@@ -511,7 +514,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             std_scores = [out[1] for out in predictions]
             mean_scores = torch.cat(mean_scores, dim=0).tolist()
             std_scores = torch.cat(std_scores, dim=0).tolist()
-            if sort_by_mtlen:
+            if length_batching:
                 unsorted_mean_scores = [None for _ in range(len(samples))]
                 unsorted_std_scores = [None for _ in range(len(samples))]
                 for idx, mean_score, std_score in zip(
@@ -529,7 +532,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 self, dataloaders=dataloader, return_predictions=True
             )
             predictions = torch.cat(predictions, dim=0).tolist()
-            if sort_by_mtlen:
+            if length_batching:
                 unsorted_predictions = [None for _ in range(len(samples))]
                 for idx, prediction in zip(sort_ids, predictions):
                     unsorted_predictions[idx] = prediction

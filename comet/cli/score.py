@@ -32,6 +32,7 @@ optional arguments:
 """
 import json
 from typing import Union
+import multiprocessing
 
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
@@ -51,20 +52,10 @@ def score_command() -> None:
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
-        "--model_storage_path",
-        help="Path to the directory where models will be stored.",
-        default=None,
-    )
-    parser.add_argument(
         "--to_json",
         type=Union[bool, str],
         default=False,
         help="Exports results to a json file.",
-    )
-    parser.add_argument(
-        "--disable_cache",
-        action="store_true",
-        help="Disables sentence embeddings caching. This makes inference slower but saves memory.",
     )
     parser.add_argument(
         "--model",
@@ -73,6 +64,11 @@ def score_command() -> None:
         default="wmt20-comet-da",
         choices=available_metrics.keys(),
         help="COMET model to be used.",
+    )
+    parser.add_argument(
+        "--model_storage_path",
+        help="Path to the directory where models will be stored.",
+        default=None,
     )
     parser.add_argument(
         "--mc_dropout",
@@ -85,6 +81,22 @@ def score_command() -> None:
         help="Prediction seed.",
         type=int,
         default=12,
+    )
+    parser.add_argument(
+        "--num_workers",
+        help="Number of workers to use when loading data.",
+        type=int,
+        default=multiprocessing.cpu_count(),
+    )
+    parser.add_argument(
+        "--disable_cache",
+        action="store_true",
+        help="Disables sentence embeddings caching. This makes inference slower but saves memory.",
+    )
+    parser.add_argument(
+        "--disable_length_batching",
+        action="store_true",
+        help="Disables length batching. This makes inference slower.",
     )
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
@@ -121,7 +133,8 @@ def score_command() -> None:
     data = [dict(zip(data, t)) for t in zip(*data.values())]
     if cfg.mc_dropout:
         mean_scores, std_scores, sys_score = model.predict(
-            data, cfg.batch_size, cfg.gpus, cfg.mc_dropout
+            data, cfg.batch_size, cfg.gpus, cfg.mc_dropout, 
+            num_workers=cfg.num_workers, length_batching=cfg.disable_length_batching
         )
         for i, (mean, std, sample) in enumerate(zip(mean_scores, std_scores, data)):
             print("Segment {}\tscore: {:.4f}\tvariance: {:.4f}".format(i, mean, std))
@@ -129,7 +142,10 @@ def score_command() -> None:
             sample["variance"] = std
 
     else:
-        predictions, sys_score = model.predict(data, cfg.batch_size, cfg.gpus)
+        predictions, sys_score = model.predict(
+            data, cfg.batch_size, cfg.gpus, 
+            num_workers=cfg.num_workers, length_batching=cfg.disable_length_batching
+        )
         for i, (score, sample) in enumerate(zip(predictions, data)):
             print("Segment {}\tscore: {:.4f}".format(i, score))
             sample["COMET"] = score
@@ -139,6 +155,3 @@ def score_command() -> None:
         with open(cfg.to_json, "w") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)
         print("Predictions saved in: {}.".format(cfg.to_json))
-
-    if not cfg.disable_cache:
-        print(model.retrieve_sentence_embedding.cache_info())
