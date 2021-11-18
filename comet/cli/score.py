@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Copyright (C) 2020 Unbabel
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,11 +20,14 @@ Command for scoring MT systems.
 optional arguments:
   -h, --help            Show this help message and exit.
   -s SOURCES, --sources SOURCES
-                        (required, type: Path_fr)
+                        (required unless using -d, type: Path_fr)
   -t TRANSLATIONS, --translations TRANSLATIONS
                         (required, type: Path_fr)
   -r REFERENCES, --references REFERENCES
-                        (required, type: Path_fr)
+                        (type: Path_fr, default: None)
+  -d SACREBLEU_TESTSET, --sacrebleu_dataset SACREBLEU_TESTSET
+                        (optional, use in place of -s and -r, type: str
+                         format TESTSET:LANGPAIR, e.g., wmt20:en-de)
   --to_json TO_JSON     (type: Union[bool, str], default: False)
   --model MODEL         (type: Union[str, Path_fr], default: wmt21-large-estimator)
   --batch_size BATCH_SIZE
@@ -39,16 +44,17 @@ from comet.models import available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
-
+from sacrebleu.utils import get_source_file, get_reference_files
 
 _REFLESS_MODELS = ["comet-qe"]
 
 
 def score_command() -> None:
     parser = ArgumentParser(description="Command for scoring MT systems.")
-    parser.add_argument("-s", "--sources", type=Path_fr, required=True)
-    parser.add_argument("-t", "--translations", type=Path_fr, required=True)
+    parser.add_argument("-s", "--sources", type=Path_fr)
+    parser.add_argument("-t", "--translations", type=Path_fr)
     parser.add_argument("-r", "--references", type=Path_fr)
+    parser.add_argument("-d", "--sacrebleu_dataset", type=str)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
@@ -101,10 +107,28 @@ def score_command() -> None:
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
 
+    if cfg.sources is None and cfg.sacrebleu_dataset is None:
+        parser.error(f"You must specify a source (-s) or a sacrebleu dataset (-d)")
+
+    if (cfg.sacrebleu_dataset is not None):
+        if cfg.references is not None or cfg.sources is not None:
+            parser.error(f"Cannot use sacrebleu datasets (-d) with manually-specified datasets (-s and -r)")
+
+        try:
+            testset, langpair = cfg.sacrebleu_dataset.rsplit(":", maxsplit=1)
+            cfg.sources = Path_fr(get_source_file(testset, langpair))
+            cfg.references = Path_fr(get_reference_files(testset, langpair)[0])
+        except ValueError:
+            parser.error("SacreBLEU testset format must be TESTSET:LANGPAIR, e.g., wmt20:de-en")
+        except Exception as e:
+            import sys
+            print("SacreBLEU error:", e, file=sys.stderr)
+            sys.exit(1)
+
     if (cfg.references is None) and (
         not any([i in cfg.model for i in _REFLESS_MODELS])
     ):
-        parser.error("{} requires -r/--references.".format(cfg.model))
+        parser.error("{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model))
 
     model_path = (
         download_model(cfg.model, saving_directory=cfg.model_storage_path)
@@ -155,3 +179,6 @@ def score_command() -> None:
         with open(cfg.to_json, "w") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)
         print("Predictions saved in: {}.".format(cfg.to_json))
+
+if __name__ == "__main__":
+    score_command()
