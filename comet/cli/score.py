@@ -37,6 +37,7 @@ optional arguments:
 """
 import json
 from typing import Union
+import multiprocessing
 
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
@@ -71,6 +72,11 @@ def score_command() -> None:
         help="COMET model to be used.",
     )
     parser.add_argument(
+        "--model_storage_path",
+        help="Path to the directory where models will be stored.",
+        default=None,
+    )
+    parser.add_argument(
         "--mc_dropout",
         type=Union[bool, int],
         default=False,
@@ -81,6 +87,22 @@ def score_command() -> None:
         help="Prediction seed.",
         type=int,
         default=12,
+    )
+    parser.add_argument(
+        "--num_workers",
+        help="Number of workers to use when loading data.",
+        type=int,
+        default=multiprocessing.cpu_count(),
+    )
+    parser.add_argument(
+        "--disable_cache",
+        action="store_true",
+        help="Disables sentence embeddings caching. This makes inference slower but saves memory.",
+    )
+    parser.add_argument(
+        "--disable_length_batching",
+        action="store_true",
+        help="Disables length batching. This makes inference slower.",
     )
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
@@ -109,10 +131,15 @@ def score_command() -> None:
         parser.error("{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model))
 
     model_path = (
-        download_model(cfg.model) if cfg.model in available_metrics else cfg.model
+        download_model(cfg.model, saving_directory=cfg.model_storage_path)
+        if cfg.model in available_metrics
+        else cfg.model
     )
     model = load_from_checkpoint(model_path)
     model.eval()
+
+    if not cfg.disable_cache:
+        model.set_embedding_cache()
 
     with open(cfg.sources()) as fp:
         sources = [line.strip() for line in fp.readlines()]
@@ -130,31 +157,28 @@ def score_command() -> None:
     data = [dict(zip(data, t)) for t in zip(*data.values())]
     if cfg.mc_dropout:
         mean_scores, std_scores, sys_score = model.predict(
-            data, cfg.batch_size, cfg.gpus, cfg.mc_dropout
+            data, cfg.batch_size, cfg.gpus, cfg.mc_dropout, 
+            num_workers=cfg.num_workers, length_batching=cfg.disable_length_batching
         )
         for i, (mean, std, sample) in enumerate(zip(mean_scores, std_scores, data)):
             print("Segment {}\tscore: {:.4f}\tvariance: {:.4f}".format(i, mean, std))
             sample["COMET"] = mean
             sample["variance"] = std
 
-        print("System score: {:.4f}".format(sys_score))
-        if isinstance(cfg.to_json, str):
-            with open(cfg.to_json, "w") as outfile:
-                json.dump(data, outfile, ensure_ascii=False, indent=4)
-            print("Predictions saved in: {}.".format(cfg.to_json))
-
     else:
-        predictions, sys_score = model.predict(data, cfg.batch_size, cfg.gpus)
+        predictions, sys_score = model.predict(
+            data, cfg.batch_size, cfg.gpus, 
+            num_workers=cfg.num_workers, length_batching=cfg.disable_length_batching
+        )
         for i, (score, sample) in enumerate(zip(predictions, data)):
             print("Segment {}\tscore: {:.4f}".format(i, score))
             sample["COMET"] = score
 
-        print("System score: {:.4f}".format(sys_score))
-        if isinstance(cfg.to_json, str):
-            with open(cfg.to_json, "w") as outfile:
-                json.dump(data, outfile, ensure_ascii=False, indent=4)
-            print("Predictions saved in: {}.".format(cfg.to_json))
-
+    print("System score: {:.4f}".format(sys_score))
+    if isinstance(cfg.to_json, str):
+        with open(cfg.to_json, "w") as outfile:
+            json.dump(data, outfile, ensure_ascii=False, indent=4)
+        print("Predictions saved in: {}.".format(cfg.to_json))
 
 if __name__ == "__main__":
     score_command()
