@@ -21,7 +21,8 @@ CometModel
 import abc
 import logging
 import multiprocessing
-from os import path
+import os
+
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -30,10 +31,33 @@ import torch
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
 from torch import nn
-from torch.utils.data import DataLoader, RandomSampler, Subset
+from torch.utils.data import DataLoader, RandomSampler, Sampler, Subset
 
+from .lru_cache import tensor_lru_cache
 from .pooling_utils import average_pooling, max_pooling
 from .predict_pbar import PredictProgressBar
+
+
+class OrderedSampler(Sampler[int]):
+    """
+    Sampler that returns the indices in a deterministic order.
+    """
+
+    def __init__(self, indices: List[int]):
+        self.indices = indices
+
+    def __iter__(self):
+        return iter(self.indices)
+
+    def __len__(self):
+        return len(self.indices)
+
+
+if "COMET_EMBEDDINGS_CACHE" in os.environ:
+    CACHE_SIZE = os.environ["COMET_EMBEDDINGS_CACHE"]
+else:
+    CACHE_SIZE = 1024
+
 
 logger = logging.getLogger(__name__)
 
@@ -107,12 +131,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.nr_frozen_epochs = self.hparams.nr_frozen_epochs
 
         if load_weights_from_checkpoint is not None:
-            if path.exists(load_weights_from_checkpoint):
+            if os.path.exists(load_weights_from_checkpoint):
                 self.load_weights(load_weights_from_checkpoint)
             else:
                 logger.warning(f"Path {load_weights_from_checkpoint} does not exist!")
 
         self.mc_dropout = False  # Flag used to control usage of MC Dropout
+        self.caching = False  # Flag used to control Embedding Caching
 
     def set_mc_dropout(self, value: bool):
         self.mc_dropout = value
@@ -188,6 +213,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.unfreeze_encoder()
             self._frozen = False
 
+    def set_embedding_cache(self):
+        """Function that when called turns embedding caching on."""
+        self.caching = True
+
     def get_sentence_embedding(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> torch.Tensor:
@@ -199,6 +228,22 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
         :return: torch.Tensor [batch_size x hidden_size]
         """
+        if self.caching:
+            return self.retrieve_sentence_embedding(input_ids, attention_mask)
+        else:
+            return self.compute_sentence_embedding(input_ids, attention_mask)
+
+    @tensor_lru_cache(maxsize=CACHE_SIZE)
+    def retrieve_sentence_embedding(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> torch.Tensor:
+        """Wrapper for `get_sentence_embedding` function that caches results."""
+        return self.compute_sentence_embedding(input_ids, attention_mask)
+
+    def compute_sentence_embedding(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> torch.Tensor:
+
         encoder_out = self.encoder(input_ids, attention_mask)
         if self.layerwise_attention:
             # HACK: LayerNorm is applied at the MiniBatch. This means that for big batch sizes the variance
@@ -405,6 +450,8 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         mc_dropout: Union[int, bool] = False,
         progress_bar: bool = True,
         accelerator: str = "ddp",
+        num_workers: int = None,
+        length_batching: bool = True,
     ) -> Union[Tuple[List[float], float], Tuple[List[float], List[float], float]]:
         """Function that receives a list of samples (dictionaries with translations, sources and/or references)
         and returns segment level scores and a system level score. If `mc_dropout` is set, it also returns for each
@@ -412,7 +459,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
         :param samples: List with dictionaries with source, translations and/or references.
         :param batch_size: Batch size used during inference.
-        :gpus: Number of GPUs to be used.
+        :param gpus: Number of GPUs to be used.
+        :param mc_dropout: Number of inference steps to run using MCD. Its disabled by default!
+        :param progress_bar: Flag that turns on and off the predict progress bar.
+        :param accelarator: Pytorch Lightning accelerator (e.g: dp, ddp).
+        :param num_workers: Number of workers to use when loading data from dataloaders.
+        :param length_batching: If set to true, reduces padding by sorting samples by MT length.
 
         :return: List with segment-level scores and a system-score or segment-level scores, segment-level
             confidence and a system-score.
@@ -428,14 +480,24 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 for parameter in self.layerwise_attention.scalar_parameters
             ]
 
+        # TODO: ideally this should be based on the actual token_ids
+        # but that would require fundamentally changing the way dataloader is
+        # setup, so currently raw chars are used as an approximation
+        sampler = None
+        if length_batching:
+            sort_ids = np.argsort([len(sample["src"]) for sample in samples])
+            sampler = OrderedSampler(sort_ids)
+
         self.eval()
         dataloader = DataLoader(
             dataset=samples,
             batch_size=batch_size,
+            sampler=sampler,
             collate_fn=self.prepare_for_inference,
-            num_workers=multiprocessing.cpu_count(),
+            num_workers=num_workers or multiprocessing.cpu_count(),
         )
         accelerator = accelerator if gpus > 1 else None
+
         if progress_bar:
             trainer = ptl.Trainer(
                 gpus=gpus,
@@ -462,6 +524,17 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             std_scores = [out[1] for out in predictions]
             mean_scores = torch.cat(mean_scores, dim=0).tolist()
             std_scores = torch.cat(std_scores, dim=0).tolist()
+            if length_batching:
+                unsorted_mean_scores = [None for _ in range(len(samples))]
+                unsorted_std_scores = [None for _ in range(len(samples))]
+                for idx, mean_score, std_score in zip(
+                    sort_ids, mean_scores, std_scores
+                ):
+                    unsorted_mean_scores[idx] = mean_score
+                    unsorted_std_scores[idx] = std_score
+                mean_scores = unsorted_mean_scores
+                std_scores = unsorted_std_scores
+
             return mean_scores, std_scores, sum(mean_scores) / len(mean_scores)
 
         else:
@@ -469,4 +542,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 self, dataloaders=dataloader, return_predictions=True
             )
             predictions = torch.cat(predictions, dim=0).tolist()
+            if length_batching:
+                unsorted_predictions = [None for _ in range(len(samples))]
+                for idx, prediction in zip(sort_ids, predictions):
+                    unsorted_predictions[idx] = prediction
+                predictions = unsorted_predictions
+
             return predictions, sum(predictions) / len(predictions)

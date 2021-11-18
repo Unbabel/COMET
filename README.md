@@ -23,7 +23,14 @@ pip install unbabel-comet==1.0.0rc9
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
 ```bash
 git clone https://github.com/Unbabel/COMET
+cd COMET
 poetry install
+```
+
+Alternately, for development, you can run the CLI tools directly, e.g.,
+
+```bash
+PYTHONPATH=. ./comet/cli/score.py
 ```
 
 ## Scoring MT outputs:
@@ -48,7 +55,7 @@ You can select another model/metric with the --model flag and for reference-free
 comet-score -s src.de -t hyp.en --model wmt20-comet-qe-da
 ```
 
-Following the work on [Uncertainty-Aware MT Evaluation](https://arxiv.org/abs/2109.06352) you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric is less confident in that prediction.
+Following the work on [Uncertainty-Aware MT Evaluation](https://aclanthology.org/2021.findings-emnlp.330/) you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric is less confident in that prediction.
 
 ```bash
 comet-score -s src.de -t hyp.en -r ref.en --mc_dropout 30
@@ -119,11 +126,15 @@ coverage report -m
 ```
 
 ## Publications
+- [Are References Really Needed? Unbabel-IST 2021 Submission for the Metrics Shared Task](http://statmt.org/wmt21/pdf/2021.wmt-1.111.pdf)
 
-- [COMET: A Neural Framework for MT Evaluation](https://www.aclweb.org/anthology/2020.emnlp-main.213)
-
-- [Unbabel's Participation in the WMT20 Metrics Shared Task](https://aclanthology.org/2020.wmt-1.101/)
+- [Uncertainty-Aware Machine Translation Evaluation](https://aclanthology.org/2021.findings-emnlp.330/) 
 
 - [COMET - Deploying a New State-of-the-art MT Evaluation Metric in Production](https://www.aclweb.org/anthology/2020.amta-user.4)
 
-- [Uncertainty-Aware Machine Translation Evaluation](https://arxiv.org/pdf/2109.06352.pdf)
+- [Unbabel's Participation in the WMT20 Metrics Shared Task](https://aclanthology.org/2020.wmt-1.101/)
+
+- [COMET: A Neural Framework for MT Evaluation](https://www.aclweb.org/anthology/2020.emnlp-main.213)
+
+
+

@@ -19,4 +19,4 @@ In our participation to the WMT21 shared task we steer COMET towards higher corr
 
 Additionally, we present COMETinho (`wmt21-cometinho-da`), a light-weight COMET model that is 19x faster on CPU than the original model.
 
-**NOTE:** One thing we noticed in the WMT21 Models is that the variance between predicted scores is lower than previous models! 
+**NOTE:** One thing we noticed in the WMT21 Models is that the variance between predicted scores is lower than previous models which make their predictions look very similar to each other even if the overall correlations with human judgments improve and the system rankings is correct.
