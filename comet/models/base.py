@@ -30,17 +30,18 @@ import torch
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
 from torch import nn
-from torch.utils.data import DataLoader, Sampler, RandomSampler, Subset
+from torch.utils.data import DataLoader, RandomSampler, Sampler, Subset
 
+from .lru_cache import tensor_lru_cache
 from .pooling_utils import average_pooling, max_pooling
 from .predict_pbar import PredictProgressBar
-from .lru_cache import tensor_lru_cache
 
 
 class OrderedSampler(Sampler[int]):
     """
     Sampler that returns the indices in a deterministic order.
     """
+
     def __init__(self, indices: List[int]):
         self.indices = indices
 
@@ -50,9 +51,9 @@ class OrderedSampler(Sampler[int]):
     def __len__(self):
         return len(self.indices)
 
-        
 
 logger = logging.getLogger(__name__)
+
 
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     """CometModel:
@@ -129,6 +130,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 logger.warning(f"Path {load_weights_from_checkpoint} does not exist!")
 
         self.mc_dropout = False  # Flag used to control usage of MC Dropout
+        self.caching = False  # Flag used to control Embedding Caching
 
     def set_mc_dropout(self, value: bool):
         self.mc_dropout = value
@@ -204,7 +206,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.unfreeze_encoder()
             self._frozen = False
 
-    @tensor_lru_cache(maxsize=1024)
+    def set_embedding_cache(self):
+        """Function that when called turns embedding caching on."""
+        self.caching = True
+
     def get_sentence_embedding(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor
     ) -> torch.Tensor:
@@ -216,6 +221,22 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
         :return: torch.Tensor [batch_size x hidden_size]
         """
+        if self.caching:
+            return self.retrieve_sentence_embedding(input_ids, attention_mask)
+        else:
+            return self.compute_sentence_embedding(input_ids, attention_mask)
+
+    @tensor_lru_cache(maxsize=1024)
+    def retrieve_sentence_embedding(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> torch.Tensor:
+        """Wrapper for `get_sentence_embedding` function that caches results."""
+        return self.compute_sentence_embedding(input_ids, attention_mask)
+
+    def compute_sentence_embedding(
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+    ) -> torch.Tensor:
+
         encoder_out = self.encoder(input_ids, attention_mask)
         if self.layerwise_attention:
             # HACK: LayerNorm is applied at the MiniBatch. This means that for big batch sizes the variance
@@ -409,7 +430,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         ]
 
     def prepare_for_inference(self, sample):
-        """ Ideally this should be a lamba function but for some reason python does not copy local lambda functions.
+        """Ideally this should be a lamba function but for some reason python does not copy local lambda functions.
         This functions replaces `collate_fn=lambda x: self.prepare_sample(x, inference=True)` from line 434.
         """
         return self.prepare_sample(sample, inference=True)
@@ -458,12 +479,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         dataloader = DataLoader(
             dataset=samples,
             batch_size=batch_size,
-            #collate_fn=lambda x: self.prepare_sample(x, inference=True),
+            # collate_fn=lambda x: self.prepare_sample(x, inference=True),
             sampler=sampler,
             collate_fn=self.prepare_for_inference,
             num_workers=num_workers or multiprocessing.cpu_count(),
         )
-        
+
         if progress_bar:
             trainer = ptl.Trainer(
                 gpus=gpus,
@@ -493,7 +514,9 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             if sort_by_mtlen:
                 unsorted_mean_scores = [None for _ in range(len(samples))]
                 unsorted_std_scores = [None for _ in range(len(samples))]
-                for idx, mean_score, std_score  in zip(sort_ids, mean_scores, std_scores):
+                for idx, mean_score, std_score in zip(
+                    sort_ids, mean_scores, std_scores
+                ):
                     unsorted_mean_scores[idx] = mean_score
                     unsorted_std_scores[idx] = std_score
                 mean_scores = unsorted_mean_scores

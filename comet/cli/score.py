@@ -50,12 +50,21 @@ def score_command() -> None:
     parser.add_argument("-r", "--references", type=Path_fr)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
-    parser.add_argument("--model_storage_path", help="path to the directory where models will be stored.")
+    parser.add_argument(
+        "--model_storage_path",
+        help="Path to the directory where models will be stored.",
+        default=None,
+    )
     parser.add_argument(
         "--to_json",
         type=Union[bool, str],
         default=False,
         help="Exports results to a json file.",
+    )
+    parser.add_argument(
+        "--disable_cache",
+        action="store_true",
+        help="Disables sentence embeddings caching. This makes inference slower but saves memory.",
     )
     parser.add_argument(
         "--model",
@@ -86,10 +95,15 @@ def score_command() -> None:
         parser.error("{} requires -r/--references.".format(cfg.model))
 
     model_path = (
-        download_model(cfg.model, saving_directory=args.model_storage_path) if cfg.model in available_metrics else cfg.model
+        download_model(cfg.model, saving_directory=cfg.model_storage_path)
+        if cfg.model in available_metrics
+        else cfg.model
     )
     model = load_from_checkpoint(model_path)
     model.eval()
+
+    if not cfg.disable_cache:
+        model.set_embedding_cache()
 
     with open(cfg.sources()) as fp:
         sources = [line.strip() for line in fp.readlines()]
@@ -114,20 +128,17 @@ def score_command() -> None:
             sample["COMET"] = mean
             sample["variance"] = std
 
-        print("System score: {:.4f}".format(sys_score))
-        if isinstance(cfg.to_json, str):
-            with open(cfg.to_json, "w") as outfile:
-                json.dump(data, outfile, ensure_ascii=False, indent=4)
-            print("Predictions saved in: {}.".format(cfg.to_json))
-
     else:
         predictions, sys_score = model.predict(data, cfg.batch_size, cfg.gpus)
         for i, (score, sample) in enumerate(zip(predictions, data)):
             print("Segment {}\tscore: {:.4f}".format(i, score))
             sample["COMET"] = score
 
-        print("System score: {:.4f}".format(sys_score))
-        if isinstance(cfg.to_json, str):
-            with open(cfg.to_json, "w") as outfile:
-                json.dump(data, outfile, ensure_ascii=False, indent=4)
-            print("Predictions saved in: {}.".format(cfg.to_json))
+    print("System score: {:.4f}".format(sys_score))
+    if isinstance(cfg.to_json, str):
+        with open(cfg.to_json, "w") as outfile:
+            json.dump(data, outfile, ensure_ascii=False, indent=4)
+        print("Predictions saved in: {}.".format(cfg.to_json))
+
+    if not cfg.disable_cache:
+        print(model.retrieve_sentence_embedding.cache_info())

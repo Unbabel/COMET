@@ -1,3 +1,17 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2020 Unbabel
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 LRU Cache 
 ==========
@@ -8,15 +22,21 @@ Our modification simply modifies the _make_key function to use tensor str repres
 intead of the object reference. Other than that we use the original implementation
 """
 from _thread import RLock
+from functools import _CacheInfo, _HashedSeq, update_wrapper
+
 import torch
 
-from functools import _HashedSeq, _CacheInfo, update_wrapper
 
-
-def _make_key(args, kwds, typed,
-             kwd_mark = (object(),),
-             fasttypes = {int, str},
-             tuple=tuple, type=type, len=len):
+def _make_key(
+    args,
+    kwds,
+    typed,
+    kwd_mark=(object(),),
+    fasttypes={int, str},
+    tuple=tuple,
+    type=type,
+    len=len,
+):
     """Make a cache key from optionally typed positional and keyword arguments
     The key is constructed in a way that is flat as possible rather than
     as a nested structure that would take more memory.
@@ -63,33 +83,33 @@ def tensor_lru_cache(maxsize=128, typed=False):
         # The user_function was passed in directly via the maxsize argument
         user_function, maxsize = maxsize, 128
         wrapper = _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo)
-        wrapper.cache_parameters = lambda : {'maxsize': maxsize, 'typed': typed}
+        wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}
         return update_wrapper(wrapper, user_function)
     elif maxsize is not None:
-        raise TypeError(
-            'Expected first argument to be an integer, a callable, or None')
+        raise TypeError("Expected first argument to be an integer, a callable, or None")
 
     def decorating_function(user_function):
         wrapper = _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo)
-        wrapper.cache_parameters = lambda : {'maxsize': maxsize, 'typed': typed}
+        wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}
         return update_wrapper(wrapper, user_function)
 
     return decorating_function
 
+
 def _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo):
     # Constants shared by all lru cache instances:
-    sentinel = object()          # unique object used to signal cache misses
-    make_key = _make_key         # build a key from the function arguments
-    PREV, NEXT, KEY, RESULT = 0, 1, 2, 3   # names for the link fields
+    sentinel = object()  # unique object used to signal cache misses
+    make_key = _make_key  # build a key from the function arguments
+    PREV, NEXT, KEY, RESULT = 0, 1, 2, 3  # names for the link fields
 
     cache = {}
     hits = misses = 0
     full = False
-    cache_get = cache.get    # bound method to lookup a key or return None
+    cache_get = cache.get  # bound method to lookup a key or return None
     cache_len = cache.__len__  # get cache size without calling len()
-    lock = RLock()           # because linkedlist updates aren't threadsafe
-    root = []                # root of the circular doubly linked list
-    root[:] = [root, root, None, None]     # initialize by pointing to self
+    lock = RLock()  # because linkedlist updates aren't threadsafe
+    root = []  # root of the circular doubly linked list
+    root[:] = [root, root, None, None]  # initialize by pointing to self
 
     if maxsize == 0:
 
@@ -171,7 +191,7 @@ def _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo):
                     last[NEXT] = root[PREV] = cache[key] = link
                     # Use the cache_len bound method instead of the len() function
                     # which could potentially be wrapped in an lru_cache itself.
-                    full = (cache_len() >= maxsize)
+                    full = cache_len() >= maxsize
             return result
 
     def get_cache():
