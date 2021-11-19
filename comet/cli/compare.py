@@ -62,7 +62,7 @@ from scipy import stats
 _REFLESS_MODELS = ["comet-qe"]  # All reference-free metrics are named with 'comet-qe'
 # Due to small numerical differences in scores we consider that any system comparison
 # with a difference bellow EPS to be considered a tie.
-EPS = 0.0001
+EPS = 0.001
 
 
 def compare_command() -> Union[None, int]:
@@ -187,12 +187,6 @@ def compare_command() -> Union[None, int]:
                 cfg.model, list(available_metrics.keys())
             )
         )
-
-    model_path = (
-        download_model(cfg.model, saving_directory=cfg.model_storage_path)
-        if cfg.model in available_metrics
-        else cfg.model
-    )
     model = load_from_checkpoint(model_path)
     model.eval()
 
@@ -324,11 +318,11 @@ def compare_command() -> Union[None, int]:
             },
         },
     )
-    print("Bootstrap Resampling Results:")
+    print("\nBootstrap Resampling Results:")
     for k, v in data[0]["bootstrap_resampling"].items():
         print("{}:\t{:.4f}".format(k, v))
 
-    print("Paired T-Test Results:")
+    print("\nPaired T-Test Results:")
     for k, v in data[0]["paired_t-test"].items():
         print("{}:\t{:.4f}".format(k, v))
 

@@ -54,7 +54,7 @@ class OrderedSampler(Sampler[int]):
 
 
 if "COMET_EMBEDDINGS_CACHE" in os.environ:
-    CACHE_SIZE = os.environ["COMET_EMBEDDINGS_CACHE"]
+    CACHE_SIZE = int(os.environ["COMET_EMBEDDINGS_CACHE"])
 else:
     CACHE_SIZE = 1024
 

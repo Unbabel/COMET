@@ -186,15 +186,10 @@ def score_command() -> None:
     with open(cfg.sources()) as fp:
         sources = [line.strip() for line in fp.readlines()]
 
-    # When we only have 1 single system to score:
-    if len(cfg.translations) == 1:
-        with open(cfg.translations[0]()) as fp:
-            translations = [line.strip() for line in fp.readlines()]
-    else:
-        translations = []
-        for path_fr in cfg.translations:
-            with open(path_fr()) as fp:
-                translations.append([line.strip() for line in fp.readlines()])
+    translations = []
+    for path_fr in cfg.translations:
+        with open(path_fr()) as fp:
+            translations.append([line.strip() for line in fp.readlines()])
 
     if "comet-qe" in cfg.model:
         data = {"src": [sources for _ in translations], "mt": translations}
@@ -209,9 +204,8 @@ def score_command() -> None:
 
     if cfg.gpus > 1 and cfg.accelerator == "ddp":
         # Flatten all data to score across multiple GPUs
-        data["src"] = list(itertools.chain(*data["src"]))
-        data["mt"] = list(itertools.chain(*data["mt"]))
-        data["ref"] = list(itertools.chain(*data["ref"]))
+        for k, v in data.items():
+            data[k] = list(itertools.chain(*v))
         data = [dict(zip(data, t)) for t in zip(*data.values())]
 
         gather_mean = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
@@ -234,11 +228,9 @@ def score_command() -> None:
 
         torch.distributed.barrier()  # Waits for all processes
         if torch.distributed.get_rank() == 0:
-            seg_scores = [o[i] for i in range(len(gather_mean[0])) for o in gather_mean]
+            seg_scores = list(itertools.chain(*gather_mean))
             if len(outputs) == 3:
-                std_scores = [
-                    o[i] for i in range(len(gather_std[0])) for o in gather_std
-                ]
+                std_scores = list(itertools.chain(*gather_std))
             else:
                 std_scores = None
         else:
@@ -271,8 +263,8 @@ def score_command() -> None:
         # to maximize cache hits!
         seg_scores, std_scores, sys_scores = [], [], []
         new_data = []
-        for src, mt, ref in zip(data["src"], data["mt"], data["ref"]):
-            sys_data = {"src": src, "mt": mt, "ref": ref}
+        for i in range(len(cfg.translations)):
+            sys_data = {k: v[i] for k, v in data.items()}
             sys_data = [dict(zip(sys_data, t)) for t in zip(*sys_data.values())]
             new_data.append(np.array(sys_data))
             outputs = model.predict(
@@ -300,7 +292,7 @@ def score_command() -> None:
     for i in range(len(data[files[0]])):  # loop over (src, ref)
         for j in range(len(files)):  # loop of system
             data[files[j]][i]["COMET"] = seg_scores[j][i]
-            if std_scores[j]:
+            if cfg.mc_dropout:
                 data[files[j]][i]["variance"] = std_scores[j][i]
                 print(
                     "{}\tSegment {}\tscore: {:.4f}\tvariance: {:.4f}".format(
