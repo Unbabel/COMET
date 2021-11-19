@@ -24,6 +24,7 @@ Detailed usage examples and instructions can be found in the [Full Documentation
 Simple installation from PyPI
 
 ```bash
+pip install --upgrade pip  # ensures that pip is current 
 pip install unbabel-comet
 ```
 or
