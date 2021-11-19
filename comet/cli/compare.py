@@ -44,7 +44,7 @@ optional arguments:
                         Prediction seed. (type: int, default: 12)
 
 """
-
+import os
 import json
 import multiprocessing
 from typing import Union
@@ -101,10 +101,9 @@ def compare_command() -> Union[None, int]:
     )
     parser.add_argument(
         "--model",
-        type=Union[str, Path_fr],
+        type=str,
         required=False,
         default="wmt20-comet-da",
-        choices=available_metrics.keys(),
         help="COMET model to be used.",
     )
     parser.add_argument(
@@ -167,7 +166,6 @@ def compare_command() -> Union[None, int]:
             )
         except Exception as e:
             import sys
-
             print("SacreBLEU error:", e, file=sys.stderr)
             sys.exit(1)
 
@@ -178,6 +176,15 @@ def compare_command() -> Union[None, int]:
             "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
         )
 
+    if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
+        model_path = cfg.model
+    elif cfg.model in available_metrics:
+        model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
+    else:
+        parser.error(
+            "{} is not a valid checkpoint path or model choice. Choose from {}".format(cfg.model, list(available_metrics.keys()))
+        )
+    
     model_path = (
         download_model(cfg.model, saving_directory=cfg.model_storage_path)
         if cfg.model in available_metrics
@@ -210,20 +217,20 @@ def compare_command() -> Union[None, int]:
     system_x = [dict(zip(system_x, t)) for t in zip(*system_x.values())]
     system_y = [dict(zip(system_y, t)) for t in zip(*system_y.values())]
 
-    seperator_index = len(system_x)
-    data = system_x + system_y
-    outputs = model.predict(
-        samples=data,
-        batch_size=cfg.batch_size,
-        gpus=cfg.gpus,
-        progress_bar=(not cfg.disable_bar),
-        accelerator=cfg.accelerator,
-        num_workers=cfg.num_workers,
-        length_batching=(not cfg.disable_length_batching),
-    )
-    seg_scores = outputs[0]
-    gather_outputs = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
     if cfg.gpus > 1 and cfg.accelerator == "ddp":
+        gather_outputs = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
+        seperator_index = len(system_x)
+        data = system_x + system_y
+        outputs = model.predict(
+            samples=data,
+            batch_size=cfg.batch_size,
+            gpus=cfg.gpus,
+            progress_bar=(not cfg.disable_bar),
+            accelerator=cfg.accelerator,
+            num_workers=cfg.num_workers,
+            length_batching=(not cfg.disable_length_batching),
+        )
+        seg_scores = outputs[0]
         torch.distributed.all_gather_object(gather_outputs, seg_scores)
         torch.distributed.barrier()  # Waits for all processes
         if torch.distributed.get_rank() == 0:
@@ -232,9 +239,30 @@ def compare_command() -> Union[None, int]:
             ]
         else:
             return 0
-
-    x_seg_scores = seg_scores[:seperator_index]
-    y_seg_scores = seg_scores[seperator_index:]
+        
+        x_seg_scores = seg_scores[:seperator_index]
+        y_seg_scores = seg_scores[seperator_index:]
+    
+    else: # This maximizes cache hits because batches will be equal!
+        x_seg_scores, _ = model.predict(
+            samples=system_x,
+            batch_size=cfg.batch_size,
+            gpus=cfg.gpus,
+            progress_bar=(not cfg.disable_bar),
+            accelerator=cfg.accelerator,
+            num_workers=cfg.num_workers,
+            length_batching=(not cfg.disable_length_batching),
+        )
+        y_seg_scores, _ = model.predict(
+            samples=system_y,
+            batch_size=cfg.batch_size,
+            gpus=cfg.gpus,
+            progress_bar=(not cfg.disable_bar),
+            accelerator=cfg.accelerator,
+            num_workers=cfg.num_workers,
+            length_batching=(not cfg.disable_length_batching),
+        )
+    
     data = []
     for i, (x_score, y_score) in enumerate(zip(x_seg_scores, y_seg_scores)):
         print(

@@ -484,7 +484,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         # but that would require fundamentally changing the way dataloader is
         # setup, so currently raw chars are used as an approximation
         sampler = None
-        if length_batching:
+        if length_batching and gpus < 2:
             sort_ids = np.argsort([len(sample["src"]) for sample in samples])
             sampler = OrderedSampler(sort_ids)
 
@@ -524,7 +524,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             std_scores = [out[1] for out in predictions]
             mean_scores = torch.cat(mean_scores, dim=0).tolist()
             std_scores = torch.cat(std_scores, dim=0).tolist()
-            if length_batching:
+            if length_batching and gpus < 2:
                 unsorted_mean_scores = [None for _ in range(len(samples))]
                 unsorted_std_scores = [None for _ in range(len(samples))]
                 for idx, mean_score, std_score in zip(
@@ -542,7 +542,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 self, dataloaders=dataloader, return_predictions=True
             )
             predictions = torch.cat(predictions, dim=0).tolist()
-            if length_batching:
+            if length_batching and gpus < 2:
                 unsorted_predictions = [None for _ in range(len(samples))]
                 for idx, prediction in zip(sort_ids, predictions):
                     unsorted_predictions[idx] = prediction

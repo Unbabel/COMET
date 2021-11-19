@@ -45,9 +45,12 @@ optional arguments:
   --seed_everything SEED_EVERYTHING
                         Prediction seed. (type: int, default: 12)
 """
+import os
 import json
 import multiprocessing
 from typing import Dict, List, Optional, Union
+import itertools
+
 
 import numpy as np
 import torch
@@ -84,10 +87,9 @@ def score_command() -> None:
     )
     parser.add_argument(
         "--model",
-        type=Union[str, Path_fr],
+        type=str,
         required=False,
         default="wmt20-comet-da",
-        choices=available_metrics.keys(),
         help="COMET model to be used.",
     )
     parser.add_argument(
@@ -165,12 +167,15 @@ def score_command() -> None:
         parser.error(
             "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
         )
-
-    model_path = (
-        download_model(cfg.model, saving_directory=cfg.model_storage_path)
-        if cfg.model in available_metrics
-        else cfg.model
-    )
+    
+    if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
+        model_path = cfg.model
+    elif cfg.model in available_metrics:
+        model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
+    else:
+        parser.error(
+            "{} is not a valid checkpoint path or model choice. Choose from {}".format(cfg.model, available_metrics.keys())
+        )
     model = load_from_checkpoint(model_path)
     model.eval()
 
@@ -188,35 +193,40 @@ def score_command() -> None:
         translations = []
         for path_fr in cfg.translations:
             with open(path_fr()) as fp:
-                translations += [line.strip() for line in fp.readlines()]
+                translations.append([line.strip() for line in fp.readlines()])
 
     if "comet-qe" in cfg.model:
-        data = {"src": sources * len(cfg.translations), "mt": translations}
+        data = {"src": [sources for _ in translations], "mt": translations}
     else:
         with open(cfg.references()) as fp:
             references = [line.strip() for line in fp.readlines()]
         data = {
-            "src": sources * len(cfg.translations),
+            "src": [sources for _ in translations],
             "mt": translations,
-            "ref": references * len(cfg.translations),
+            "ref": [references for _ in translations],
         }
 
-    data = [dict(zip(data, t)) for t in zip(*data.values())]
-    gather_mean = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
-    gather_std = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
-    outputs = model.predict(
-        samples=data,
-        batch_size=cfg.batch_size,
-        gpus=cfg.gpus,
-        mc_dropout=cfg.mc_dropout,
-        progress_bar=(not cfg.disable_bar),
-        accelerator=cfg.accelerator,
-        num_workers=cfg.num_workers,
-        length_batching=(not cfg.disable_length_batching),
-    )
-    seg_scores = outputs[0]
-    std_scores = None if len(outputs) == 2 else outputs[1]
     if cfg.gpus > 1 and cfg.accelerator == "ddp":
+        # Flatten all data to score across multiple GPUs
+        data["src"] = list(itertools.chain(*data["src"]))
+        data["mt"] = list(itertools.chain(*data["mt"]))
+        data["ref"] = list(itertools.chain(*data["ref"]))
+        data = [dict(zip(data, t)) for t in zip(*data.values())]
+
+        gather_mean = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
+        gather_std = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
+        outputs = model.predict(
+            samples=data,
+            batch_size=cfg.batch_size,
+            gpus=cfg.gpus,
+            mc_dropout=cfg.mc_dropout,
+            progress_bar=(not cfg.disable_bar),
+            accelerator=cfg.accelerator,
+            num_workers=cfg.num_workers,
+            length_batching=(not cfg.disable_length_batching),
+        )
+        seg_scores = outputs[0]
+        std_scores = None if len(outputs) == 2 else outputs[1]
         torch.distributed.all_gather_object(gather_mean, outputs[0])
         if len(outputs) == 3:
             torch.distributed.all_gather_object(gather_std, outputs[1])
@@ -233,30 +243,58 @@ def score_command() -> None:
         else:
             return
 
-    files = [path_fr.rel_path for path_fr in cfg.translations]
-    if len(cfg.translations) > 1:
-        seg_scores = np.array_split(seg_scores, len(cfg.translations))
-        sys_scores = [sum(split) / len(split) for split in seg_scores]
-        std_scores = (
-            np.array_split(std_scores, len(cfg.translations))
-            if std_scores
-            else [None] * len(seg_scores)
-        )
-        data = np.array_split(data, len(cfg.translations))
+        if len(cfg.translations) > 1:
+            seg_scores = np.array_split(seg_scores, len(cfg.translations))
+            sys_scores = [sum(split) / len(split) for split in seg_scores]
+            std_scores = (
+                np.array_split(std_scores, len(cfg.translations))
+                if std_scores
+                else [None] * len(seg_scores)
+            )
+            data = np.array_split(data, len(cfg.translations))
+        else:
+            sys_scores = [
+                sum(seg_scores) / len(seg_scores),
+            ]
+            seg_scores = [
+                seg_scores,
+            ]
+            data = [
+                np.array(data),
+            ]
+            std_scores = [
+                std_scores,
+            ]
     else:
-        sys_scores = [
-            sum(seg_scores) / len(seg_scores),
-        ]
-        seg_scores = [
-            seg_scores,
-        ]
-        data = [
-            np.array(data),
-        ]
-        std_scores = [
-            std_scores,
-        ]
+        # If not using Multiple GPUs we will score each system independently
+        # to maximize cache hits!
+        seg_scores, std_scores, sys_scores = [], [], []
+        new_data = []
+        for src, mt, ref in zip(data["src"], data["mt"], data["ref"]):
+            sys_data = {"src": src, "mt": mt, "ref": ref}
+            sys_data = [dict(zip(sys_data, t)) for t in zip(*sys_data.values())]
+            new_data.append(np.array(sys_data))
+            outputs = model.predict(
+                samples=sys_data,
+                batch_size=cfg.batch_size,
+                gpus=cfg.gpus,
+                mc_dropout=cfg.mc_dropout,
+                progress_bar=(not cfg.disable_bar),
+                accelerator=cfg.accelerator,
+                num_workers=cfg.num_workers,
+                length_batching=(not cfg.disable_length_batching),
+            )
+            if len(outputs) == 3:
+                seg_scores.append(outputs[0])
+                std_scores.append(outputs[1])
+            else:
+                seg_scores.append(outputs[0])
+                std_scores.append(None)
+            
+            sys_scores.append(sum(outputs[0])/len(outputs[0]))
+        data = new_data
 
+    files = [path_fr.rel_path for path_fr in cfg.translations]
     data = {file: system_data.tolist() for file, system_data in zip(files, data)}
     for i in range(len(data[files[0]])):  # loop over (src, ref)
         for j in range(len(files)):  # loop of system
