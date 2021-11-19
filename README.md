@@ -8,7 +8,7 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-> Version 1.0.0 is finally out 🥳! whats new?
+> Version 1.0 is finally out 🥳! whats new?
 > 1) `comet-compare` command for statistical comparison between two models
 > 2) `comet-score` with multiple hypothesis/systems
 > 3) Embeddings caching for faster inference (thanks to [@jsouza](https://github.com/jsouza)).
@@ -24,7 +24,11 @@ Detailed usage examples and instructions can be found in the [Full Documentation
 Simple installation from PyPI
 
 ```bash
-pip install unbabel-comet==1.0.0
+pip install unbabel-comet
+```
+or
+```bash
+pip install unbabel-comet==1.0.1 --use-feature=2020-resolver
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
@@ -53,12 +57,13 @@ echo -e "The fire could have been stopped\nSchools and pre-school were open" >> 
 echo -e "They were able to control the fire.\nSchools and kindergartens opened" >> ref.en
 ```
 
+Basic scoring command:
 ```bash
 comet-score -s src.de -t hyp1.en -r ref.en
 ```
+> you can set `--gpus 0` to test on CPU.
 
 Scoring multiple systems:
-
 ```bash
 comet-score -s src.de -t hyp1.en hyp2.en -r ref.en
 ```
