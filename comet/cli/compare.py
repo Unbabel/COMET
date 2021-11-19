@@ -44,9 +44,9 @@ optional arguments:
                         Prediction seed. (type: int, default: 12)
 
 """
-import os
 import json
 import multiprocessing
+import os
 from typing import Union
 
 import numpy as np
@@ -166,6 +166,7 @@ def compare_command() -> Union[None, int]:
             )
         except Exception as e:
             import sys
+
             print("SacreBLEU error:", e, file=sys.stderr)
             sys.exit(1)
 
@@ -182,9 +183,11 @@ def compare_command() -> Union[None, int]:
         model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
     else:
         parser.error(
-            "{} is not a valid checkpoint path or model choice. Choose from {}".format(cfg.model, list(available_metrics.keys()))
+            "{} is not a valid checkpoint path or model choice. Choose from {}".format(
+                cfg.model, list(available_metrics.keys())
+            )
         )
-    
+
     model_path = (
         download_model(cfg.model, saving_directory=cfg.model_storage_path)
         if cfg.model in available_metrics
@@ -218,7 +221,9 @@ def compare_command() -> Union[None, int]:
     system_y = [dict(zip(system_y, t)) for t in zip(*system_y.values())]
 
     if cfg.gpus > 1 and cfg.accelerator == "ddp":
-        gather_outputs = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
+        gather_outputs = [
+            None for _ in range(cfg.gpus)
+        ]  # Only necessary for multigpu DDP
         seperator_index = len(system_x)
         data = system_x + system_y
         outputs = model.predict(
@@ -239,11 +244,11 @@ def compare_command() -> Union[None, int]:
             ]
         else:
             return 0
-        
+
         x_seg_scores = seg_scores[:seperator_index]
         y_seg_scores = seg_scores[seperator_index:]
-    
-    else: # This maximizes cache hits because batches will be equal!
+
+    else:  # This maximizes cache hits because batches will be equal!
         x_seg_scores, _ = model.predict(
             samples=system_x,
             batch_size=cfg.batch_size,
@@ -262,7 +267,7 @@ def compare_command() -> Union[None, int]:
             num_workers=cfg.num_workers,
             length_batching=(not cfg.disable_length_batching),
         )
-    
+
     data = []
     for i, (x_score, y_score) in enumerate(zip(x_seg_scores, y_seg_scores)):
         print(

@@ -45,12 +45,11 @@ optional arguments:
   --seed_everything SEED_EVERYTHING
                         Prediction seed. (type: int, default: 12)
 """
-import os
+import itertools
 import json
 import multiprocessing
+import os
 from typing import Dict, List, Optional, Union
-import itertools
-
 
 import numpy as np
 import torch
@@ -167,14 +166,16 @@ def score_command() -> None:
         parser.error(
             "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
         )
-    
+
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         model_path = cfg.model
     elif cfg.model in available_metrics:
         model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
     else:
         parser.error(
-            "{} is not a valid checkpoint path or model choice. Choose from {}".format(cfg.model, available_metrics.keys())
+            "{} is not a valid checkpoint path or model choice. Choose from {}".format(
+                cfg.model, available_metrics.keys()
+            )
         )
     model = load_from_checkpoint(model_path)
     model.eval()
@@ -290,8 +291,8 @@ def score_command() -> None:
             else:
                 seg_scores.append(outputs[0])
                 std_scores.append(None)
-            
-            sys_scores.append(sum(outputs[0])/len(outputs[0]))
+
+            sys_scores.append(sum(outputs[0]) / len(outputs[0]))
         data = new_data
 
     files = [path_fr.rel_path for path_fr in cfg.translations]
