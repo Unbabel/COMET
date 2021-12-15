@@ -102,7 +102,10 @@ class RegressionMetric(CometModel):
 
     def init_metrics(self):
         metrics = MetricCollection(
-            {"spearman": SpearmanCorrcoef(), "pearson": PearsonCorrcoef()}
+            {
+                #"spearman": SpearmanCorrcoef(), 
+                "pearson": PearsonCorrcoef()
+            }
         )
         self.train_metrics = metrics.clone(prefix="train_")
         self.val_metrics = metrics.clone(prefix="val_")
@@ -204,5 +207,5 @@ class RegressionMetric(CometModel):
         df["src"] = df["src"].astype(str)
         df["mt"] = df["mt"].astype(str)
         df["ref"] = df["ref"].astype(str)
-        df["score"] = df["score"].astype(float)
+        df["score"] = df["score"].astype("float16")
         return df.to_dict("records")

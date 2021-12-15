@@ -13,5 +13,6 @@
 # limitations under the License.
 from .bert import BERTEncoder
 from .xlmr import XLMREncoder
+from .minilm import MiniLMEncoder
 
-str2encoder = {"BERT": BERTEncoder, "XLM-RoBERTa": XLMREncoder}
+str2encoder = {"BERT": BERTEncoder, "XLM-RoBERTa": XLMREncoder, "MiniLM": MiniLMEncoder}
