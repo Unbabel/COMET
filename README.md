@@ -19,11 +19,10 @@
 
 ## Quick Installation
 
-Detailed usage examples and instructions can be found in the [Full Documentation](https://unbabel.github.io/COMET/html/index.html).
-
 Simple installation from PyPI
 
 ```bash
+pip install --upgrade pip  # ensures that pip is current 
 pip install unbabel-comet
 ```
 or

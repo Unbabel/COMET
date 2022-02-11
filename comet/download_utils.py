@@ -201,7 +201,7 @@ def download_model(model: str, saving_directory: str = None) -> str:
 
     elif model not in available_metrics.keys():
         raise Exception(
-            f"{model} is not in the `availale_metrics` or is a valid checkpoint folder."
+            f"{model} is not in the `available_metrics` or is a valid checkpoint folder."
         )
 
     elif available_metrics[model].startswith("https://"):
