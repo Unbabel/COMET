@@ -75,6 +75,9 @@ def compare_command() -> Union[None, int]:
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
+        "--quiet", action="store_true", help="Prints only the final system score."
+    )
+    parser.add_argument(
         "--num_splits",
         type=int,
         default=300,
@@ -264,11 +267,12 @@ def compare_command() -> Union[None, int]:
 
     data = []
     for i, (x_score, y_score) in enumerate(zip(x_seg_scores, y_seg_scores)):
-        print(
-            "Segment {}\tsystem_x score: {:.4f}\tsystem_y score: {:.4f}".format(
-                i, x_score, y_score
+        if not cfg.quiet:
+            print(
+                "Segment {}\tsystem_x score: {:.4f}\tsystem_y score: {:.4f}".format(
+                    i, x_score, y_score
+                )
             )
-        )
         data.append(
             {
                 "src": system_x[i]["src"],

@@ -72,6 +72,9 @@ def score_command() -> None:
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
+        "--quiet", action="store_true", help="Prints only the final system score."
+    )
+    parser.add_argument(
         "--accelerator",
         type=str,
         default="ddp",
@@ -289,22 +292,25 @@ def score_command() -> None:
 
     files = [path_fr.rel_path for path_fr in cfg.translations]
     data = {file: system_data.tolist() for file, system_data in zip(files, data)}
+    
     for i in range(len(data[files[0]])):  # loop over (src, ref)
         for j in range(len(files)):  # loop of system
             data[files[j]][i]["COMET"] = seg_scores[j][i]
             if cfg.mc_dropout:
                 data[files[j]][i]["variance"] = std_scores[j][i]
-                print(
-                    "{}\tSegment {}\tscore: {:.4f}\tvariance: {:.4f}".format(
-                        files[j], i, seg_scores[j][i], std_scores[j][i]
+                if not cfg.quiet:
+                    print(
+                        "{}\tSegment {}\tscore: {:.4f}\tvariance: {:.4f}".format(
+                            files[j], i, seg_scores[j][i], std_scores[j][i]
+                        )
                     )
-                )
             else:
-                print(
-                    "{}\tSegment {}\tscore: {:.4f}".format(
-                        files[j], i, seg_scores[j][i]
+                if not cfg.quiet:
+                    print(
+                        "{}\tSegment {}\tscore: {:.4f}".format(
+                            files[j], i, seg_scores[j][i]
+                        )
                     )
-                )
 
     for j in range(len(files)):
         print("{}\tscore: {:.4f}".format(files[j], sys_scores[j]))
