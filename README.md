@@ -73,6 +73,12 @@ WMT test sets via [SacreBLEU](https://github.com/mjpost/sacrebleu):
 comet-score -d wmt20:en-de -t PATH/TO/TRANSLATIONS
 ```
 
+The default setting of `comet-score` prints the score for each segment individually. If you are only interested in the score for the whole dataset (computed as the average of the segment scores), you can use the `--quiet` flag.
+
+```bash
+comet-score -s src.de -t hyp1.en -r ref.en --quiet
+```
+
 You can select another model/metric with the --model flag and for reference-free (QE-as-a-metric) models you don't need to pass a reference.
 
 ```bash
