@@ -52,6 +52,10 @@ def _make_key(
     for x in args:
         if torch.is_tensor(x):
             new_args.append(
+                # HACK: Tensor representations omit some tensor content.
+                # Nonetheless converting the tensor into a tuple is too slow.
+                # The current solution is an approximation to the actual tensor 
+                # full representation. This can still lead to `false` cache hits!
                 x.__repr__() +
                 "\n" + x.diagonal().__repr__() + 
                 "\n" + x.shape.__repr__()
