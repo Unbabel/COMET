@@ -44,6 +44,7 @@ optional arguments:
                         (type: Union[bool, int], default: False)
   --seed_everything SEED_EVERYTHING
                         Prediction seed. (type: int, default: 12)
+  --quiet               Prints only the average COMET score for the whole dataset. (default: False)
 """
 import itertools
 import json
@@ -137,6 +138,11 @@ def score_command() -> None:
         "--print_cache_info",
         action="store_true",
         help="Print information about COMET cache.",
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Prints only the average COMET score for the whole dataset.",
     )
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
