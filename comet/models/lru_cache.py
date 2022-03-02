@@ -51,7 +51,11 @@ def _make_key(
     new_args = []
     for x in args:
         if torch.is_tensor(x):
-            new_args.append(x.__repr__() + x.shape.__repr__())
+            new_args.append(
+                x.__repr__() +
+                "\n" + x.diagonal().__repr__() + 
+                "\n" + x.shape.__repr__()
+            )
         else:
             new_args.append(x)
 
