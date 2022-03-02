@@ -83,7 +83,7 @@ class BERTEncoder(Encoder):
         opt_parameters += [
             {
                 "params": self.model.encoder.layer[i].parameters(),
-                "lr": lr * decay ** i,
+                "lr": lr * decay**i,
             }
             for i in range(self.num_layers - 2, 0, -1)
         ]

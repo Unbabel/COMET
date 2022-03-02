@@ -103,7 +103,7 @@ class RegressionMetric(CometModel):
     def init_metrics(self):
         metrics = MetricCollection(
             {
-                #"spearman": SpearmanCorrcoef(), 
+                # "spearman": SpearmanCorrcoef(),
                 "pearson": PearsonCorrcoef()
             }
         )

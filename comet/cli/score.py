@@ -139,11 +139,6 @@ def score_command() -> None:
         action="store_true",
         help="Print information about COMET cache.",
     )
-    parser.add_argument(
-        "--quiet",
-        action="store_true",
-        help="Prints only the average COMET score for the whole dataset.",
-    )
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
     if cfg.sources is None and cfg.sacrebleu_dataset is None:
@@ -298,7 +293,7 @@ def score_command() -> None:
 
     files = [path_fr.rel_path for path_fr in cfg.translations]
     data = {file: system_data.tolist() for file, system_data in zip(files, data)}
-    
+
     for i in range(len(data[files[0]])):  # loop over (src, ref)
         for j in range(len(files)):  # loop of system
             data[files[j]][i]["COMET"] = seg_scores[j][i]

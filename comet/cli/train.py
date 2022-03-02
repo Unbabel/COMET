@@ -29,6 +29,8 @@ For more details run the following command:
 ```
 """
 import json
+import warnings
+
 
 from comet.models import (
     CometModel,
@@ -103,7 +105,15 @@ def train_command() -> None:
         model = RankingMetric(**namespace_to_dict(cfg.ranking_metric.init_args))
     else:
         raise Exception("Model configurations missing!")
+    # Related to train/val_dataloaders:
 
+    # 2 workers per gpu is enough! If set to the number of cpus on this machine
+    # it throws another exception saying its too many workers.
+    warnings.filterwarnings(
+        "ignore",
+        category=UserWarning,
+        message=".*Consider increasing the value of the `num_workers` argument` .*",
+    )
     trainer.fit(model)
 
 

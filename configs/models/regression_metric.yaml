@@ -7,17 +7,16 @@ regression_metric:
     encoder_learning_rate: 1.0e-05
     learning_rate: 3.1e-05
     layerwise_decay: 0.95
-    encoder_model: XLM-RoBERTa
-    pretrained_model: xlm-roberta-large
+    encoder_model: MiniLM
+    pretrained_model: microsoft/Multilingual-MiniLM-L12-H384
     pool: avg
     layer: mix
     dropout: 0.15
     batch_size: 4
-    train_data: data/scores-1520.csv
-    validation_data: data/mqm.test.csv
+    train_data: data/scores-1720_train.csv
+    validation_data: data/scores-1720_val.csv
     hidden_sizes:
-      - 3072
-      - 1024
+      - 384
     
 trainer: ../trainer.yaml
 early_stopping: ../early_stopping.yaml

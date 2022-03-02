@@ -280,8 +280,8 @@ class RankingMetric(CometModel):
     def predict_step(
         self,
         batch: Dict[str, torch.Tensor],
-        batch_idx: int,
-        dataloader_idx: Optional[int],
+        batch_idx: Optional[int] = None,
+        dataloader_idx: Optional[int] = None,
     ) -> List[float]:
         src_sentemb = self.get_sentence_embedding(
             batch["src_input_ids"], batch["src_attention_mask"]

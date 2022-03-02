@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-import multiprocessing
 import os
 import shutil
 import unittest
+import warnings
 
 import torch
 from comet.models import RegressionMetric
@@ -27,11 +27,10 @@ class TestRegressionMetric(unittest.TestCase):
             gpus=0,
             max_epochs=10,
             deterministic=True,
-            checkpoint_callback=True,
+            enable_checkpointing=True,
             default_root_dir=DATA_PATH,
             logger=False,
-            weights_summary=None,
-            progress_bar_refresh_rate=0,
+            enable_progress_bar=False,
         )
         model = RegressionMetric(
             encoder_model="BERT",
@@ -43,6 +42,11 @@ class TestRegressionMetric(unittest.TestCase):
             batch_size=32,
             learning_rate=1e-04,
             encoder_learning_rate=1e-04,
+        )
+        warnings.filterwarnings(
+            "ignore",
+            category=UserWarning,
+            message=".*Consider increasing the value of the `num_workers` argument` .*",
         )
         trainer.fit(model)
         self.assertTrue(
@@ -62,11 +66,14 @@ class TestRegressionMetric(unittest.TestCase):
             dataset=dataset,
             batch_size=256,
             collate_fn=lambda x: saved_model.prepare_sample(x, inference=True),
-            num_workers=multiprocessing.cpu_count(),
+            num_workers=2,
         )
         y_hat = (
             torch.cat(
-                trainer.predict(dataloaders=dataloader, return_predictions=True), dim=0
+                trainer.predict(
+                    ckpt_path="best", dataloaders=dataloader, return_predictions=True
+                ),
+                dim=0,
             )
             .cpu()
             .tolist()

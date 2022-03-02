@@ -18,7 +18,6 @@ MiniLM Encoder
     Pretrained MiniLM encoder from Microsoft. This encoder uses a BERT 
     architecture with an XLMR tokenizer.
 """
-from comet.encoders.base import Encoder
 from comet.encoders.bert import BERTEncoder
 from transformers import BertModel, XLMRobertaTokenizer
 
@@ -31,6 +30,8 @@ class MiniLMEncoder(BERTEncoder):
 
     def __init__(self, pretrained_model: str) -> None:
         super().__init__()
-        self.tokenizer = XLMRobertaTokenizer.from_pretrained(pretrained_model, use_fast=True)
+        self.tokenizer = XLMRobertaTokenizer.from_pretrained(
+            pretrained_model, use_fast=True
+        )
         self.model = BertModel.from_pretrained(pretrained_model)
         self.model.encoder.output_hidden_states = True

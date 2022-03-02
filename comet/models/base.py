@@ -20,9 +20,8 @@ CometModel
 """
 import abc
 import logging
-import multiprocessing
 import os
-
+import warnings
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -416,7 +415,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             sampler=RandomSampler(self.train_dataset),
             batch_size=self.hparams.batch_size,
             collate_fn=self.prepare_sample,
-            num_workers=multiprocessing.cpu_count(),
+            num_workers=2 * self.trainer.gpus,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -426,13 +425,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
-                num_workers=min(8, multiprocessing.cpu_count()),
+                num_workers=2 * self.trainer.gpus,
             ),
             DataLoader(
                 dataset=self.validation_dataset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
-                num_workers=min(8, multiprocessing.cpu_count()),
+                num_workers=2 * self.trainer.gpus,
             ),
         ]
 
@@ -494,7 +493,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             batch_size=batch_size,
             sampler=sampler,
             collate_fn=self.prepare_for_inference,
-            num_workers=num_workers or multiprocessing.cpu_count(),
+            num_workers=num_workers or 2 * gpus,
         )
         accelerator = accelerator if gpus > 1 else None
 
@@ -514,6 +513,15 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 progress_bar_refresh_rate=0,
                 accelerator=accelerator,
             )
+
+        # TODO:
+        # Remove this upon resolution of:
+        # https://github.com/PyTorchLightning/pytorch-lightning/discussions/11392
+        warnings.filterwarnings(
+            "ignore",
+            category=UserWarning,
+            message="Your `predict_dataloader` has `shuffle=True`.*",
+        )
 
         if mc_dropout:
             self.set_mc_dropout(mc_dropout)

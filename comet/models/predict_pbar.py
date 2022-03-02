@@ -4,7 +4,7 @@ import pytorch_lightning as ptl
 from tqdm import tqdm
 
 
-class PredictProgressBar(ptl.callbacks.ProgressBar):
+class PredictProgressBar(ptl.callbacks.progress.tqdm_progress.TQDMProgressBar):
     """Default Lightning Progress bar writes to stdout, we replace stdout with stderr"""
 
     def init_predict_tqdm(self) -> tqdm:
