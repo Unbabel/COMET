@@ -33,6 +33,7 @@ include = [
 comet-train = 'comet.cli.train:train_command'
 comet-score = 'comet.cli.score:score_command'
 comet-compare = 'comet.cli.compare:compare_command'
+comet-mbr = 'comet.cli.mbr:mbr_command'
 
 [tool.poetry.dependencies]
 python = ">=3.7.0,<4.0.0"

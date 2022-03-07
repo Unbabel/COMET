@@ -20,37 +20,24 @@ Command for scoring MT systems.
 optional arguments:
   -h, --help            Show this help message and exit.
   -s SOURCES, --sources SOURCES
-                        (required unless using -d, type: Path_fr)
+                        (type: Path_fr, default: null)
   -t TRANSLATIONS, --translations TRANSLATIONS
-                        (required, type: Path_fr)
-  -r REFERENCES, --references REFERENCES
-                        (type: Path_fr, default: None)
-  -d SACREBLEU_TESTSET, --sacrebleu_dataset SACREBLEU_TESTSET
-                        (optional, use in place of -s and -r, type: str
-                         format TESTSET:LANGPAIR, e.g., wmt20:en-de)
-  --to_json TO_JSON     (type: Union[bool, str], default: False)
-  --model MODEL         (type: Union[str, Path_fr], default: wmt21-large-estimator)
+                        (type: Path_fr, default: null)
   --batch_size BATCH_SIZE
                         (type: int, default: 8)
-  --gpus GPUS           (type: int, default: 1)
-  --accelerator {dp,ddp}
-                        Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
-  --disable_bar         Disables progress bar. (default: True)
-  --to_json TO_JSON     Exports results to a json file. (type: Union[bool, str], default: False)
-  --model {emnlp20-comet-rank,wmt20-comet-da,wmt20-comet-qe-da,wmt21-comet-mqm,wmt21-cometinho-da,wmt21-comet-qe-mqm}
-                        COMET model to be used. (type: Union[str, Path_fr], default: wmt20-comet-da)
-  --mc_dropout MC_DROPOUT
-                        Number of inference runs for each sample in MC Dropout. 
-                        (type: Union[bool, int], default: False)
-  --seed_everything SEED_EVERYTHING
-                        Prediction seed. (type: int, default: 12)
-  --quiet               Prints only the average COMET score for the whole dataset. (default: False)
+  --num_samples NUM_SAMPLES
+                        (required, type: int)
+  --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
+  --model_storage_path MODEL_STORAGE_PATH
+                        Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
+  -o OUTPUT, --output OUTPUT
+                        Best candidates after running MBR decoding. (type: str, default: mbr_result.txt)
 """
 import itertools
 import json
 import multiprocessing
 import os
-from typing import Dict, List, Optional, Union
+from typing import Union
 
 import numpy as np
 import torch
@@ -323,3 +310,7 @@ def score_command() -> None:
 
     if cfg.print_cache_info:
         print(model.retrieve_sentence_embedding.cache_info())
+
+
+if __name__ == "__main__":
+    score_command()

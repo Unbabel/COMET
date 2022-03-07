@@ -103,7 +103,7 @@ class RegressionMetric(CometModel):
     def init_metrics(self):
         metrics = MetricCollection(
             {
-                # "spearman": SpearmanCorrcoef(),
+                "spearman": SpearmanCorrcoef(),
                 "pearson": PearsonCorrcoef()
             }
         )
@@ -169,6 +169,24 @@ class RegressionMetric(CometModel):
         targets = {"score": torch.tensor(sample["score"], dtype=torch.float)}
         return inputs, targets
 
+    def estimate(
+        self,
+        src_sentemb: torch.Tensor,
+        mt_sentemb: torch.Tensor,
+        ref_sentemb: torch.Tensor,
+    ) -> Dict[str, torch.Tensor]:
+        diff_ref = torch.abs(mt_sentemb - ref_sentemb)
+        diff_src = torch.abs(mt_sentemb - src_sentemb)
+
+        prod_ref = mt_sentemb * ref_sentemb
+        prod_src = mt_sentemb * src_sentemb
+
+        embedded_sequences = torch.cat(
+            (mt_sentemb, ref_sentemb, prod_ref, diff_ref, prod_src, diff_src),
+            dim=1,
+        )
+        return {"score": self.estimator(embedded_sequences)}
+
     def forward(
         self,
         src_input_ids: torch.tensor,
@@ -182,18 +200,7 @@ class RegressionMetric(CometModel):
         src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
         mt_sentemb = self.get_sentence_embedding(mt_input_ids, mt_attention_mask)
         ref_sentemb = self.get_sentence_embedding(ref_input_ids, ref_attention_mask)
-
-        diff_ref = torch.abs(mt_sentemb - ref_sentemb)
-        diff_src = torch.abs(mt_sentemb - src_sentemb)
-
-        prod_ref = mt_sentemb * ref_sentemb
-        prod_src = mt_sentemb * src_sentemb
-
-        embedded_sequences = torch.cat(
-            (mt_sentemb, ref_sentemb, prod_ref, diff_ref, prod_src, diff_src),
-            dim=1,
-        )
-        return {"score": self.estimator(embedded_sequences)}
+        return self.estimate(src_sentemb, mt_sentemb, ref_sentemb)
 
     def read_csv(self, path: str) -> List[dict]:
         """Reads a comma separated value file.
