@@ -487,13 +487,16 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             sort_ids = np.argsort([len(sample["src"]) for sample in samples])
             sampler = OrderedSampler(sort_ids)
 
+        if num_workers is None:
+            num_workers = 2 * gpus
+
         self.eval()
         dataloader = DataLoader(
             dataset=samples,
             batch_size=batch_size,
             sampler=sampler,
             collate_fn=self.prepare_for_inference,
-            num_workers=num_workers or 2 * gpus,
+            num_workers=num_workers,
         )
         accelerator = accelerator if gpus > 1 else None
 
