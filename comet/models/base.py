@@ -27,8 +27,10 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pytorch_lightning as ptl
 import torch
+import transformers
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
+from packaging import version
 from torch import nn
 from torch.utils.data import DataLoader, RandomSampler, Sampler, Subset
 
@@ -105,9 +107,16 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.save_hyperparameters(
             ignore=["train_data", "validation_data", "load_weights_from_checkpoint"]
         )
+
+        if self.hparams.encoder_model == "XLM-RoBERTa-XL":
+            # Ensure backwards compatibility with transformer versions
+            if version.parse(transformers.__version__) < version.parse("4.17.0"):
+                raise Exception("XLM-RoBERTa-XL requires transformers>=4.17.0. Your current version is {}".format(transformers.__version__))
+        
         self.encoder = str2encoder[self.hparams.encoder_model].from_pretrained(
             self.hparams.pretrained_model
         )
+        
         self.epoch_nr = 0
         if self.hparams.layer == "mix":
             self.layerwise_attention = LayerwiseAttention(
