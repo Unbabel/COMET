@@ -21,7 +21,7 @@ init_args:
   limit_predict_batches: 1.0
   log_every_n_steps: 50
   profiler: null
-  overfit_batches: 200
+  overfit_batches: 0.0
   plugins: null
   precision: 32
   max_epochs: 5

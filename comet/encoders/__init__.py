@@ -11,8 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .bert import BERTEncoder
-from .xlmr import XLMREncoder
-from .minilm import MiniLMEncoder
+import transformers
+from packaging import version
 
-str2encoder = {"BERT": BERTEncoder, "XLM-RoBERTa": XLMREncoder, "MiniLM": MiniLMEncoder}
+from .bert import BERTEncoder
+from .minilm import MiniLMEncoder
+from .xlmr import XLMREncoder
+
+str2encoder = {
+    "BERT": BERTEncoder, 
+    "XLM-RoBERTa": XLMREncoder, 
+    "MiniLM": MiniLMEncoder
+}
+
+if version.parse(transformers.__version__) >= version.parse("4.17.0"):
+    from .xlmr_xl import XLMRXLEncoder
+    str2encoder["XLM-RoBERTa-XL"] = XLMRXLEncoder
