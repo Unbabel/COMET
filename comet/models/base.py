@@ -513,6 +513,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         )
         accelerator = accelerator if gpus > 1 else None
 
+        warnings.filterwarnings(
+            "ignore",
+            category=UserWarning,
+            message=".*Consider increasing the value of the `num_workers` argument` .*",
+        )
         if progress_bar:
             trainer = ptl.Trainer(
                 gpus=gpus,

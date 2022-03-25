@@ -35,7 +35,6 @@ optional arguments:
 """
 import itertools
 import json
-import multiprocessing
 import os
 from typing import Union
 
@@ -106,7 +105,7 @@ def score_command() -> None:
         "--num_workers",
         help="Number of workers to use when loading data.",
         type=int,
-        default=multiprocessing.cpu_count(),
+        default=2,
     )
     parser.add_argument(
         "--disable_bar", action="store_true", help="Disables progress bar."
