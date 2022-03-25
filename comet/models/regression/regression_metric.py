@@ -103,7 +103,7 @@ class RegressionMetric(CometModel):
     def init_metrics(self):
         metrics = MetricCollection(
             {
-                #"spearman": SpearmanCorrcoef(),
+                # "spearman": SpearmanCorrcoef(),
                 "pearson": PearsonCorrcoef()
             }
         )
@@ -136,13 +136,10 @@ class RegressionMetric(CometModel):
                 params,
                 lr=self.hparams.learning_rate,
                 relative_step=False,
-                scale_parameter=False
+                scale_parameter=False,
             )
         else:
-            optimizer = torch.optim.AdamW(
-                params,
-                lr=self.hparams.learning_rate
-            )
+            optimizer = torch.optim.AdamW(params, lr=self.hparams.learning_rate)
         # scheduler = self._build_scheduler(optimizer)
         return [optimizer], []
 

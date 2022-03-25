@@ -111,12 +111,16 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         if self.hparams.encoder_model == "XLM-RoBERTa-XL":
             # Ensure backwards compatibility with transformer versions
             if version.parse(transformers.__version__) < version.parse("4.17.0"):
-                raise Exception("XLM-RoBERTa-XL requires transformers>=4.17.0. Your current version is {}".format(transformers.__version__))
-        
+                raise Exception(
+                    "XLM-RoBERTa-XL requires transformers>=4.17.0. Your current version is {}".format(
+                        transformers.__version__
+                    )
+                )
+
         self.encoder = str2encoder[self.hparams.encoder_model].from_pretrained(
             self.hparams.pretrained_model
         )
-        
+
         self.epoch_nr = 0
         if self.hparams.layer == "mix":
             self.layerwise_attention = LayerwiseAttention(

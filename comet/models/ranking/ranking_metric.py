@@ -122,13 +122,10 @@ class RankingMetric(CometModel):
                 params,
                 lr=self.hparams.learning_rate,
                 relative_step=False,
-                scale_parameter=False
+                scale_parameter=False,
             )
         else:
-            optimizer = torch.optim.AdamW(
-                params,
-                lr=self.hparams.learning_rate
-            )
+            optimizer = torch.optim.AdamW(params, lr=self.hparams.learning_rate)
         # scheduler = self._build_scheduler(optimizer)
         return [optimizer], []
 
