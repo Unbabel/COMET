@@ -8,15 +8,6 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-> Version 1.0 is finally out 🥳! whats new?
-> 1) `comet-compare` command for statistical comparison between two models
-> 2) `comet-score` with multiple hypothesis/systems
-> 3) Embeddings caching for faster inference (thanks to [@jsouza](https://github.com/jsouza)).
-> 4) Length Batching for faster inference (thanks to [@CoderPat](https://github.com/CoderPat))
-> 5) Integration with SacreBLEU for dataset downloading (thanks to [@mjpost](https://github.com/mjpost))
-> 6) Monte-carlo Dropout for uncertainty estimation (thanks to [@glushkovato](https://github.com/glushkovato) and [@chryssa-zrv](https://github.com/chryssa-zrv))
-> 7) Some code refactoring 
-
 ## Quick Installation
 
 Simple installation from PyPI
@@ -27,7 +18,7 @@ pip install unbabel-comet
 ```
 or
 ```bash
-pip install unbabel-comet==1.0.1 --use-feature=2020-resolver
+pip install unbabel-comet==1.1.0 --use-feature=2020-resolver
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
@@ -97,7 +88,14 @@ When comparing two MT systems we encourage you to run the `comet-compare` comman
 comet-compare -s src.de -x hyp1.en -y hyp2.en -r ref.en
 ```
 
-For even more detailed MT contrastive evaluation please take a look at our new tool [MT-Telescope](https://github.com/Unbabel/MT-Telescope).
+**New: Minimum Bayes Risk Decoding:**
+
+Inspired by the work by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) we have developed a command to perform Minimum Bayes Risk decoding. This command receives a text file with source sentences and a text file containing all the MT samples and writes to an output file the best sample according to COMET.
+
+```bash
+comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt --num_sample [X] -o [OUTPUT_FILE].txt
+```
+
 
 #### Multi-GPU Inference:
 
@@ -106,8 +104,10 @@ COMET is optimized to be used in a single GPU by taking advantage of length batc
 Nonetheless, if your data does not have repetitions and you have more than 1 GPU available, you can **run multi-GPU inference with the following command**:
 
 ```bash
-comet-score -s src.de -t hyp1.en -r ref.en --gpus 2
+comet-score -s src.de -t hyp1.en -r ref.en --gpus 2 --quiet
 ```
+
+**Warning:** Segment-level scores using multigpu will be out of order. This is only useful for system scoring.
 
 #### Changing Embedding Cache Size:
 You can change the cache size of COMET using the following env variable:
