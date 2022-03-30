@@ -37,57 +37,14 @@ Contributing
 ==============
 We welcome contributions to improve COMET. Please refer to `CONTRIBUTING.md <https://github.com/Unbabel/COMET/blob/master/CONTRIBUTING.md>`_ for quick instructions or to contributing instructions for more detailed instructions on how to set up your development environment.
 
-Citation
+Publications
 =========
 
-.. code-block:: bibtex
-
-   @inproceedings{rei-etal-2020-comet,
-      title = "{COMET}: A Neural Framework for {MT} Evaluation",
-      author = "Rei, Ricardo  and
-         Stewart, Craig  and
-         Farinha, Ana C  and
-         Lavie, Alon",
-      booktitle = "Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)",
-      month = nov,
-      year = "2020",
-      address = "Online",
-      publisher = "Association for Computational Linguistics",
-      url = "https://www.aclweb.org/anthology/2020.emnlp-main.213",
-      pages = "2685--2702",
-   }
-
-.. code-block:: bibtex
-
-   @inproceedings{rei-EtAl:2020:WMT,
-      author    = {Rei, Ricardo  and  Stewart, Craig  and  Farinha, Ana C  and  Lavie, Alon},
-      title     = {Unbabel's Participation in the WMT20 Metrics Shared Task},
-      booktitle      = {Proceedings of the Fifth Conference on Machine Translation},
-      month          = {November},
-      year           = {2020},
-      address        = {Online},
-      publisher      = {Association for Computational Linguistics},
-      pages     = {909--918},
-   }    
-
-.. code-block:: bibtex
-
-   @inproceedings{stewart-etal-2020-comet,
-    title = "{COMET} - Deploying a New State-of-the-art {MT} Evaluation Metric in Production",
-    author = "Stewart, Craig  and
-      Rei, Ricardo  and
-      Farinha, Catarina  and
-      Lavie, Alon",
-    booktitle = "Proceedings of the 14th Conference of the Association for Machine Translation in the Americas (Volume 2: User Track)",
-    month = oct,
-    year = "2020",
-    address = "Virtual",
-    publisher = "Association for Machine Translation in the Americas",
-    url = "https://www.aclweb.org/anthology/2020.amta-user.4",
-    pages = "78--109",
-   }
-
-
+* `COMET: A Neural Framework for MT Evaluation <https://www.aclweb.org/anthology/2020.emnlp-main.213>`_ 
+* `Unbabel's Participation in the WMT20 Metrics Shared Task <https://aclanthology.org/2020.wmt-1.101/>`_ 
+* `COMET - Deploying a New State-of-the-art MT Evaluation Metric in Production <https://www.aclweb.org/anthology/2020.amta-user.4/>`_  
+* `Uncertainty-Aware Machine Translation Evaluation <https://aclanthology.org/2021.findings-emnlp.330/>`_ 
+* `Are References Really Needed? Unbabel-IST 2021 Submission for the Metrics Shared Task <http://statmt.org/wmt21/pdf/2021.wmt-1.111.pdf>`_ 
 
 Library Reference
 ==================

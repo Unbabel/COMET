@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>comet.models.ranking.ranking_metric &mdash; COMET 1.1.0 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/comet.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../../index.html" class="icon icon-home"> COMET
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../running.html">Running COMET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../models.html">COMET Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../training.html">Train your own Metric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../library.html">Library Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">COMET</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+      <li>comet.models.ranking.ranking_metric</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for comet.models.ranking.ranking_metric</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># Copyright (C) 2020 Unbabel</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Ranking Metric</span>
+<span class="sd">====================</span>
+<span class="sd">    Translation Ranking metric was introduced by</span>
+<span class="sd">        [Rei, et al. 2020](https://aclanthology.org/2020.emnlp-main.213/)</span>
+<span class="sd">    and it is trained on top of Direct Assessment Relative Ranks (DARR) to encode</span>
+<span class="sd">    `good` translations closer to the anchors (source &amp; reference) than `worse`</span>
+<span class="sd">    translations.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+<span class="kn">from</span> <span class="nn">comet.models.base</span> <span class="kn">import</span> <span class="n">CometModel</span>
+<span class="kn">from</span> <span class="nn">transformers.optimization</span> <span class="kn">import</span> <span class="n">Adafactor</span>
+
+<span class="kn">from</span> <span class="nn">.wmt_kendall</span> <span class="kn">import</span> <span class="n">WMTKendall</span>
+
+
+<div class="viewcode-block" id="RankingMetric"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_metric.RankingMetric">[docs]</a><span class="k">class</span> <span class="nc">RankingMetric</span><span class="p">(</span><span class="n">CometModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;RankingMetric</span>
+
+<span class="sd">    :param nr_frozen_epochs: Number of epochs (% of epoch) that the encoder is frozen.</span>
+<span class="sd">    :param keep_embeddings_frozen: Keeps the encoder frozen during training.</span>
+<span class="sd">    :param optimizer: Optimizer used during training.</span>
+<span class="sd">    :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.</span>
+<span class="sd">    :param learning_rate: Learning rate used to fine-tune the top layers.</span>
+<span class="sd">    :param layerwise_decay: Learning rate % decay from top-to-bottom encoder layers.</span>
+<span class="sd">    :param encoder_model: Encoder model to be used.</span>
+<span class="sd">    :param pretrained_model: Pretrained model from Hugging Face.</span>
+<span class="sd">    :param pool: Pooling strategy to derive a sentence embedding [&#39;cls&#39;, &#39;max&#39;, &#39;avg&#39;].</span>
+<span class="sd">    :param layer: Encoder layer to be used (&#39;mix&#39; for pooling info from all layers.)</span>
+<span class="sd">    :param dropout: Dropout used in the top-layers.</span>
+<span class="sd">    :param batch_size: Batch size used during training.</span>
+<span class="sd">    :param train_data: Path to a csv file containing the training data.</span>
+<span class="sd">    :param validation_data: Path to a csv file containing the validation data.</span>
+<span class="sd">    :param load_weights_from_checkpoint: Path to a checkpoint file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">nr_frozen_epochs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="n">keep_embeddings_frozen</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;AdamW&quot;</span><span class="p">,</span>
+        <span class="n">encoder_learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-05</span><span class="p">,</span>
+        <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3e-05</span><span class="p">,</span>
+        <span class="n">layerwise_decay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">encoder_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;XLM-RoBERTa&quot;</span><span class="p">,</span>
+        <span class="n">pretrained_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;xlm-roberta-base&quot;</span><span class="p">,</span>
+        <span class="n">pool</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;avg&quot;</span><span class="p">,</span>
+        <span class="n">layer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;mix&quot;</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="n">train_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">validation_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">load_weights_from_checkpoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">nr_frozen_epochs</span><span class="p">,</span>
+            <span class="n">keep_embeddings_frozen</span><span class="p">,</span>
+            <span class="n">optimizer</span><span class="p">,</span>
+            <span class="n">encoder_learning_rate</span><span class="p">,</span>
+            <span class="n">learning_rate</span><span class="p">,</span>
+            <span class="n">layerwise_decay</span><span class="p">,</span>
+            <span class="n">encoder_model</span><span class="p">,</span>
+            <span class="n">pretrained_model</span><span class="p">,</span>
+            <span class="n">pool</span><span class="p">,</span>
+            <span class="n">layer</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="p">,</span>
+            <span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">train_data</span><span class="p">,</span>
+            <span class="n">validation_data</span><span class="p">,</span>
+            <span class="n">load_weights_from_checkpoint</span><span class="p">,</span>
+            <span class="s2">&quot;ranking_metric&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_hyperparameters</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">init_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span> <span class="o">=</span> <span class="n">WMTKendall</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span> <span class="o">=</span> <span class="n">WMTKendall</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;val&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">loss</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">TripletMarginLoss</span><span class="p">(</span><span class="n">margin</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RankingMetric.configure_optimizers"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_metric.RankingMetric.configure_optimizers">[docs]</a>    <span class="k">def</span> <span class="nf">configure_optimizers</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">LambdaLR</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Sets the optimizers to be used during training.&quot;&quot;&quot;</span>
+        <span class="n">layer_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">layerwise_lr</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">encoder_learning_rate</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layerwise_decay</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span><span class="p">:</span>
+            <span class="n">layerwise_attn_params</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span>
+                    <span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">]</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">layer_parameters</span> <span class="o">+</span> <span class="n">layerwise_attn_params</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">layer_parameters</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">==</span> <span class="s2">&quot;Adafactor&quot;</span><span class="p">:</span>
+            <span class="n">optimizer</span> <span class="o">=</span> <span class="n">Adafactor</span><span class="p">(</span>
+                <span class="n">params</span><span class="p">,</span>
+                <span class="n">lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">,</span>
+                <span class="n">relative_step</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">scale_parameter</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">lr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">learning_rate</span><span class="p">)</span>
+        <span class="c1"># scheduler = self._build_scheduler(optimizer)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">optimizer</span><span class="p">],</span> <span class="p">[]</span></div>
+
+    <span class="k">def</span> <span class="nf">prepare_sample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="n">inference</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+
+        <span class="n">sample</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">[</span><span class="n">dic</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">dic</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">sample</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+
+        <span class="k">if</span> <span class="n">inference</span><span class="p">:</span>
+            <span class="n">src_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">])</span>
+            <span class="n">mt_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;mt&quot;</span><span class="p">])</span>
+            <span class="n">ref_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">])</span>
+
+            <span class="n">ref_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ref_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ref_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="n">src_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;src_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">src_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="n">mt_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;mt_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">mt_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">ref_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">src_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">mt_inputs</span><span class="p">}</span>
+
+        <span class="n">ref_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">])</span>
+        <span class="n">src_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">])</span>
+        <span class="n">pos_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;pos&quot;</span><span class="p">])</span>
+        <span class="n">neg_inputs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;neg&quot;</span><span class="p">])</span>
+
+        <span class="n">ref_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ref_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ref_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">src_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;src_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">src_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">pos_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;pos_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">pos_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">neg_inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;neg_&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">neg_inputs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">ref_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">src_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">pos_inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">neg_inputs</span><span class="p">}</span>
+
+<div class="viewcode-block" id="RankingMetric.forward"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_metric.RankingMetric.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">src_input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">ref_input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">pos_input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">neg_input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">src_attention_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">ref_attention_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">pos_attention_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="n">neg_attention_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="n">src_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">src_input_ids</span><span class="p">,</span> <span class="n">src_attention_mask</span><span class="p">)</span>
+        <span class="n">ref_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">ref_input_ids</span><span class="p">,</span> <span class="n">ref_attention_mask</span><span class="p">)</span>
+        <span class="n">pos_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">pos_input_ids</span><span class="p">,</span> <span class="n">pos_attention_mask</span><span class="p">)</span>
+        <span class="n">neg_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span><span class="n">neg_input_ids</span><span class="p">,</span> <span class="n">neg_attention_mask</span><span class="p">)</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss</span><span class="p">(</span><span class="n">src_sentemb</span><span class="p">,</span> <span class="n">pos_sentemb</span><span class="p">,</span> <span class="n">neg_sentemb</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss</span><span class="p">(</span>
+            <span class="n">ref_sentemb</span><span class="p">,</span> <span class="n">pos_sentemb</span><span class="p">,</span> <span class="n">neg_sentemb</span>
+        <span class="p">)</span>
+
+        <span class="n">distance_src_pos</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">pos_sentemb</span><span class="p">,</span> <span class="n">src_sentemb</span><span class="p">)</span>
+        <span class="n">distance_ref_pos</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">pos_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">)</span>
+        <span class="c1"># Harmonic mean between anchors and the positive example</span>
+        <span class="n">distance_pos</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">distance_src_pos</span> <span class="o">*</span> <span class="n">distance_ref_pos</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+            <span class="n">distance_src_pos</span> <span class="o">+</span> <span class="n">distance_ref_pos</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Harmonic mean between anchors and the negative example</span>
+        <span class="n">distance_src_neg</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">neg_sentemb</span><span class="p">,</span> <span class="n">src_sentemb</span><span class="p">)</span>
+        <span class="n">distance_ref_neg</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">neg_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">)</span>
+        <span class="n">distance_neg</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">distance_src_neg</span> <span class="o">*</span> <span class="n">distance_ref_neg</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span>
+            <span class="n">distance_src_neg</span> <span class="o">+</span> <span class="n">distance_ref_neg</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;loss&quot;</span><span class="p">:</span> <span class="n">loss</span><span class="p">,</span>
+            <span class="s2">&quot;distance_pos&quot;</span><span class="p">:</span> <span class="n">distance_pos</span><span class="p">,</span>
+            <span class="s2">&quot;distance_neg&quot;</span><span class="p">:</span> <span class="n">distance_neg</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+<div class="viewcode-block" id="RankingMetric.read_csv"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_metric.RankingMetric.read_csv">[docs]</a>    <span class="k">def</span> <span class="nf">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">regression</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Reads a comma separated value file.</span>
+
+<span class="sd">        :param path: path to a csv file.</span>
+
+<span class="sd">        :return: List of records as dictionaries</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">regression</span><span class="p">:</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="s2">&quot;src&quot;</span><span class="p">,</span> <span class="s2">&quot;mt&quot;</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">,</span> <span class="s2">&quot;score&quot;</span><span class="p">]]</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;mt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;mt&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">&quot;records&quot;</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[[</span><span class="s2">&quot;src&quot;</span><span class="p">,</span> <span class="s2">&quot;pos&quot;</span><span class="p">,</span> <span class="s2">&quot;neg&quot;</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">]]</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;pos&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;pos&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;neg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;neg&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(</span><span class="s2">&quot;records&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RankingMetric.training_step"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_metric.RankingMetric.training_step">[docs]</a>    <span class="k">def</span> <span class="nf">training_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span>
+        <span class="n">batch_nb</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs one training step.</span>
+<span class="sd">        This usually consists in the forward function followed by the loss function.</span>
+
+<span class="sd">        :param batch: The output of your prepare_sample function.</span>
+<span class="sd">        :param batch_nb: Integer displaying which batch this is.</span>
+
+<span class="sd">        :returns: dictionary containing the loss and the metrics to be added to the</span>
+<span class="sd">            lightning logger.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">loss_value</span> <span class="o">=</span> <span class="n">batch_prediction</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nr_frozen_epochs</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_frozen_epochs</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
+            <span class="ow">and</span> <span class="n">batch_nb</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch_total_steps</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_frozen_epochs</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze_encoder</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frozen</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;train_loss&quot;</span><span class="p">,</span> <span class="n">loss_value</span><span class="p">,</span> <span class="n">on_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">on_epoch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss_value</span></div>
+
+<div class="viewcode-block" id="RankingMetric.validation_step"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_metric.RankingMetric.validation_step">[docs]</a>    <span class="k">def</span> <span class="nf">validation_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span>
+        <span class="n">batch_nb</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dataloader_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Similar to the training step but with the model in eval mode.</span>
+
+<span class="sd">        :param batch: The output of your prepare_sample function.</span>
+<span class="sd">        :param batch_nb: Integer displaying which batch this is.</span>
+<span class="sd">        :param dataloader_idx: Integer displaying which dataloader this is.</span>
+
+<span class="sd">        :returns: dictionary passed to the validation_end function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">loss_value</span> <span class="o">=</span> <span class="n">batch_prediction</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;val_loss&quot;</span><span class="p">,</span> <span class="n">loss_value</span><span class="p">,</span> <span class="n">on_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">on_epoch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># TODO: REMOVE if condition after torchmetrics bug fix</span>
+        <span class="k">if</span> <span class="n">dataloader_idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">batch_prediction</span><span class="p">[</span><span class="s2">&quot;distance_pos&quot;</span><span class="p">],</span> <span class="n">batch_prediction</span><span class="p">[</span><span class="s2">&quot;distance_neg&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">dataloader_idx</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="n">batch_prediction</span><span class="p">[</span><span class="s2">&quot;distance_pos&quot;</span><span class="p">],</span> <span class="n">batch_prediction</span><span class="p">[</span><span class="s2">&quot;distance_neg&quot;</span><span class="p">]</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="RankingMetric.predict_step"><a class="viewcode-back" href="../../../../library.html#comet.models.ranking.ranking_metric.RankingMetric.predict_step">[docs]</a>    <span class="k">def</span> <span class="nf">predict_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">batch</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span>
+        <span class="n">batch_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+        <span class="n">src_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span>
+            <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;src_input_ids&quot;</span><span class="p">],</span> <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;src_attention_mask&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">ref_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span>
+            <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;ref_input_ids&quot;</span><span class="p">],</span> <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;ref_attention_mask&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">mt_sentemb</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_sentence_embedding</span><span class="p">(</span>
+            <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;mt_input_ids&quot;</span><span class="p">],</span> <span class="n">batch</span><span class="p">[</span><span class="s2">&quot;mt_attention_mask&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">src_distance</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">src_sentemb</span><span class="p">)</span>
+        <span class="n">ref_distance</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">pairwise_distance</span><span class="p">(</span><span class="n">mt_sentemb</span><span class="p">,</span> <span class="n">ref_sentemb</span><span class="p">)</span>
+
+        <span class="n">distances</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">ref_distance</span> <span class="o">*</span> <span class="n">src_distance</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">ref_distance</span> <span class="o">+</span> <span class="n">src_distance</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">distances</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">distances</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

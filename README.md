@@ -8,54 +8,123 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-**Note:** This is a Pre-Release Version. We are currently working on results for the WMT2020 shared task and will likely update the repository in the beginning of October (after the shared task results).
-
 ## Quick Installation
-
-We recommend python 3.6 to run COMET.
-
-Detailed usage examples and instructions can be found in the [Full Documentation](https://unbabel.github.io/COMET/html/index.html).
 
 Simple installation from PyPI
 
 ```bash
+pip install --upgrade pip  # ensures that pip is current 
 pip install unbabel-comet
 ```
+or
+```bash
+pip install unbabel-comet==1.1.0 --use-feature=2020-resolver
+```
 
-To develop locally:
+To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
 ```bash
 git clone https://github.com/Unbabel/COMET
-pip install -r requirements.txt
-pip install -e .
+cd COMET
+poetry install
+```
+
+Alternately, for development, you can run the CLI tools directly, e.g.,
+
+```bash
+PYTHONPATH=. ./comet/cli/score.py
 ```
 
 ## Scoring MT outputs:
 
-### Via Bash:
+### CLI Usage:
 
-Examples from WMT20:
+Test examples:
 
 ```bash
 echo -e "Dem Feuer konnte Einhalt geboten werden\nSchulen und Kindergärten wurden eröffnet." >> src.de
-echo -e "The fire could be stopped\nSchools and kindergartens were open" >> hyp.en
+echo -e "The fire could be stopped\nSchools and kindergartens were open" >> hyp1.en
+echo -e "The fire could have been stopped\nSchools and pre-school were open" >> hyp2.en
 echo -e "They were able to control the fire.\nSchools and kindergartens opened" >> ref.en
 ```
 
+Basic scoring command:
 ```bash
-comet score -s src.de -h hyp.en -r ref.en
+comet-score -s src.de -t hyp1.en -r ref.en
+```
+> you can set `--gpus 0` to test on CPU.
+
+Scoring multiple systems:
+```bash
+comet-score -s src.de -t hyp1.en hyp2.en -r ref.en
 ```
 
-You can export your results to a JSON file using the `--to_json` flag and select another model/metric with `--model`.
+WMT test sets via [SacreBLEU](https://github.com/mjpost/sacrebleu):
 
 ```bash
-comet score -s src.de -h hyp.en -r ref.en --model wmt-large-hter-estimator --to_json segments.json
+comet-score -d wmt20:en-de -t PATH/TO/TRANSLATIONS
 ```
 
-### Via Python:
+The default setting of `comet-score` prints the score for each segment individually. If you are only interested in the score for the whole dataset (computed as the average of the segment scores), you can use the `--quiet` flag.
+
+```bash
+comet-score -s src.de -t hyp1.en -r ref.en --quiet
+```
+
+You can select another model/metric with the --model flag and for reference-free (QE-as-a-metric) models you don't need to pass a reference.
+
+```bash
+comet-score -s src.de -t hyp1.en --model wmt20-comet-qe-da
+```
+
+Following the work on [Uncertainty-Aware MT Evaluation](https://aclanthology.org/2021.findings-emnlp.330/) you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric is less confident in that prediction.
+
+```bash
+comet-score -s src.de -t hyp1.en -r ref.en --mc_dropout 30
+```
+
+When comparing two MT systems we encourage you to run the `comet-compare` command to get **statistical significance** with Paired T-Test and bootstrap resampling [(Koehn, et al 2004)](https://aclanthology.org/W04-3250/).
+
+```bash
+comet-compare -s src.de -x hyp1.en -y hyp2.en -r ref.en
+```
+
+**New: Minimum Bayes Risk Decoding:**
+
+Inspired by the work by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) we have developed a command to perform Minimum Bayes Risk decoding. This command receives a text file with source sentences and a text file containing all the MT samples and writes to an output file the best sample according to COMET.
+
+```bash
+comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt --num_sample [X] -o [OUTPUT_FILE].txt
+```
+
+
+#### Multi-GPU Inference:
+
+COMET is optimized to be used in a single GPU by taking advantage of length batching and embedding caching. When using Multi-GPU since data e spread across GPUs we will typically get fewer cache hits and the length batching samples is replaced by a [DistributedSampler](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#replace-sampler-ddp). Because of that, according to our experiments, using 1 GPU is faster than using 2 GPUs specially when scoring multiple systems for the same source and reference.
+
+Nonetheless, if your data does not have repetitions and you have more than 1 GPU available, you can **run multi-GPU inference with the following command**:
+
+```bash
+comet-score -s src.de -t hyp1.en -r ref.en --gpus 2 --quiet
+```
+
+**Warning:** Segment-level scores using multigpu will be out of order. This is only useful for system scoring.
+
+#### Changing Embedding Cache Size:
+You can change the cache size of COMET using the following env variable:
+
+```bash
+export COMET_EMBEDDINGS_CACHE="2048"
+```
+by default the COMET cache size is 1024.
+
+
+### Scoring within Python:
 
 ```python
-from comet.models import download_model
-model = download_model("wmt-large-da-estimator-1719")
+from comet import download_model, load_from_checkpoint
+
+model_path = download_model("wmt20-comet-da")
+model = load_from_checkpoint(model_path)
 data = [
     {
         "src": "Dem Feuer konnte Einhalt geboten werden",
@@ -68,74 +137,44 @@ data = [
         "ref": "Schools and kindergartens opened"
     }
 ]
-model.predict(data, cuda=True, show_progress=True)
+seg_scores, sys_score = model.predict(data, batch_size=8, gpus=1)
 ```
 
-### Simple Pythonic way to convert list or segments to model inputs:
+### Languages Covered:
 
-```python
-source = ["Dem Feuer konnte Einhalt geboten werden", "Schulen und Kindergärten wurden eröffnet."]
-hypothesis = ["The fire could be stopped", "Schools and kindergartens were open"]
-reference = ["They were able to control the fire.", "Schools and kindergartens opened"]
+All the above mentioned models are build on top of XLM-R which cover the following languages:
 
-data = {"src": source, "mt": hypothesis, "ref": reference}
-data = [dict(zip(data, t)) for t in zip(*data.values())]
+Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, Belarusian, Bengali, Bengali Romanized, Bosnian, Breton, Bulgarian, Burmese, Burmese, Catalan, Chinese (Simplified), Chinese (Traditional), Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Georgian, German, Greek, Gujarati, Hausa, Hebrew, Hindi, Hindi Romanized, Hungarian, Icelandic, Indonesian, Irish, Italian, Japanese, Javanese, Kannada, Kazakh, Khmer, Korean, Kurdish (Kurmanji), Kyrgyz, Lao, Latin, Latvian, Lithuanian, Macedonian, Malagasy, Malay, Malayalam, Marathi, Mongolian, Nepali, Norwegian, Oriya, Oromo, Pashto, Persian, Polish, Portuguese, Punjabi, Romanian, Russian, Sanskri, Scottish, Gaelic, Serbian, Sindhi, Sinhala, Slovak, Slovenian, Somali, Spanish, Sundanese, Swahili, Swedish, Tamil, Tamil Romanized, Telugu, Telugu Romanized, Thai, Turkish, Ukrainian, Urdu, Urdu Romanized, Uyghur, Uzbek, Vietnamese, Welsh, Western, Frisian, Xhosa, Yiddish.
 
-model.predict(data, cuda=True, show_progress=True)
-```
+**Thus, results for language pairs containing uncovered languages are unreliable!**
 
-**Note:** Using the python interface you will get a list of segment-level scores. You can obtain the corpus-level score by averaging the segment-level scores
+## COMET Models:
 
-## Model Zoo:
+We recommend the two following models to evaluate your translations:
 
-| Model              |               Description                        |
-| :--------------------- | :------------------------------------------------ |
-| ↑`wmt-large-da-estimator-1719` | **RECOMMENDED:** Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19 |
-| ↑`wmt-base-da-estimator-1719` | Estimator model build on top of XLM-R (base) trained on DA from WMT17, WMT18 and WMT19 |
-| ↓`wmt-large-hter-estimator` | Estimator model build on top of XLM-R (large) trained to regress on HTER. |
-| ↓`wmt-base-hter-estimator` | Estimator model build on top of XLM-R (base) trained to regress on HTER. |
-| ↑`emnlp-base-da-ranker`    | Translation ranking model that uses XLM-R to encode sentences. This model was trained with WMT17 and WMT18 Direct Assessments Relative Ranks (DARR). |
+- `wmt20-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-da-estimator-1719` from previous versions.
+- `wmt20-comet-qe-da`: **Reference-FREE** Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-qe-estimator-1719` from previous versions.
 
-#### QE-as-a-metric:
+These two models were developed to participate on the WMT20 Metrics shared task [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf) and were among the best metrics that year. Also, in a large-scale study performed by Microsoft Research these two metrics are ranked 1st and 2nd in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf). At segment-level, these systems also correlate well with expert evaluations based on MQM data [(Freitag et al. 2020](https://arxiv.org/pdf/2104.14478.pdf)[; Freitag et al. 2021)](https://aclanthology.org/2021.wmt-1.73/).
 
-| Model              |               Description                        |
-| -------------------- | -------------------------------- |
-| `wmt-large-qe-estimator-1719` | Quality Estimator model build on top of XLM-R (large) trained on DA from WMT17, WMT18 and WMT19. |
+For more information about the available COMET models read our metrics descriptions [here](METRICS.md)
 
 ## Train your own Metric: 
 
 Instead of using pretrained models your can train your own model with the following command:
 ```bash
-comet train -f {config_file_path}.yaml
+comet-train --cfg configs/models/{your_model_config}.yaml
 ```
 
-### Supported encoders:
-- [Learning Joint Multilingual Sentence Representations with Neural Machine Translation](https://arxiv.org/abs/1704.04154)
-- [Massively Multilingual Sentence Embeddings for Zero-Shot Cross-Lingual Transfer and Beyond](https://arxiv.org/abs/1812.10464)
-- [BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding](https://arxiv.org/pdf/1810.04805.pdf)
-- [XLM-R: Unsupervised Cross-lingual Representation Learning at Scale](https://arxiv.org/pdf/1911.02116.pdf)
-
-
-### Tensorboard:
-
-Launch tensorboard with:
-```bash
-tensorboard --logdir="experiments/"
-```
-
-## Download Command: 
-
-To download public available corpora to train your new models you can use the `download` command. For example to download the APEQUEST HTER corpus just run the following command:
+You can then use your own metric to score:
 
 ```bash
-comet download -d apequest --saving_path data/
+comet-score -s src.de -t hyp1.en -r ref.en --model PATH/TO/CHECKPOINT
 ```
+
+**Note:** Please contact ricardo.rei@unbabel.com if you wish to host your own metric within COMET available metrics!
 
 ## unittest:
-```bash
-pip install coverage
-```
-
 In order to run the toolkit tests you must run the following command:
 
 ```bash
@@ -144,50 +183,17 @@ coverage report -m
 ```
 
 ## Publications
+If you use COMET please cite our work! Also, don't forget to say which model you used to evaluate your systems.
 
-```
-@inproceedings{rei-etal-2020-comet,
-    title = "{COMET}: A Neural Framework for {MT} Evaluation",
-    author = "Rei, Ricardo  and
-      Stewart, Craig  and
-      Farinha, Ana C  and
-      Lavie, Alon",
-    booktitle = "Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing (EMNLP)",
-    month = nov,
-    year = "2020",
-    address = "Online",
-    publisher = "Association for Computational Linguistics",
-    url = "https://www.aclweb.org/anthology/2020.emnlp-main.213",
-    pages = "2685--2702",
-}
-```
+- [Are References Really Needed? Unbabel-IST 2021 Submission for the Metrics Shared Task](http://statmt.org/wmt21/pdf/2021.wmt-1.111.pdf)
 
-```
-@inproceedings{rei-EtAl:2020:WMT,
-  author    = {Rei, Ricardo  and  Stewart, Craig  and  Farinha, Ana C  and  Lavie, Alon},
-  title     = {Unbabel's Participation in the WMT20 Metrics Shared Task},
-  booktitle      = {Proceedings of the Fifth Conference on Machine Translation},
-  month          = {November},
-  year           = {2020},
-  address        = {Online},
-  publisher      = {Association for Computational Linguistics},
-  pages     = {909--918},
-}
-```
+- [Uncertainty-Aware Machine Translation Evaluation](https://aclanthology.org/2021.findings-emnlp.330/) 
 
-```
-@inproceedings{stewart-etal-2020-comet,
-    title = "{COMET} - Deploying a New State-of-the-art {MT} Evaluation Metric in Production",
-    author = "Stewart, Craig  and
-      Rei, Ricardo  and
-      Farinha, Catarina  and
-      Lavie, Alon",
-    booktitle = "Proceedings of the 14th Conference of the Association for Machine Translation in the Americas (Volume 2: User Track)",
-    month = oct,
-    year = "2020",
-    address = "Virtual",
-    publisher = "Association for Machine Translation in the Americas",
-    url = "https://www.aclweb.org/anthology/2020.amta-user.4",
-    pages = "78--109",
-}
-```
+- [COMET - Deploying a New State-of-the-art MT Evaluation Metric in Production](https://www.aclweb.org/anthology/2020.amta-user.4)
+
+- [Unbabel's Participation in the WMT20 Metrics Shared Task](https://aclanthology.org/2020.wmt-1.101/)
+
+- [COMET: A Neural Framework for MT Evaluation](https://www.aclweb.org/anthology/2020.emnlp-main.213)
+
+
+

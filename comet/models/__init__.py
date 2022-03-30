@@ -1,144 +1,62 @@
+# flake8: noqa
 # -*- coding: utf-8 -*-
-import os
-import pickle
-import sys
+# Copyright (C) 2020 Unbabel
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-import click
-import pandas as pd
+from .regression.regression_metric import RegressionMetric
+from .ranking.ranking_metric import RankingMetric
+from .regression.referenceless import ReferencelessRegression
+from .base import CometModel
+
+import os
 import yaml
 
-import wget
-from torchnlp.download import download_file_maybe_extract
-
-from .estimators import CometEstimator, QualityEstimator
-from .model_base import ModelBase
-from .ranking import CometRanker
-
 str2model = {
-    "CometEstimator": CometEstimator,
-    "CometRanker": CometRanker,
-    # Model that use source only:
-    "QualityEstimator": QualityEstimator,
+    "referenceless_regression_metric": ReferencelessRegression,
+    "regression_metric": RegressionMetric,
+    "ranking_metric": RankingMetric,
 }
 
-MODELS_URL = "https://unbabel-experimental-models.s3.amazonaws.com/comet/share/public-models.yaml"
+available_metrics = {
+    "emnlp20-comet-rank": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/emnlp20-comet-rank.tar.gz",
+    "wmt20-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-da.tar.gz",
+    "wmt20-comet-qe-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da.tar.gz",
+    "wmt20-comet-qe-da-v2": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da-v2.tar.gz",
+    # "wmt21-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-da.tar.gz",
+    "wmt21-comet-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-mqm.tar.gz",
+    # "wmt21-cometinho-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-mqm.tar.gz",
+    "wmt21-cometinho-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-da.tar.gz",
+    "wmt21-comet-qe-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-mqm.tar.gz",
+    # "wmt21-comet-qe-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/refless-wmt21-comet-da.tar.gz",
+}
 
 
-def get_cache_folder():
-    if "HOME" in os.environ:
-        cache_directory = os.environ["HOME"] + "/.cache/torch/unbabel_comet/"
-        if not os.path.exists(cache_directory):
-            os.makedirs(cache_directory)
-        return cache_directory
-    else:
-        raise Exception("HOME environment variable is not defined.")
+def load_from_checkpoint(checkpoint_path: str) -> CometModel:
+    """Loads models from a checkpoint path.
+    :param checkpoint_path: Path to a model checkpoint.
 
-
-def model2download(
-    saving_directory: str = get_cache_folder(),
-    url: str = MODELS_URL,
-) -> dict:
-    """Download a dictionary with the mapping between models and downloading urls.
-    :param saving_directory: RELATIVE path to the saving folder (must end with /).
-    Return:
-        - dictionary with the mapping between models and downloading urls.
+    :return: Returns a COMET model.
     """
-    if not os.path.exists(saving_directory):
-        raise FileNotFoundError("The folder to save the model does not exist.")
+    if not os.path.exists(checkpoint_path):
+        raise Exception(f"Invalid checkpoint path: {checkpoint_path}")
 
-    if os.path.exists(saving_directory + "available_models.yaml"):
-        os.remove(saving_directory + "available_models.yaml")
-
-    file_path = download_file_maybe_extract(
-        url=url,
-        directory=saving_directory,
-        extension="yaml",
-    )
-    with open(file_path) as fp:
-        return yaml.load(fp.read(), Loader=yaml.FullLoader)
-
-
-def download_model(model: str, saving_directory: str = None) -> ModelBase:
-    """Function that loads pretrained models from AWS.
-    :param model: Name of the model to be loaded.
-    :param saving_directory: RELATIVE path to the saving folder (must end with /).
-
-    Return:
-        - Pretrained model.
-    """
-    if saving_directory is None:
-        saving_directory = get_cache_folder()
-
-    if not os.path.exists(saving_directory):
-        os.makedirs(saving_directory)
-
-    models = model2download(saving_directory)
-
-    if os.path.isdir(saving_directory + model):
-        click.secho(f"{model} is already in cache.", fg="yellow")
-        if not model.endswith("/"):
-            model += "/"
-
-    elif model not in models.keys():
-        raise Exception(f"{model} is not a valid COMET model!")
-
-    elif models[model].startswith("https://"):
-        download_file_maybe_extract(models[model], directory=saving_directory)
-
-    else:
-        raise Exception("Something went wrong while dowloading the model!")
-
-    if os.path.exists(saving_directory + model + ".zip"):
-        os.remove(saving_directory + model + ".zip")
-
-    click.secho("Download succeeded. Loading model...", fg="yellow")
-    experiment_folder = saving_directory + model
-    checkpoints = [
-        file for file in os.listdir(experiment_folder) if file.endswith(".ckpt")
-    ]
-    checkpoint = checkpoints[-1]
-    checkpoint_path = experiment_folder + "/" + checkpoint
-    return load_checkpoint(checkpoint_path)
-
-
-def load_checkpoint(checkpoint: str) -> ModelBase:
-    """Function that loads a model from a checkpoint file.
-    :param checkpoint: Path to the checkpoint file.
-
-    Returns:
-        - COMET Model
-    """
-    if not os.path.exists(checkpoint):
-        raise Exception(f"{checkpoint} file not found!")
-    
-    tags_csv_file = "/".join(checkpoint.split("/")[:-1] + ["meta_tags.csv"])
-    hparam_yaml_file = "/".join(checkpoint.split("/")[:-1] + ["hparams.yaml"])
-
-    if os.path.exists(tags_csv_file):
-        # Uggly convertion from older Lightning checkpoints 
-        tags = pd.read_csv(
-            tags_csv_file, header=None, index_col=0, squeeze=True
-        ).to_dict()
-        hparams = {}
-        for k, v in tags.items():
-            if isinstance(v, str) and v.replace('.', '', 1).isdigit():
-                hparams[k] = float(v) if '.' in v else int(v)
-            else:
-                hparams[k] = v
-        model = str2model[tags["model"]].load_from_checkpoint(
-            checkpoint, hparams=hparams
-        )
-    elif os.path.exists(hparam_yaml_file):
-        with open(hparam_yaml_file) as yaml_file:
+    hparams_file = "/".join(checkpoint_path.split("/")[:-2] + ["hparams.yaml"])
+    if os.path.exists(hparams_file):
+        with open(hparams_file) as yaml_file:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)
-        model = str2model[hparams["model"]].load_from_checkpoint(
-            checkpoint, hparams=hparams
-        )
+        model_class = str2model[hparams["class_identifier"]]
+        model = model_class.load_from_checkpoint(checkpoint_path, **hparams)
+        return model
     else:
-        raise Exception(
-            "[meta_tags.csv|hparams.yaml is missing from the checkpoint folder."
-        )
-
-    model.eval()
-    model.freeze()
-    return model
+        raise Exception("hparams.yaml file is missing!")

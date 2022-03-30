@@ -1,0 +1,58 @@
+[tool.poetry]
+name = "unbabel-comet"
+version = "1.1.0"
+description = "High-quality Machine Translation Evaluation"
+authors = ["Ricardo Rei, Craig Stewart, Catarina Farinha, Alon Lavie"]
+license = "Apache-2.0"
+readme = "README.md"
+homepage = "https://github.com/Unbabel/COMET"
+repository = "https://github.com/Unbabel/COMET"
+documentation = "https://unbabel.github.io/COMET/html/index.html"
+keywords = [
+    "Machine Translation", 
+    "Evaluation",
+    "Unbabel",
+    "COMET"
+]
+classifiers = [
+    'Development Status :: 4 - Beta',
+    'Environment :: Console',
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence',
+]
+packages = [
+    {include = "comet"},
+]
+include = [
+    "LICENSE",
+    "pyproject.toml",
+    "CONTRIBUTING.md"
+]
+
+[tool.poetry.scripts]
+comet-train = 'comet.cli.train:train_command'
+comet-score = 'comet.cli.score:score_command'
+comet-compare = 'comet.cli.compare:compare_command'
+comet-mbr = 'comet.cli.mbr:mbr_command'
+
+[tool.poetry.dependencies]
+python = ">=3.7.0,<4.0.0"
+sentencepiece = "^0.1.96"
+pandas = "1.1.5"
+transformers = ">=4.8"
+pytorch-lightning = "1.5.10"
+jsonargparse = "3.13.1"
+torch = ">=1.6.0, <=1.10.0"
+numpy = ">=1.20.0"
+torchmetrics = "0.6"
+sacrebleu = ">=2.0.0"
+scipy = ">=1.5.4"
+
+[tool.poetry.dev-dependencies]
+sphinx-markdown-tables = "0.0.15"
+coverage = "^5.5"
+scikit-learn = "0.24"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

@@ -1,0 +1,12 @@
+class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
+init_args:
+  monitor: val_pearson
+  min_delta: 0.
+  patience: 2
+  verbose: False
+  mode: max
+  strict: True
+  check_finite: True
+  stopping_threshold: null
+  divergence_threshold: null
+  check_on_train_epoch_end: False

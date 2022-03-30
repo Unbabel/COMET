@@ -8,13 +8,14 @@ also have to be the Python 3 compliant versions thereof. This might require that
 
 Install COMET as a package with pip::
 
+   pip install --upgrade pip  # ensures that pip is current 
    pip install unbabel-comet
+
+or::
+
+   pip install unbabel-comet==1.1.0 --use-feature=2020-resolver
 
 Inside your project you can now::
 
    import comet
-
-or run it with our command line interface::
-
-   comet --help
 

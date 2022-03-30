@@ -1,0 +1,24 @@
+referenceless_regression_metric:
+  class_path: comet.models.ReferencelessRegression
+  init_args:
+    nr_frozen_epochs: 0.3
+    keep_embeddings_frozen: True
+    optimizer: AdamW
+    encoder_learning_rate: 1.0e-05
+    learning_rate: 3.1e-05
+    layerwise_decay: 0.95
+    encoder_model: XLM-RoBERTa
+    pretrained_model: xlm-roberta-large
+    pool: avg
+    layer: mix
+    dropout: 0.15
+    batch_size: 4
+    train_data: data/scores-1520.csv
+    validation_data: data/mqm.test.csv
+    hidden_sizes:
+      - 2048
+      - 1024
+    
+trainer: ../trainer.yaml
+early_stopping: ../early_stopping.yaml
+model_checkpoint: ../model_checkpoint.yaml

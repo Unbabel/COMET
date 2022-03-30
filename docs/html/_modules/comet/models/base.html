@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>comet.models.base &mdash; COMET 1.1.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/comet.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> COMET
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../running.html">Running COMET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../models.html">COMET Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../training.html">Train your own Metric</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../library.html">Library Reference</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">COMET</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+      <li>comet.models.base</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for comet.models.base</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="c1"># Copyright (C) 2020 Unbabel</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+<span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">CometModel</span>
+<span class="sd">========================</span>
+<span class="sd">    Abstract Model class that implements some of the Pytorch Lightning logic.</span>
+<span class="sd">    Extend this class to create new model and metrics within COMET.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pytorch_lightning</span> <span class="k">as</span> <span class="nn">ptl</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">transformers</span>
+<span class="kn">from</span> <span class="nn">comet.encoders</span> <span class="kn">import</span> <span class="n">str2encoder</span>
+<span class="kn">from</span> <span class="nn">comet.modules</span> <span class="kn">import</span> <span class="n">LayerwiseAttention</span>
+<span class="kn">from</span> <span class="nn">packaging</span> <span class="kn">import</span> <span class="n">version</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">RandomSampler</span><span class="p">,</span> <span class="n">Sampler</span><span class="p">,</span> <span class="n">Subset</span>
+
+<span class="kn">from</span> <span class="nn">.lru_cache</span> <span class="kn">import</span> <span class="n">tensor_lru_cache</span>
+<span class="kn">from</span> <span class="nn">.pooling_utils</span> <span class="kn">import</span> <span class="n">average_pooling</span><span class="p">,</span> <span class="n">max_pooling</span>
+<span class="kn">from</span> <span class="nn">.predict_pbar</span> <span class="kn">import</span> <span class="n">PredictProgressBar</span>
+
+
+<div class="viewcode-block" id="OrderedSampler"><a class="viewcode-back" href="../../../library.html#comet.models.base.OrderedSampler">[docs]</a><span class="k">class</span> <span class="nc">OrderedSampler</span><span class="p">(</span><span class="n">Sampler</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Sampler that returns the indices in a deterministic order.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">indices</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indices</span> <span class="o">=</span> <span class="n">indices</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">indices</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="s2">&quot;COMET_EMBEDDINGS_CACHE&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+    <span class="n">CACHE_SIZE</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;COMET_EMBEDDINGS_CACHE&quot;</span><span class="p">])</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">CACHE_SIZE</span> <span class="o">=</span> <span class="mi">1024</span>
+
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="CometModel"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel">[docs]</a><span class="k">class</span> <span class="nc">CometModel</span><span class="p">(</span><span class="n">ptl</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">abc</span><span class="o">.</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;CometModel:</span>
+
+<span class="sd">    :param nr_frozen_epochs: Number of epochs (% of epoch) that the encoder is frozen.</span>
+<span class="sd">    :param keep_embeddings_frozen: Keeps the encoder frozen during training.</span>
+<span class="sd">    :param optimizer: Optimizer used during training.</span>
+<span class="sd">    :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.</span>
+<span class="sd">    :param learning_rate: Learning rate used to fine-tune the top layers.</span>
+<span class="sd">    :param layerwise_decay: Learning rate % decay from top-to-bottom encoder layers.</span>
+<span class="sd">    :param encoder_model: Encoder model to be used.</span>
+<span class="sd">    :param pretrained_model: Pretrained model from Hugging Face.</span>
+<span class="sd">    :param pool: Pooling strategy to derive a sentence embedding [&#39;cls&#39;, &#39;max&#39;, &#39;avg&#39;].</span>
+<span class="sd">    :param layer: Encoder layer to be used (&#39;mix&#39; for pooling info from all layers.)</span>
+<span class="sd">    :param dropout: Dropout used in the top-layers.</span>
+<span class="sd">    :param batch_size: Batch size used during training.</span>
+<span class="sd">    :param train_data: Path to a csv file containing the training data.</span>
+<span class="sd">    :param validation_data: Path to a csv file containing the validation data.</span>
+<span class="sd">    :param load_weights_from_checkpoint: Path to a checkpoint file.</span>
+<span class="sd">    :param class_identifier: subclass identifier.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">nr_frozen_epochs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span>
+        <span class="n">keep_embeddings_frozen</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">optimizer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;AdamW&quot;</span><span class="p">,</span>
+        <span class="n">encoder_learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-05</span><span class="p">,</span>
+        <span class="n">learning_rate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3e-05</span><span class="p">,</span>
+        <span class="n">layerwise_decay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">,</span>
+        <span class="n">encoder_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;XLM-RoBERTa&quot;</span><span class="p">,</span>
+        <span class="n">pretrained_model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;xlm-roberta-large&quot;</span><span class="p">,</span>
+        <span class="n">pool</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;avg&quot;</span><span class="p">,</span>
+        <span class="n">layer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;mix&quot;</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">train_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">validation_data</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">load_weights_from_checkpoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">class_identifier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_hyperparameters</span><span class="p">(</span>
+            <span class="n">ignore</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;train_data&quot;</span><span class="p">,</span> <span class="s2">&quot;validation_data&quot;</span><span class="p">,</span> <span class="s2">&quot;load_weights_from_checkpoint&quot;</span><span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">encoder_model</span> <span class="o">==</span> <span class="s2">&quot;XLM-RoBERTa-XL&quot;</span><span class="p">:</span>
+            <span class="c1"># Ensure backwards compatibility with transformer versions</span>
+            <span class="k">if</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">transformers</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">version</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">&quot;4.17.0&quot;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;XLM-RoBERTa-XL requires transformers&gt;=4.17.0. Your current version is </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">transformers</span><span class="o">.</span><span class="n">__version__</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">str2encoder</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">encoder_model</span><span class="p">]</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pretrained_model</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">epoch_nr</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layer</span> <span class="o">==</span> <span class="s2">&quot;mix&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span> <span class="o">=</span> <span class="n">LayerwiseAttention</span><span class="p">(</span>
+                <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span>
+                <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+                <span class="n">layer_norm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">nr_frozen_epochs</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frozen</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">freeze_encoder</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frozen</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">keep_embeddings_frozen</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">freeze_embeddings</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_frozen_epochs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">nr_frozen_epochs</span>
+
+        <span class="k">if</span> <span class="n">load_weights_from_checkpoint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">load_weights_from_checkpoint</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">load_weights</span><span class="p">(</span><span class="n">load_weights_from_checkpoint</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Path </span><span class="si">{</span><span class="n">load_weights_from_checkpoint</span><span class="si">}</span><span class="s2"> does not exist!&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mc_dropout</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Flag used to control usage of MC Dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">caching</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Flag used to control Embedding Caching</span>
+
+    <span class="k">def</span> <span class="nf">set_mc_dropout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mc_dropout</span> <span class="o">=</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="CometModel.load_weights"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.load_weights">[docs]</a>    <span class="k">def</span> <span class="nf">load_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Function that loads the weights from a given checkpoint file.</span>
+<span class="sd">        Note:</span>
+<span class="sd">            If the checkpoint model architecture is different then `self`, only</span>
+<span class="sd">            the common parts will be loaded.</span>
+
+<span class="sd">        :param checkpoint: Path to the checkpoint containing the weights to be loaded.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loading weights from </span><span class="si">{</span><span class="n">checkpoint</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="n">checkpoint</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">,</span> <span class="n">map_location</span><span class="o">=</span><span class="k">lambda</span> <span class="n">storage</span><span class="p">,</span> <span class="n">loc</span><span class="p">:</span> <span class="n">storage</span><span class="p">)</span>
+        <span class="n">pretrained_dict</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;state_dict&quot;</span><span class="p">]</span>
+        <span class="n">model_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">state_dict</span><span class="p">()</span>
+        <span class="c1"># 1. filter out unnecessary keys</span>
+        <span class="n">pretrained_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">pretrained_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">model_dict</span><span class="p">}</span>
+        <span class="c1"># 2. overwrite entries in the existing state dict</span>
+        <span class="n">model_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pretrained_dict</span><span class="p">)</span>
+        <span class="c1"># 3. load the new state dict</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">model_dict</span><span class="p">)</span></div>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">prepare_sample</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="CometModel.configure_optimizers"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.configure_optimizers">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">configure_optimizers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+
+    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">init_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="CometModel.forward"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.forward">[docs]</a>    <span class="nd">@abc</span><span class="o">.</span><span class="n">abstractmethod</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="k">pass</span></div>
+
+    <span class="k">def</span> <span class="nf">freeze_encoder</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Encoder model frozen.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">freeze</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">loss</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">nn</span><span class="o">.</span><span class="n">MSELoss</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">compute_loss</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">targets</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss</span><span class="p">(</span><span class="n">predictions</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">targets</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">unfreeze_encoder</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frozen</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">is_global_zero</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Encoder model fine-tuning&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">unfreeze</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frozen</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">keep_embeddings_frozen</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">freeze_embeddings</span><span class="p">()</span>
+
+<div class="viewcode-block" id="CometModel.on_train_epoch_end"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.on_train_epoch_end">[docs]</a>    <span class="k">def</span> <span class="nf">on_train_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Hook used to unfreeze encoder during training.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epoch_nr</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch_nr</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_frozen_epochs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frozen</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze_encoder</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frozen</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="CometModel.set_embedding_cache"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.set_embedding_cache">[docs]</a>    <span class="k">def</span> <span class="nf">set_embedding_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Function that when called turns embedding caching on.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">caching</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="CometModel.get_sentence_embedding"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.get_sentence_embedding">[docs]</a>    <span class="k">def</span> <span class="nf">get_sentence_embedding</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Function that extracts sentence embeddings for</span>
+<span class="sd">            a single sentence.</span>
+
+<span class="sd">        :param tokens: sequences [batch_size x seq_len]</span>
+<span class="sd">        :param lengths: lengths [batch_size]</span>
+
+<span class="sd">        :return: torch.Tensor [batch_size x hidden_size]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">caching</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">retrieve_sentence_embedding</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_sentence_embedding</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CometModel.retrieve_sentence_embedding"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.retrieve_sentence_embedding">[docs]</a>    <span class="nd">@tensor_lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="n">CACHE_SIZE</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">retrieve_sentence_embedding</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Wrapper for `get_sentence_embedding` function that caches results.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_sentence_embedding</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">compute_sentence_embedding</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">input_ids</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+
+        <span class="n">encoder_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">input_ids</span><span class="p">,</span> <span class="n">attention_mask</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span><span class="p">:</span>
+            <span class="c1"># HACK: LayerNorm is applied at the MiniBatch. This means that for big batch sizes the variance</span>
+            <span class="c1"># and norm within the batch will create small differences in the final score</span>
+            <span class="c1"># If we are predicting we split the data into equal size batches to minimize this variance.</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">training</span><span class="p">:</span>
+                <span class="n">n_splits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mi">8</span><span class="p">))</span>
+                <span class="n">embeddings</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">split</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_splits</span><span class="p">):</span>
+                    <span class="n">all_layers</span> <span class="o">=</span> <span class="p">[]</span>
+                    <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">])):</span>
+                        <span class="n">layer_embs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">][</span><span class="n">layer</span><span class="p">],</span> <span class="mi">8</span><span class="p">)</span>
+                        <span class="n">all_layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">layer_embs</span><span class="p">[</span><span class="n">split</span><span class="p">])</span>
+                    <span class="n">split_attn</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">attention_mask</span><span class="p">,</span> <span class="mi">8</span><span class="p">)[</span><span class="n">split</span><span class="p">]</span>
+                    <span class="n">embeddings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span><span class="p">(</span><span class="n">all_layers</span><span class="p">,</span> <span class="n">split_attn</span><span class="p">))</span>
+                <span class="n">embeddings</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">embeddings</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span><span class="p">(</span>
+                    <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">],</span> <span class="n">attention_mask</span>
+                <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layer</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layer</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">num_layers</span><span class="p">:</span>
+            <span class="n">embeddings</span> <span class="o">=</span> <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;all_layers&quot;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layer</span><span class="p">]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid model layer </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">layer</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;default&quot;</span><span class="p">:</span>
+            <span class="n">sentemb</span> <span class="o">=</span> <span class="n">encoder_out</span><span class="p">[</span><span class="s2">&quot;sentemb&quot;</span><span class="p">]</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;max&quot;</span><span class="p">:</span>
+            <span class="n">sentemb</span> <span class="o">=</span> <span class="n">max_pooling</span><span class="p">(</span>
+                <span class="n">input_ids</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;avg&quot;</span><span class="p">:</span>
+            <span class="n">sentemb</span> <span class="o">=</span> <span class="n">average_pooling</span><span class="p">(</span>
+                <span class="n">input_ids</span><span class="p">,</span>
+                <span class="n">embeddings</span><span class="p">,</span>
+                <span class="n">attention_mask</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="o">.</span><span class="n">tokenizer</span><span class="o">.</span><span class="n">pad_token_id</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">pool</span> <span class="o">==</span> <span class="s2">&quot;cls&quot;</span><span class="p">:</span>
+            <span class="n">sentemb</span> <span class="o">=</span> <span class="n">embeddings</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Invalid pooling technique.&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">sentemb</span>
+
+<div class="viewcode-block" id="CometModel.training_step"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.training_step">[docs]</a>    <span class="k">def</span> <span class="nf">training_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span>
+        <span class="n">batch_nb</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs one training step and logs the training loss.</span>
+
+<span class="sd">        :param batch: The output of your prepare_sample function.</span>
+<span class="sd">        :param batch_nb: Integer displaying which batch this is.</span>
+
+<span class="sd">        :returns: Loss value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">batch_input</span><span class="p">,</span> <span class="n">batch_target</span> <span class="o">=</span> <span class="n">batch</span>
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="o">**</span><span class="n">batch_input</span><span class="p">)</span>
+        <span class="n">loss_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_loss</span><span class="p">(</span><span class="n">batch_prediction</span><span class="p">,</span> <span class="n">batch_target</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nr_frozen_epochs</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_frozen_epochs</span> <span class="o">&gt;</span> <span class="mf">0.0</span>
+            <span class="ow">and</span> <span class="n">batch_nb</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch_total_steps</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_frozen_epochs</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">unfreeze_encoder</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_frozen</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;train_loss&quot;</span><span class="p">,</span> <span class="n">loss_value</span><span class="p">,</span> <span class="n">on_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">on_epoch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss_value</span></div>
+
+<div class="viewcode-block" id="CometModel.validation_step"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.validation_step">[docs]</a>    <span class="k">def</span> <span class="nf">validation_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span>
+        <span class="n">batch_nb</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dataloader_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs one validation step and logs metrics.</span>
+
+<span class="sd">        :param batch: The output of your prepare_sample function.</span>
+<span class="sd">        :param batch_nb: Integer displaying which batch this is.</span>
+<span class="sd">        :param dataloader_idx: Integer displaying which dataloader this is.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">batch_input</span><span class="p">,</span> <span class="n">batch_target</span> <span class="o">=</span> <span class="n">batch</span>
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="o">**</span><span class="n">batch_input</span><span class="p">)</span>
+        <span class="n">loss_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_loss</span><span class="p">(</span><span class="n">batch_prediction</span><span class="p">,</span> <span class="n">batch_target</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;val_loss&quot;</span><span class="p">,</span> <span class="n">loss_value</span><span class="p">,</span> <span class="n">on_step</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">on_epoch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># TODO: REMOVE if condition after torchmetrics bug fix</span>
+        <span class="k">if</span> <span class="n">batch_prediction</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">.</span><span class="n">Size</span><span class="p">([</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="n">dataloader_idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">batch_prediction</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">batch_target</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">dataloader_idx</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="n">batch_prediction</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">batch_target</span><span class="p">[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span>
+                <span class="p">)</span></div>
+
+<div class="viewcode-block" id="CometModel.on_predict_start"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.on_predict_start">[docs]</a>    <span class="k">def</span> <span class="nf">on_predict_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Called when predict begins.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mc_dropout</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="CometModel.predict_step"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.predict_step">[docs]</a>    <span class="k">def</span> <span class="nf">predict_step</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">batch</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span>
+        <span class="n">batch_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dataloader_idx</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Runs one prediction step and returns the predicted values.</span>
+
+<span class="sd">        :param batch: The output of your prepare_sample function.</span>
+<span class="sd">        :param batch_nb: Integer displaying which batch this is.</span>
+<span class="sd">        :param dataloader_idx: Integer displaying which dataloader this is.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mc_dropout</span><span class="p">:</span>
+            <span class="n">mcd_outputs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+                <span class="p">[</span><span class="bp">self</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mc_dropout</span><span class="p">)]</span>
+            <span class="p">)</span>
+            <span class="n">mcd_mean</span> <span class="o">=</span> <span class="n">mcd_outputs</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">mcd_std</span> <span class="o">=</span> <span class="n">mcd_outputs</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">mcd_mean</span><span class="p">,</span> <span class="n">mcd_std</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="p">(</span><span class="o">**</span><span class="n">batch</span><span class="p">)[</span><span class="s2">&quot;score&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CometModel.validation_epoch_end"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.validation_epoch_end">[docs]</a>    <span class="k">def</span> <span class="nf">validation_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Computes and logs metrics.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span><span class="o">.</span><span class="n">compute</span><span class="p">(),</span> <span class="n">prog_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span><span class="o">.</span><span class="n">compute</span><span class="p">(),</span> <span class="n">prog_bar</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_metrics</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">val_metrics</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="CometModel.setup"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.setup">[docs]</a>    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Data preparation function called before training by Lightning.</span>
+
+<span class="sd">        :param stage: either &#39;fit&#39;, &#39;validate&#39;, &#39;test&#39;, or &#39;predict&#39;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">stage</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">train_data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">validation_dataset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">validation_data</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">epoch_total_steps</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">)</span> <span class="o">//</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">*</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">num_gpus</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">total_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">epoch_total_steps</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">max_epochs</span><span class="p">)</span>
+
+            <span class="c1"># Always validate the model with 2k examples to control overfit.</span>
+            <span class="n">train_subset</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">),</span> <span class="n">size</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_subset</span> <span class="o">=</span> <span class="n">Subset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">train_subset</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">init_metrics</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="CometModel.train_dataloader"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.train_dataloader">[docs]</a>    <span class="k">def</span> <span class="nf">train_dataloader</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataLoader</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Function that loads the train set.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">DataLoader</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">,</span>
+            <span class="n">sampler</span><span class="o">=</span><span class="n">RandomSampler</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_dataset</span><span class="p">),</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">collate_fn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">,</span>
+            <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">gpus</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="CometModel.val_dataloader"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.val_dataloader">[docs]</a>    <span class="k">def</span> <span class="nf">val_dataloader</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataLoader</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Function that loads the validation set.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">DataLoader</span><span class="p">(</span>
+                <span class="n">dataset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">train_subset</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">collate_fn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">,</span>
+                <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">gpus</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">DataLoader</span><span class="p">(</span>
+                <span class="n">dataset</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">validation_dataset</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hparams</span><span class="o">.</span><span class="n">batch_size</span><span class="p">,</span>
+                <span class="n">collate_fn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">,</span>
+                <span class="n">num_workers</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">trainer</span><span class="o">.</span><span class="n">gpus</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">]</span></div>
+
+<div class="viewcode-block" id="CometModel.prepare_for_inference"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.prepare_for_inference">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_for_inference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Ideally this should be a lamba function but for some reason python does not copy local lambda functions.</span>
+<span class="sd">        This functions replaces `collate_fn=lambda x: self.prepare_sample(x, inference=True)` from line 434.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare_sample</span><span class="p">(</span><span class="n">sample</span><span class="p">,</span> <span class="n">inference</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CometModel.predict"><a class="viewcode-back" href="../../../library.html#comet.models.base.CometModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">samples</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="n">gpus</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">mc_dropout</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">progress_bar</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">accelerator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ddp&quot;</span><span class="p">,</span>
+        <span class="n">num_workers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">length_batching</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Function that receives a list of samples (dictionaries with translations, sources and/or references)</span>
+<span class="sd">        and returns segment level scores and a system level score. If `mc_dropout` is set, it also returns for each</span>
+<span class="sd">        segment score, a confidence value.</span>
+
+<span class="sd">        :param samples: List with dictionaries with source, translations and/or references.</span>
+<span class="sd">        :param batch_size: Batch size used during inference.</span>
+<span class="sd">        :param gpus: Number of GPUs to be used.</span>
+<span class="sd">        :param mc_dropout: Number of inference steps to run using MCD. Its disabled by default!</span>
+<span class="sd">        :param progress_bar: Flag that turns on and off the predict progress bar.</span>
+<span class="sd">        :param accelarator: Pytorch Lightning accelerator (e.g: dp, ddp).</span>
+<span class="sd">        :param num_workers: Number of workers to use when loading data from dataloaders.</span>
+<span class="sd">        :param length_batching: If set to true, reduces padding by sorting samples by MT length.</span>
+
+<span class="sd">        :return: List with segment-level scores and a system-score or segment-level scores, segment-level</span>
+<span class="sd">            confidence and a system-score.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># HACK: Workaround pytorch bug that prevents ParameterList to be used in DP</span>
+        <span class="c1"># https://github.com/pytorch/pytorch/issues/36035</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">gpus</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span><span class="o">.</span><span class="n">gamma_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span><span class="o">.</span><span class="n">gamma</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">parameter</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layerwise_attention</span><span class="o">.</span><span class="n">scalar_parameters</span>
+            <span class="p">]</span>
+
+        <span class="c1"># TODO: ideally this should be based on the actual token_ids</span>
+        <span class="c1"># but that would require fundamentally changing the way dataloader is</span>
+        <span class="c1"># setup, so currently raw chars are used as an approximation</span>
+        <span class="n">sampler</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">length_batching</span> <span class="ow">and</span> <span class="n">gpus</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">sort_ids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;src&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">])</span>
+            <span class="n">sampler</span> <span class="o">=</span> <span class="n">OrderedSampler</span><span class="p">(</span><span class="n">sort_ids</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">num_workers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">num_workers</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">gpus</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
+        <span class="n">dataloader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">samples</span><span class="p">,</span>
+            <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+            <span class="n">sampler</span><span class="o">=</span><span class="n">sampler</span><span class="p">,</span>
+            <span class="n">collate_fn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prepare_for_inference</span><span class="p">,</span>
+            <span class="n">num_workers</span><span class="o">=</span><span class="n">num_workers</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">accelerator</span> <span class="o">=</span> <span class="n">accelerator</span> <span class="k">if</span> <span class="n">gpus</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+            <span class="s2">&quot;ignore&quot;</span><span class="p">,</span>
+            <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;.*Consider increasing the value of the `num_workers` argument` .*&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">progress_bar</span><span class="p">:</span>
+            <span class="n">trainer</span> <span class="o">=</span> <span class="n">ptl</span><span class="o">.</span><span class="n">Trainer</span><span class="p">(</span>
+                <span class="n">gpus</span><span class="o">=</span><span class="n">gpus</span><span class="p">,</span>
+                <span class="n">deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">logger</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">PredictProgressBar</span><span class="p">()],</span>
+                <span class="n">accelerator</span><span class="o">=</span><span class="n">accelerator</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">trainer</span> <span class="o">=</span> <span class="n">ptl</span><span class="o">.</span><span class="n">Trainer</span><span class="p">(</span>
+                <span class="n">gpus</span><span class="o">=</span><span class="n">gpus</span><span class="p">,</span>
+                <span class="n">deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">logger</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">progress_bar_refresh_rate</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="n">accelerator</span><span class="o">=</span><span class="n">accelerator</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># TODO:</span>
+        <span class="c1"># Remove this upon resolution of:</span>
+        <span class="c1"># https://github.com/PyTorchLightning/pytorch-lightning/discussions/11392</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span>
+            <span class="s2">&quot;ignore&quot;</span><span class="p">,</span>
+            <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">,</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Your `predict_dataloader` has `shuffle=True`.*&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">mc_dropout</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_mc_dropout</span><span class="p">(</span><span class="n">mc_dropout</span><span class="p">)</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span> <span class="n">dataloaders</span><span class="o">=</span><span class="n">dataloader</span><span class="p">,</span> <span class="n">return_predictions</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="n">mean_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">out</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+            <span class="n">std_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">out</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">]</span>
+            <span class="n">mean_scores</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">mean_scores</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="n">std_scores</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">std_scores</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">length_batching</span> <span class="ow">and</span> <span class="n">gpus</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">unsorted_mean_scores</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">))]</span>
+                <span class="n">unsorted_std_scores</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">))]</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">mean_score</span><span class="p">,</span> <span class="n">std_score</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                    <span class="n">sort_ids</span><span class="p">,</span> <span class="n">mean_scores</span><span class="p">,</span> <span class="n">std_scores</span>
+                <span class="p">):</span>
+                    <span class="n">unsorted_mean_scores</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">mean_score</span>
+                    <span class="n">unsorted_std_scores</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">std_score</span>
+                <span class="n">mean_scores</span> <span class="o">=</span> <span class="n">unsorted_mean_scores</span>
+                <span class="n">std_scores</span> <span class="o">=</span> <span class="n">unsorted_std_scores</span>
+
+            <span class="k">return</span> <span class="n">mean_scores</span><span class="p">,</span> <span class="n">std_scores</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">mean_scores</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">mean_scores</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span> <span class="n">dataloaders</span><span class="o">=</span><span class="n">dataloader</span><span class="p">,</span> <span class="n">return_predictions</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="n">predictions</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">length_batching</span> <span class="ow">and</span> <span class="n">gpus</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">unsorted_predictions</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">))]</span>
+                <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">prediction</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sort_ids</span><span class="p">,</span> <span class="n">predictions</span><span class="p">):</span>
+                    <span class="n">unsorted_predictions</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">prediction</span>
+                <span class="n">predictions</span> <span class="o">=</span> <span class="n">unsorted_predictions</span>
+
+            <span class="k">return</span> <span class="n">predictions</span><span class="p">,</span> <span class="nb">sum</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
