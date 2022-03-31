@@ -2,7 +2,7 @@
 Installation
 ============
 
-Please note that since Python>=3.5 is required, all of the following commands, especially `pip`,
+Please note that since Python>=3.7 is required, all of the following commands, especially `pip`,
 also have to be the Python 3 compliant versions thereof. This might require that you run `pip3` instead.
 
 

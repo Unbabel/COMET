@@ -41,15 +41,16 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Running COMET</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#command-line-interface">Command Line Interface</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#using-python">Using Python</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-interface">Command Line Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#scoring-command">Scoring Command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compare-command">Compare Command</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mbr-command">MBR Command</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a></li>
-</ul>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="library.html">Library Reference</a></li>
 </ul>
 
         </div>
@@ -80,53 +81,122 @@
 <h1>Running COMET<a class="headerlink" href="#running-comet" title="Permalink to this headline"></a></h1>
 <section id="command-line-interface">
 <h2>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline"></a></h2>
-<p>After installing COMET you can score you MT outputs with the following command:</p>
+<p>Our CLI supports 4 different commands:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">comet-score</span></code>: the <a class="reference internal" href="#scoring-command">Scoring Command</a> is used to evaluate MT.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">comet-compare</span></code>: the <a class="reference internal" href="#compare-command">Compare Command</a> is used too compare two MT systems using statistical significance tests.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">comet-mbr</span></code>: the <a class="reference internal" href="#mbr-command">MBR Command</a>  is used for Minimum Bayes Risk Decoding.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">comet-train</span></code>: used to <a class="reference external" href="https://unbabel.github.io/COMET/html/training.html">train your own evaluation Metric</a>.</p></li>
+</ul>
+<p>Before we get started please create the following <em>dummy test data</em>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">echo</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;Dem Feuer konnte Einhalt geboten werden</span><span class="se">\n</span><span class="s2">Schulen und Kindergärten wurden eröffnet.&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span>
-<span class="n">echo</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;The fire could be stopped</span><span class="se">\n</span><span class="s2">Schools and kindergartens were open&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">hyp</span><span class="o">.</span><span class="n">en</span>
+<span class="n">echo</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;The fire could be stopped</span><span class="se">\n</span><span class="s2">Schools and kindergartens were open&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span>
+<span class="n">echo</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;The fire could have been stopped</span><span class="se">\n</span><span class="s2">Schools and pre-school were open&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">hyp2</span><span class="o">.</span><span class="n">en</span>
 <span class="n">echo</span> <span class="o">-</span><span class="n">e</span> <span class="s2">&quot;They were able to control the fire.</span><span class="se">\n</span><span class="s2">Schools and kindergartens opened&quot;</span> <span class="o">&gt;&gt;</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span>
-<span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">h</span> <span class="n">hyp</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span>
 </pre></div>
 </div>
-<p>You can also specify a metric model using the <cite>—model</cite> flag (see <a class="reference internal" href="models.html#comet-metrics"><span class="std std-ref">COMET Metrics</span></a> for available metric models):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">h</span> <span class="n">hyp</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">model</span> <span class="n">wmt</span><span class="o">-</span><span class="n">large</span><span class="o">-</span><span class="n">da</span><span class="o">-</span><span class="n">estimator</span><span class="o">-</span><span class="mi">1719</span>
+<section id="scoring-command">
+<h3>Scoring Command<a class="headerlink" href="#scoring-command" title="Permalink to this headline"></a></h3>
+<p>Basic scoring command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span>
 </pre></div>
 </div>
-<p>You can export your results to a JSON file using the <cite>—to_json</cite> flag:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span> <span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">h</span> <span class="n">hyp</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">to_json</span> <span class="n">output</span><span class="o">.</span><span class="n">json</span>
+<p>use  <code class="docutils literal notranslate"><span class="pre">--gpus</span> <span class="pre">0</span></code> to test on CPU.</p>
+<p>Scoring multiple systems:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="n">hyp2</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span>
 </pre></div>
 </div>
-<p>Finally, if you don’t have access to a GPU you can run COMET using CPU with the <code class="code docutils literal notranslate"><span class="pre">--cpu</span></code> flag but this will take some time to run.</p>
+<p>You can also test your system on public benchmarks such as WMT20 en-de via <a class="reference external" href="https://github.com/mjpost/sacrebleu/">SacreBLEU</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">d</span> <span class="n">wmt20</span><span class="p">:</span><span class="n">en</span><span class="o">-</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">PATH</span><span class="o">/</span><span class="n">TO</span><span class="o">/</span><span class="n">TRANSLATIONS</span>
+</pre></div>
+</div>
+<p>The default setting of <code class="docutils literal notranslate"><span class="pre">comet-score</span></code> prints the score for each segment individually.
+If you are only interested in the score for the whole dataset (computed as the average of the segment scores),
+you can use the <code class="docutils literal notranslate"><span class="pre">--quiet</span></code> flag. E.g:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">quiet</span>
+</pre></div>
+</div>
+<p>COMET provides a list of different model/metrics that you can use to evaluate your systems. You can select which one you want using the <code class="docutils literal notranslate"><span class="pre">--model</span></code> flag.</p>
+<p><strong>NOTE:</strong> For reference-free (QE-as-a-metric) models you don’t need to pass a reference. E.g:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">model</span> <span class="n">wmt20</span><span class="o">-</span><span class="n">comet</span><span class="o">-</span><span class="n">qe</span><span class="o">-</span><span class="n">da</span>
+</pre></div>
+</div>
+<p>Following our work on <a class="reference external" href="https://aclanthology.org/2021.findings-emnlp.330/">Uncertainty-Aware MT Evaluation</a> you can use the <code class="docutils literal notranslate"><span class="pre">--mc_dropout</span></code> flag to get a variance/uncertainty value for each segment score.
+If this value is high, it means that the metric is less confident in that prediction.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">mc_dropout</span> <span class="mi">30</span>
+</pre></div>
+</div>
+<p><strong>Multi-GPU Inference:</strong></p>
+<p>COMET is optimized to be used in a single GPU by taking advantage of length batching and embedding caching. When using Multi-GPU since data e spread
+across GPUs we will typically get fewer cache hits and the length batching samples is replaced by a <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#replace-sampler-ddp/">DistributedSampler</a>.
+Because of that, according to our experiments, using 1 GPU is faster than using 2 GPUs specially when scoring multiple systems
+for the same source and reference.</p>
+<p>Nonetheless, if your data does not have repetitions and you have more than 1 GPU available, you can <strong>run multi-GPU inference with the following command</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">gpus</span> <span class="mi">2</span> <span class="o">--</span><span class="n">quiet</span>
+</pre></div>
+</div>
+<p><strong>Changing Embedding Cache Size:</strong>
+You can change the cache size of COMET using the following env variable:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">COMET_EMBEDDINGS_CACHE</span><span class="o">=</span><span class="s2">&quot;2048&quot;</span>
+</pre></div>
+</div>
+<p>by default the COMET cache size is 1024.</p>
 </section>
-<section id="using-python">
-<h2>Using Python<a class="headerlink" href="#using-python" title="Permalink to this headline"></a></h2>
-<p>Instead of using CLI you can also score your models in Python with the <cite>predict</cite> function:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">comet.models</span> <span class="kn">import</span> <span class="n">download_model</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">download_model</span><span class="p">(</span><span class="s2">&quot;wmt-large-da-estimator-1719&quot;</span><span class="p">,</span> <span class="s2">&quot;path/where/to/save/models/&quot;</span><span class="p">)</span>
-<span class="n">data</span> <span class="o">=</span> <span class="p">[</span>
-   <span class="p">{</span>
-      <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="s2">&quot;Dem Feuer konnte Einhalt geboten werden&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="s2">&quot;The fire could be stopped&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;They were able to control the fire.&quot;</span>
-   <span class="p">},</span>
-   <span class="p">{</span>
-      <span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="s2">&quot;Schulen und Kindergärten wurden eröffnet.&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="s2">&quot;Schools and kindergartens were open&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;Schools and kindergartens opened&quot;</span>
-   <span class="p">}</span>
-<span class="p">]</span>
-<span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cuda</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<section id="compare-command">
+<h3>Compare Command<a class="headerlink" href="#compare-command" title="Permalink to this headline"></a></h3>
+<p>When comparing MT systems <strong>we encourage you to check how significant are the improvements</strong> you observe for a given model.
+This command receives two system outputs and performs statistical significant testing with <em>Paired T-Test</em> and <em>bootstrap resampling</em>.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">compare</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">x</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">y</span> <span class="n">hyp2</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span>
 </pre></div>
 </div>
-<p>Scoring MT ouputs using lists:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Dem Feuer konnte Einhalt geboten werden&quot;</span><span class="p">,</span> <span class="s2">&quot;Schulen und Kindergärten wurden eröffnet.&quot;</span><span class="p">]</span>
-<span class="n">hypothesis</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;The fire could be stopped&quot;</span><span class="p">,</span> <span class="s2">&quot;Schools and kindergartens were open&quot;</span><span class="p">]</span>
-<span class="n">reference</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;They were able to control the fire.&quot;</span><span class="p">,</span> <span class="s2">&quot;Schools and kindergartens opened&quot;</span><span class="p">]</span>
-<span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;src&quot;</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="s2">&quot;mt&quot;</span><span class="p">:</span> <span class="n">hypothesis</span><span class="p">,</span> <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="n">reference</span><span class="p">}</span>
-<span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">data</span><span class="o">.</span><span class="n">values</span><span class="p">())]</span>
-<span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">cuda</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</section>
+<section id="mbr-command">
+<h3>MBR Command<a class="headerlink" href="#mbr-command" title="Permalink to this headline"></a></h3>
+<p>Minimum Bayes-Risk (MBR) decoding aims to find the candidate hypothesis that has the least expected loss under a given metric.
+Recent studies showed that MBR with neural fine-tuned metrics such as COMET leads to significant improvement in automatic and
+human evaluations [<a class="reference external" href="https://arxiv.org/abs/2111.09388/">Freitag et al. 2022,</a> <a class="reference external" href="https://arxiv.org/abs/2203.00201/">Zhang et al. 2022</a>].</p>
+<p>We find that this is a promissing direction for MT in general and for that reason we developed the <code class="docutils literal notranslate"><span class="pre">comet-mbr</span></code> command. Our implementation is
+inspired by <a class="reference external" href="https://arxiv.org/abs/2202.05148/">Amrhein et al, 2022,</a>  caching approach.</p>
+<p>Example::</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">mbr</span> <span class="o">-</span><span class="n">s</span> <span class="n">source</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">t</span> <span class="n">samples</span><span class="o">.</span><span class="n">txt</span> <span class="o">--</span><span class="n">num_samples</span> <span class="n">n</span> <span class="o">-</span><span class="n">o</span> <span class="n">output</span><span class="o">.</span><span class="n">txt</span>
 </pre></div>
 </div>
-<p><strong>Note:</strong> COMET corpus-level scores are obtained by averaging segment-level scores.</p>
+<p>where <code class="docutils literal notranslate"><span class="pre">source.txt</span></code> is a text file with one source per line and <code class="docutils literal notranslate"><span class="pre">samples.txt</span></code> is a text file with <code class="docutils literal notranslate"><span class="pre">n</span></code> samples for each <code class="docutils literal notranslate"><span class="pre">source.txt</span></code> line.
+The command will write the best MT sample to the <code class="docutils literal notranslate"><span class="pre">output.txt</span></code> file.</p>
+<p>Example with 2 source and 3 samples:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 74%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>source.txt</p></th>
+<th class="head"><p>samples.txt</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td rowspan="3"><p>Obama
+receives
+Netanyahu</p></td>
+<td><p>Obama empfängt Netanjahu</p></td>
+</tr>
+<tr class="row-odd"><td><p>Obama empfing Netanjahu</p></td>
+</tr>
+<tr class="row-even"><td><p>Obama trifft Netanjahu</p></td>
+</tr>
+<tr class="row-odd"><td rowspan="3"><p>Lamb grew
+up in the</p>
+<p>area.</p>
+</td>
+<td><p>Lamm wuchs in der Gegend auf.</p></td>
+</tr>
+<tr class="row-even"><td><p>Lamb wuchs in der Gegend auf.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Lamb wuchs in dieser Gegend auf.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
 </section>
 </section>
 
