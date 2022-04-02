@@ -165,6 +165,8 @@ The default model was developed to [participate in the WMT20 Metrics shared task
 
 Our recommended QE system was [developed for the WMT21 Metrics shared task](https://aclanthology.org/2021.wmt-1.111/) and was the best performing _QE as a Metric_ that year [(Freitag et al. 2021)](https://aclanthology.org/2021.wmt-1.73/).
 
+**Note:** The range of scores between different models can be totally different. To better understand COMET scores please [take a look at our FAQs](https://unbabel.github.io/COMET/html/faqs.html)
+
 For more information about the available COMET models read our metrics descriptions [here](https://unbabel.github.io/COMET/html/models.html)
 
 ## Train your own Metric: 
