@@ -21,17 +21,33 @@ optional arguments:
   -h, --help            Show this help message and exit.
   -s SOURCES, --sources SOURCES
                         (type: Path_fr, default: null)
-  -t TRANSLATIONS, --translations TRANSLATIONS
+  -t TRANSLATIONS [TRANSLATIONS ...], --translations TRANSLATIONS [TRANSLATIONS ...]
                         (type: Path_fr, default: null)
+  -r REFERENCES, --references REFERENCES
+                        (type: Path_fr, default: null)
+  -d SACREBLEU_DATASET, --sacrebleu_dataset SACREBLEU_DATASET
+                        (type: str, default: null)
   --batch_size BATCH_SIZE
                         (type: int, default: 8)
-  --num_samples NUM_SAMPLES
-                        (required, type: int)
+  --gpus GPUS           (type: int, default: 1)
+  --quiet               Prints only the final system score. (default: False)
+  --accelerator {dp,ddp}
+                        Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
+  --to_json TO_JSON     Exports results to a json file. (type: Union[bool, str], default: False)
   --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
                         Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
-  -o OUTPUT, --output OUTPUT
-                        Best candidates after running MBR decoding. (type: str, default: mbr_result.txt)
+  --mc_dropout MC_DROPOUT
+                        Number of inference runs for each sample in MC Dropout. (type: Union[bool, int], default: False)
+  --seed_everything SEED_EVERYTHING
+                        Prediction seed. (type: int, default: 12)
+  --num_workers NUM_WORKERS
+                        Number of workers to use when loading data. (type: int, default: 2)
+  --disable_bar         Disables progress bar. (default: False)
+  --disable_cache       Disables sentence embeddings caching. This makes inference slower but saves memory. (default: False)
+  --disable_length_batching
+                        Disables length batching. This makes inference slower. (default: False)
+  --print_cache_info    Print information about COMET cache. (default: False)
 """
 import itertools
 import json
