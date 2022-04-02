@@ -159,9 +159,11 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 We recommend the two following models to evaluate your translations:
 
 - `wmt20-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-da-estimator-1719` from previous versions.
-- `wmt21-comet-qe-da`: **Reference-FREE** Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT15 to WMT20.
+- `wmt21-comet-qe-mqm`: **Reference-FREE** Regression model build on top of XLM-R (large), trained on Direct Assessments and fine-tuned on MQM.
 
-The default model was developed to participate in the WMT20 Metrics shared task [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf) and were among the best metrics that year. Also, in a large-scale study performed by Microsoft Research this metrics ranked 1st in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf). 
+The default model was developed to [participate in the WMT20 Metrics shared task](https://aclanthology.org/2020.wmt-1.101/) [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf) and were among the best metrics that year. Also, in a large-scale study performed by Microsoft Research this metrics ranked 1st in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf). 
+
+Our recommended QE system was [developed for the WMT21 Metrics shared task](https://aclanthology.org/2021.wmt-1.111/) and was the best performing _QE as a Metric_ that year [(Freitag et al. 2021)](https://aclanthology.org/2021.wmt-1.73/).
 
 For more information about the available COMET models read our metrics descriptions [here](https://unbabel.github.io/COMET/html/models.html)
 
