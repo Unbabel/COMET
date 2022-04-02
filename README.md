@@ -8,6 +8,12 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
+> Version 1.1 is out 🥳! whats new?
+> Updated [documentation](https://unbabel.github.io/COMET/html/index.html)
+> Updated Pytorch Lightning version to avoid security vulnerabilities (Untrusted Data & Code Injection)
+> Inspired by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) we added the `comet-mbr` command for fast Minimum Bayes Risk Decoding.
+> New encoder models
+
 ## Quick Installation
 
 Simple installation from PyPI
@@ -153,11 +159,11 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 We recommend the two following models to evaluate your translations:
 
 - `wmt20-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-da-estimator-1719` from previous versions.
-- `wmt20-comet-qe-da`: **Reference-FREE** Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-qe-estimator-1719` from previous versions.
+- `wmt21-comet-qe-da`: **Reference-FREE** Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT15 to WMT20.
 
-These two models were developed to participate on the WMT20 Metrics shared task [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf) and were among the best metrics that year. Also, in a large-scale study performed by Microsoft Research these two metrics are ranked 1st and 2nd in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf). At segment-level, these systems also correlate well with expert evaluations based on MQM data [(Freitag et al. 2020](https://arxiv.org/pdf/2104.14478.pdf)[; Freitag et al. 2021)](https://aclanthology.org/2021.wmt-1.73/).
+The default model was developed to participate in the WMT20 Metrics shared task [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf) and were among the best metrics that year. Also, in a large-scale study performed by Microsoft Research this metrics ranked 1st in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf). 
 
-For more information about the available COMET models read our metrics descriptions [here](METRICS.md)
+For more information about the available COMET models read our metrics descriptions [here](https://unbabel.github.io/COMET/html/models.html)
 
 ## Train your own Metric: 
 
