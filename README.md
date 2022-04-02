@@ -9,10 +9,10 @@
 </p>
 
 > Version 1.1 is out 🥳! whats new?
-> Updated [documentation](https://unbabel.github.io/COMET/html/index.html)
-> Updated Pytorch Lightning version to avoid security vulnerabilities (Untrusted Data & Code Injection)
-> Inspired by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) we added the `comet-mbr` command for fast Minimum Bayes Risk Decoding.
-> New encoder models
+> 1) Updated [documentation](https://unbabel.github.io/COMET/html/index.html)
+> 2) Updated Pytorch Lightning version to avoid security vulnerabilities (Untrusted Data & Code Injection)
+> 3) Inspired by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) we added the `comet-mbr` command for fast Minimum Bayes Risk Decoding.
+> 4) New encoder models
 
 ## Quick Installation
 
