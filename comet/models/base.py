@@ -401,6 +401,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.log_dict(self.val_metrics.compute(), prog_bar=True)
         self.train_metrics.reset()
         self.val_metrics.reset()
+        
 
     def setup(self, stage) -> None:
         """Data preparation function called before training by Lightning.
@@ -412,7 +413,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.validation_dataset = self.read_csv(self.hparams.validation_data)
 
             self.epoch_total_steps = len(self.train_dataset) // (
-                self.hparams.batch_size * max(1, self.trainer.num_gpus)
+                self.hparams.batch_size * max(1, self.trainer.num_devices)
             )
             self.total_steps = self.epoch_total_steps * float(self.trainer.max_epochs)
 
@@ -428,7 +429,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             sampler=RandomSampler(self.train_dataset),
             batch_size=self.hparams.batch_size,
             collate_fn=self.prepare_sample,
-            num_workers=2 * self.trainer.gpus,
+            num_workers=2 * self.trainer.num_devices,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -438,13 +439,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
-                num_workers=2 * self.trainer.gpus,
+                num_workers=2 * self.trainer.num_devices,
             ),
             DataLoader(
                 dataset=self.validation_dataset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=self.prepare_sample,
-                num_workers=2 * self.trainer.gpus,
+                num_workers=2 * self.trainer.num_devices,
             ),
         ]
 
@@ -525,6 +526,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 logger=False,
                 callbacks=[PredictProgressBar()],
                 accelerator=accelerator,
+                max_epochs=-1
             )
         else:
             trainer = ptl.Trainer(
@@ -533,6 +535,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 logger=False,
                 progress_bar_refresh_rate=0,
                 accelerator=accelerator,
+                max_epochs=-1
             )
 
         # TODO:
@@ -541,7 +544,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         warnings.filterwarnings(
             "ignore",
             category=UserWarning,
-            message="Your `predict_dataloader` has `shuffle=True`.*",
+            message="Your `predict_dataloader`'s sampler has shuffling enabled.*",
         )
 
         if mc_dropout:

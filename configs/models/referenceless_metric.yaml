@@ -11,10 +11,10 @@ referenceless_regression_metric:
     pretrained_model: xlm-roberta-large
     pool: avg
     layer: mix
-    dropout: 0.15
+    dropout: 0.1
     batch_size: 4
-    train_data: data/scores-1520.csv
-    validation_data: data/mqm.test.csv
+    train_data: data/TRAIN.csv
+    validation_data: data/DEV.csv
     hidden_sizes:
       - 2048
       - 1024

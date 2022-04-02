@@ -36,15 +36,6 @@ class XLMRXLEncoder(XLMREncoder):
         )
         self.model.encoder.output_hidden_states = True
 
-    def freeze_embeddings(self) -> None:
-        """Frezees the embedding layer."""
-        for param in self.model.embeddings.parameters():
-            param.requires_grad = False
-
-        for layer in self.model.encoder.layer[:8]:
-            for param in layer.parameters():
-                param.requires_grad = False
-
     @classmethod
     def from_pretrained(cls, pretrained_model: str) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.

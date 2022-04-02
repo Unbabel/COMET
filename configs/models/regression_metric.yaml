@@ -12,9 +12,9 @@ regression_metric:
     pool: avg
     layer: mix
     dropout: 0.15
-    batch_size: 4
-    train_data: data/scores-1720_train.csv
-    validation_data: data/scores-1720_val.csv
+    batch_size: 8
+    train_data: data/TRAIN.csv
+    validation_data: data/DEV.csv
     hidden_sizes:
       - 384
     

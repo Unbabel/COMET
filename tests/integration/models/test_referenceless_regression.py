@@ -22,10 +22,14 @@ class TestReferencelessRegression(unittest.TestCase):
         shutil.rmtree(os.path.join(DATA_PATH, "checkpoints"))
 
     def test_training(self):
-
         seed_everything(12)
+        warnings.filterwarnings(
+            "ignore",
+            #category=PossibleUserWarning,
+            message="GPU available but not used.*",
+        )
         trainer = Trainer(
-            gpus=0,
+            accelerator="cpu",
             max_epochs=10,
             deterministic=True,
             enable_checkpointing=True,
@@ -52,12 +56,12 @@ class TestReferencelessRegression(unittest.TestCase):
         trainer.fit(model)
         self.assertTrue(
             os.path.exists(
-                os.path.join(DATA_PATH, "checkpoints", "epoch=9-step=159.ckpt")
+                os.path.join(DATA_PATH, "checkpoints", "epoch=9-step=160.ckpt")
             )
         )
 
         saved_model = ReferencelessRegression.load_from_checkpoint(
-            os.path.join(DATA_PATH, "checkpoints", "epoch=9-step=159.ckpt")
+            os.path.join(DATA_PATH, "checkpoints", "epoch=9-step=160.ckpt")
         )
         dataset = saved_model.read_csv(
             os.path.join(DATA_PATH, "test_regression_data.csv")
@@ -79,4 +83,4 @@ class TestReferencelessRegression(unittest.TestCase):
             .cpu()
             .tolist()
         )
-        self.assertAlmostEqual(pearsonr(y_hat, y)[0], 0.8, places=1)
+        assert pearsonr(y_hat, y)[0] > 0.77

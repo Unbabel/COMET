@@ -28,9 +28,8 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from comet.models.base import CometModel
+from comet.models.metrics import WMTKendall
 from transformers.optimization import Adafactor
-
-from .wmt_kendall import WMTKendall
 
 
 class RankingMetric(CometModel):
