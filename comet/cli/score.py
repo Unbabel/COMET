@@ -174,18 +174,18 @@ def score_command() -> None:
     if not cfg.disable_cache:
         model.set_embedding_cache()
 
-    with open(cfg.sources()) as fp:
+    with open(cfg.sources(), encoding="utf-8") as fp:
         sources = [line.strip() for line in fp.readlines()]
 
     translations = []
     for path_fr in cfg.translations:
-        with open(path_fr()) as fp:
+        with open(path_fr(), encoding="utf-8") as fp:
             translations.append([line.strip() for line in fp.readlines()])
 
     if "comet-qe" in cfg.model:
         data = {"src": [sources for _ in translations], "mt": translations}
     else:
-        with open(cfg.references()) as fp:
+        with open(cfg.references(), encoding="utf-8") as fp:
             references = [line.strip() for line in fp.readlines()]
         data = {
             "src": [sources for _ in translations],
@@ -304,7 +304,7 @@ def score_command() -> None:
         print("{}\tscore: {:.4f}".format(files[j], sys_scores[j]))
 
     if isinstance(cfg.to_json, str):
-        with open(cfg.to_json, "w") as outfile:
+        with open(cfg.to_json, "w", encoding="utf-8") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)
         print("Predictions saved in: {}.".format(cfg.to_json))
 
