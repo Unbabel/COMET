@@ -30,7 +30,7 @@ import torch.nn.functional as F
 from comet.models.base import CometModel
 from transformers import AdamW
 
-from .wmt_kendall import WMTKendall
+from comet.models.metrics import WMTKendall
 
 
 class RankingMetric(CometModel):

@@ -13,8 +13,8 @@ regression_metric:
     layer: mix
     dropout: 0.15
     batch_size: 4
-    train_data: data/scores-1720_train.csv
-    validation_data: data/scores-1720_val.csv
+    train_data: data/news-mqm-2021.csv
+    validation_data: data/ted-mqm-2021.csv
     hidden_sizes:
       - 384
     

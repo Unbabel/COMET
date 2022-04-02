@@ -20,11 +20,16 @@ class TestRankingMetric(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(os.path.join(DATA_PATH, "checkpoints"))
-
+        
     def test_training(self):
         seed_everything(12)
+        warnings.filterwarnings(
+            "ignore",
+            #category=PossibleUserWarning,
+            message="GPU available but not used.*",
+        )
         trainer = Trainer(
-            gpus=0,
+            accelerator="cpu",
             max_epochs=4,
             deterministic=True,
             enable_checkpointing=True,
@@ -50,11 +55,11 @@ class TestRankingMetric(unittest.TestCase):
         trainer.fit(model)
         self.assertTrue(
             os.path.exists(
-                os.path.join(DATA_PATH, "checkpoints", "epoch=3-step=15.ckpt")
+                os.path.join(DATA_PATH, "checkpoints", "epoch=3-step=16.ckpt")
             )
         )
         saved_model = RankingMetric.load_from_checkpoint(
-            os.path.join(DATA_PATH, "checkpoints", "epoch=3-step=15.ckpt")
+            os.path.join(DATA_PATH, "checkpoints", "epoch=3-step=16.ckpt")
         )
         dataset = saved_model.read_csv(
             os.path.join(DATA_PATH, "test_regression_data.csv"), regression=True

@@ -25,7 +25,7 @@ import pandas as pd
 import torch
 from comet.models.base import CometModel
 from comet.modules import FeedForward
-from torchmetrics import MetricCollection, PearsonCorrcoef, SpearmanCorrcoef
+from comet.models.metrics import RegressionMetrics
 from transformers import AdamW
 
 
@@ -101,14 +101,8 @@ class RegressionMetric(CometModel):
         )
 
     def init_metrics(self):
-        metrics = MetricCollection(
-            {
-                "spearman": SpearmanCorrcoef(),
-                "pearson": PearsonCorrcoef()
-            }
-        )
-        self.train_metrics = metrics.clone(prefix="train_")
-        self.val_metrics = metrics.clone(prefix="val_")
+        self.train_metrics = RegressionMetrics(prefix="train")
+        self.val_metrics = RegressionMetrics(prefix="val")
 
     def configure_optimizers(
         self,
