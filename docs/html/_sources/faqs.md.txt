@@ -18,7 +18,7 @@ Also, depending on the data that they were used to train, different models might
 
 ##### Which COMET model should I use?
 
-**For general purpose MT evaluation** we recommend you to use `wmt20-comet-da`. This is the most _stable_ model we have. It has been studied a lot by different authors and so far it seems to correlate well with different types of human assessments in different domains and languages.
+**For general purpose MT evaluation** we recommend you to use `wmt20-comet-da`. This is the most _stable_ model we have. It has been studied by several different authors and so far it seems to correlate well with different types of human assessments in different domains and languages.
 
 Nonetheless, for the WMT 2021 shared task we developed several models that predict _Multidimensional Quality Metrics (MQM)_ rather than DA's. The MQM models have similar performance in terms of correlation with _Direct Assessments_ and higher correlation with MQM annotations. Use `wmt21-comet-mqm` if you wish to have a proxy for MQM.
 

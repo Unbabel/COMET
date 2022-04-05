@@ -62,7 +62,7 @@ Along with the MQM models we release the checkpoints trained only on DA's data.
 - <code>wmt21-comet-qe-da</code>: Referenceless Model trained on _Direct Assessments_ from WMT15 to WMT20. 
 - <code>wmt21-cometinho-da</code>: Regression Model trained on top of a smaller [MiniLMV2](https://aclanthology.org/2021.findings-acl.188/) encoder using _Direct Assessments_ from WMT15 to WMT20 
 
-**NOTE:** One thing we noticed in this year's Models have a lower variance between predicted scores than 2020 models. Nonetheless, correlations with human judgments in form of both DA and MQM are high. Check our [FAQs for more insights on COMET scores](https://unbabel.github.io/COMET/html/faqs.html#is-there-a-theoretical-range-of-values-for-the-comet-regressor).
+**NOTE:** One thing we noticed in this year's models is that they have a lower variance between predicted scores than 2020 models. Nonetheless, correlations with human judgments in the form of both DA and MQM are high. Check our [FAQs for more insights on COMET scores](https://unbabel.github.io/COMET/html/faqs.html#is-there-a-theoretical-range-of-values-for-the-comet-regressor).
 
 
 ## Benchmark
