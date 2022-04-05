@@ -44,7 +44,11 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Frequently Asked Questions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#is-there-a-theoretical-range-of-values-for-the-comet-regressor">Is there a theoretical range of values for the COMET regressor?</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#which-comet-model-should-i-use">Which COMET model should I use?</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#where-can-i-find-the-data-used-to-train-comet-models">Where can I find the data used to train COMET models?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#where-can-i-find-the-data-used-to-train-comet-models">Where can I find the data used to train COMET models?</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#direct-assessments">Direct Assessments</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multidimensional-quality-metrics">Multidimensional Quality Metrics</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a></li>
@@ -80,15 +84,86 @@
 <p>Since we released COMET we have received several questions related to interpretabilty of the scores and usage. In this section we try to address these questions the best we can!</p>
 <section id="is-there-a-theoretical-range-of-values-for-the-comet-regressor">
 <h2>Is there a theoretical range of values for the COMET regressor?<a class="headerlink" href="#is-there-a-theoretical-range-of-values-for-the-comet-regressor" title="Permalink to this headline"></a></h2>
-<p>TODO</p>
+<p>Before we dig deeper into details about COMET scores I would like to clarify something:</p>
+<p><em>Absolute scores via automatic metrics are meaningless (what does 31 BLEU mean without context? it can be both awesome score for News EN-Finnish or really bad score for EN-French), and pretrained metrics only amplify it by using different scales for different languages and especially different domains.</em></p>
+<p>Check <a class="reference external" href="https://aclanthology.org/2021.wmt-1.57/">[Kocmi et al. 2021]</a> and our discussion here: <a class="reference external" href="https://github.com/Unbabel/COMET/issues/18">#18</a></p>
+<p>Most COMET models are trained to regress on a specific quality assessment and in most cases we normalize those quality scores to obtain a <a class="reference external" href="https://www.simplypsychology.org/z-score.html">z-score</a>. This means that theoretically our models are unbounded! The score itself has no direct interpretation but they correctly rank translations and systems according to their quality!</p>
+<p>Also, depending on the data that they were used to train, different models might have different score ranges. We observed that most scores for our <code class="docutils literal notranslate"><span class="pre">wmt20-comet-da</span></code> fall between -1.5 and 1, while our <code class="docutils literal notranslate"><span class="pre">wmt21-comet-qe-da</span></code> produces scores between -0.2 and 0.2.</p>
+<p><img alt="WMT21 Distribution" src="_images/distributions-WMT21.png" /></p>
 </section>
 <section id="which-comet-model-should-i-use">
 <h2>Which COMET model should I use?<a class="headerlink" href="#which-comet-model-should-i-use" title="Permalink to this headline"></a></h2>
-<p>TODO</p>
+<p><strong>For general purpose MT evaluation</strong> we recommend you to use <code class="docutils literal notranslate"><span class="pre">wmt20-comet-da</span></code>. This is the most <em>stable</em> model we have. It has been studied a lot by different authors and so far it seems to correlate well with different types of human assessments in different domains and languages.</p>
+<p>Nonetheless, for the WMT 2021 shared task we developed several models that predict <em>Multidimensional Quality Metrics (MQM)</em> rather than DA’s. The MQM models have similar performance in terms of correlation with <em>Direct Assessments</em> and higher correlation with MQM annotations. Use <code class="docutils literal notranslate"><span class="pre">wmt21-comet-mqm</span></code> if you wish to have a proxy for MQM.</p>
+<p><strong>For evaluating models without a reference</strong> we recommend the models trained for our participation in the WMT21 shared task, namely: <code class="docutils literal notranslate"><span class="pre">wmt21-comet-qe-da</span></code> for higher correlations with DA, and <code class="docutils literal notranslate"><span class="pre">wmt21-comet-qe-mqm</span></code> for higher correlations with MQM.</p>
 </section>
 <section id="where-can-i-find-the-data-used-to-train-comet-models">
 <h2>Where can I find the data used to train COMET models?<a class="headerlink" href="#where-can-i-find-the-data-used-to-train-comet-models" title="Permalink to this headline"></a></h2>
-<p>TODO</p>
+<section id="direct-assessments">
+<h3>Direct Assessments<a class="headerlink" href="#direct-assessments" title="Permalink to this headline"></a></h3>
+<p>Every year the WMT News Translation task organizers collect thousands of quality annotations in the form of <em>Direct Assessments</em>. Most COMET models use that data either in the form of z-scores or in the form of relative-ranks.</p>
+<p>I’ll leave here a table with links for that data.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th align="center">year</th>
+<th align="center">DA</th>
+<th align="center">relative ranks</th>
+<th align="center">paper</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">2017</td>
+<td align="center"><a href="https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2017-da.csv.tar.gz">🔗</a></td>
+<td align="center"><a href="https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2017-daRR.csv.tar.gz">🔗</a></td>
+<td align="center"><a href="https://statmt.org/wmt17/pdf/WMT55.pdf">Results of the WMT17 Metrics Shared Task</a></td>
+</tr>
+<tr>
+<td align="center">2018</td>
+<td align="center"><a href="https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2018-da.csv.tar.gz">🔗</a></td>
+<td align="center"><a href="https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2018-daRR.csv.tar.gz">🔗</a></td>
+<td align="center"><a href="https://statmt.org/wmt18/pdf/WMT078.pdf">Results of the WMT18 Metrics Shared Task</a></td>
+</tr>
+<tr>
+<td align="center">2019</td>
+<td align="center"><a href="https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2019-da.csv.tar.gz">🔗</a></td>
+<td align="center"><a href="https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2019-daRR.csv.tar.gz">🔗</a></td>
+<td align="center"><a href="https://statmt.org/wmt19/pdf/53/WMT02.pdf">Results of the WMT19 Metrics Shared Task</a></td>
+</tr>
+<tr>
+<td align="center">2020</td>
+<td align="center"><a href="https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2020-da.csv.tar.gz">🔗</a></td>
+<td align="center"><a href="https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2020-daRR.csv.tar.gz">🔗</a></td>
+<td align="center"><a href="https://statmt.org/wmt20/pdf/2020.wmt-1.77.pdf">Results of the WMT20 Metrics Shared Task</a></td>
+</tr>
+</tbody>
+</table></section>
+<section id="multidimensional-quality-metrics">
+<h3>Multidimensional Quality Metrics<a class="headerlink" href="#multidimensional-quality-metrics" title="Permalink to this headline"></a></h3>
+<p>In the last editions of the WMT Metrics shared task the organizers decided to run evaluation of MT based on <em>Multidimensional Quality Metrics (MQM)</em> based on findings that crowd-sourced <em>Direct Assessments</em> are noisy and do not correlate well with annotations done by experts <a class="reference external" href="https://aclanthology.org/2021.tacl-1.87.pdf">[Freitag, et al. 2021]</a>.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th align="center">year</th>
+<th align="center">MQM</th>
+<th align="center">paper</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="center">2020</td>
+<td align="center"><a href="https://github.com/google/wmt-mqm-human-evaluation">🔗</a></td>
+<td align="center"><a href="https://aclanthology.org/2021.tacl-1.87.pdf">A Large-Scale Study of Human Evaluation for Machine Translation</a></td>
+</tr>
+<tr>
+<td align="center">2021</td>
+<td align="center"><a href="https://github.com/google/wmt-mqm-human-evaluation">🔗</a></td>
+<td align="center"><a href="https://aclanthology.org/2021.wmt-1.73.pdf">Results of the WMT21 Metrics Shared Task</a></td>
+</tr>
+</tbody>
+</table><p><strong>Please cite the corresponding papers if you use any of these data!</strong></p>
+</section>
 </section>
 </section>
 

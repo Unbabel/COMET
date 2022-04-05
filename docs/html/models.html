@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Train your own Metric" href="training.html" />
-    <link rel="prev" title="Running COMET" href="running.html" /> 
+    <link rel="prev" title="Frequently Asked Questions" href="faqs.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -41,6 +41,7 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running COMET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faqs.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">COMET Metrics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#model-architectures">Model Architectures:</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#available-metrics">Available Metrics:</a></li>
@@ -54,7 +55,6 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faqs.html">Frequently Asked Questions</a></li>
 </ul>
 
         </div>
@@ -166,11 +166,11 @@
 <td>Regression metric trained on DA's from WMT15 to WMT20 using a light-weight encoder model.</td>
 </tr>
 </tbody>
-</table><p>Our <em>default</em> metric is the <code>wmt20-comet-da</code>.</p>
+</table><p>Our <em>default</em> metric is the <code>wmt20-comet-da</code> and our <em>default</em> Referenceless (QE as a metric) is  <code>wmt21-comet-qe-da</code>.</p>
 </section>
 <section id="wmt20-comet-metrics">
 <h2>WMT20 COMET Metrics<a class="headerlink" href="#wmt20-comet-metrics" title="Permalink to this headline"></a></h2>
-<p>For <a class="reference external" href="https://aclanthology.org/2020.wmt-1.101.pdf">our participation in the WMT20 shared task</a> we developed several models. We later release our best regression model, our best refereceless model and our best ranking model.</p>
+<p>For <a class="reference external" href="https://aclanthology.org/2020.wmt-1.101.pdf">our participation in the WMT20 shared task</a> we developed several models. Those models are the following:</p>
 <ul class="simple">
 <li><p><code>wmt20-comet-da</code>: Our best regression metric that year. It is trained to predict <em>Direct Assessments</em> using data ranging 2017 to 2019. (Same as <code>wmt-large-da-estimator-1719</code> from previous versions.)</p></li>
 <li><p><code>wmt20-comet-qe-da</code>: This was the model we used to participate in the QE-as-a-metric subtask. It is trained to predict <em>Direct Assessments</em> using data ranging 2017 to 2019. This is a Referenceless Metric meaning that it uses <strong>source and translation only!</strong> (Same as <code>wmt-large-qe-estimator-1719</code> from previous versions.)</p></li>
@@ -185,13 +185,12 @@
 <h2>WMT21 COMET Metrics<a class="headerlink" href="#wmt21-comet-metrics" title="Permalink to this headline"></a></h2>
 <section id="mqm-metrics">
 <h3>MQM Metrics<a class="headerlink" href="#mqm-metrics" title="Permalink to this headline"></a></h3>
-<p>In  <a class="reference external" href="https://aclanthology.org/2021.wmt-1.111.pdf">our participation to the WMT21 shared task</a> we steer COMET towards higher correlations with MQM. We do so by first pre-training on <em>Direct Assessments</em> and then fine-tuning on z-normalized MQM scores.</p>
+<p>In  <a class="reference external" href="https://aclanthology.org/2021.wmt-1.111.pdf">our participation to the WMT21 shared task</a> we steered COMET towards higher correlations with MQM. We do so by first pre-training on <em>Direct Assessments</em> and then fine-tuning on z-normalized MQM scores.</p>
 <ul class="simple">
 <li><p><code>wmt21-comet-mqm</code>: This model was pre-trained on <em>Direct Assessments</em> from WMT15 to WMT20 and then fine-tuned on MQM z-scores from <a class="reference external" href="https://aclanthology.org/2021.tacl-1.87/">Freitag et al, 2021 (MQM)</a>. This model was one of the best performing metrics that year <a class="reference external" href="https://aclanthology.org/2021.wmt-1.73/">[Freitag et al. 2021 (WMT21)]</a>.</p></li>
 <li><p><code>wmt21-comet-qe-mqm</code>: Reference-free version of <code>wmt21-comet-mqm</code>. This model was the best performing <em>QE-as-a-metric</em> that year. <a class="reference external" href="https://aclanthology.org/2021.wmt-1.73/">[Freitag et al. 2021 (WMT21)]</a>.</p></li>
 <li><p><code>wmt21-cometinho-mqm</code>: Additionally, we introduced Cometinho, a light-weight COMET model that is built on top of a smaller XLM-R encoder (<a class="reference external" href="https://aclanthology.org/2021.findings-acl.188/">MiniLMV2</a>). This model is NOT a distilled COMET model… It is simply built on top of a smaller pretrained encoder.</p></li>
 </ul>
-<p><strong>NOTE:</strong> One thing we noticed in these MQM Models is that the variance between predicted scores is lower than models trained only DA’s. The range of scores produced by these models is very narrow.</p>
 </section>
 <section id="da-metrics">
 <h3>DA Metrics<a class="headerlink" href="#da-metrics" title="Permalink to this headline"></a></h3>
@@ -201,6 +200,7 @@
 <li><p><code>wmt21-comet-qe-da</code>: Referenceless Model trained on <em>Direct Assessments</em> from WMT15 to WMT20.</p></li>
 <li><p><code>wmt21-cometinho-da</code>: Regression Model trained on top of a smaller <a class="reference external" href="https://aclanthology.org/2021.findings-acl.188/">MiniLMV2</a> encoder using <em>Direct Assessments</em> from WMT15 to WMT20</p></li>
 </ul>
+<p><strong>NOTE:</strong> One thing we noticed in this year’s Models have a lower variance between predicted scores than 2020 models. Nonetheless, correlations with human judgments in form of both DA and MQM are high. Check our <a class="reference external" href="https://unbabel.github.io/COMET/html/faqs.html#is-there-a-theoretical-range-of-values-for-the-comet-regressor">FAQs for more insights on COMET scores</a>.</p>
 </section>
 </section>
 <section id="benchmark">
@@ -213,7 +213,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="running.html" class="btn btn-neutral float-left" title="Running COMET" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="faqs.html" class="btn btn-neutral float-left" title="Frequently Asked Questions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="training.html" class="btn btn-neutral float-right" title="Train your own Metric" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

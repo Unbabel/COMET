@@ -29,11 +29,12 @@ All COMET metrics follow one of the following architectures:
 | `wmt21-comet-qe-da` | Referenceless Metric | Referenceless metric trained on DA's from WMT15 to WMT20. |
 | `wmt21-cometinho-da` | Regression Metric | Regression metric trained on DA's from WMT15 to WMT20 using a light-weight encoder model. |
 
-Our _default_ metric is the <code>wmt20-comet-da</code>.
+Our _default_ metric is the <code>wmt20-comet-da</code> and our _default_ Referenceless (QE as a metric) is  <code>wmt21-comet-qe-da</code>.
+
 
 ## WMT20 COMET Metrics
 
-For [our participation in the WMT20 shared task](https://aclanthology.org/2020.wmt-1.101.pdf) we developed several models. We later release our best regression model, our best refereceless model and our best ranking model.
+For [our participation in the WMT20 shared task](https://aclanthology.org/2020.wmt-1.101.pdf) we developed several models. Those models are the following:
 
 - <code>wmt20-comet-da</code>: Our best regression metric that year. It is trained to predict _Direct Assessments_ using data ranging 2017 to 2019. (Same as <code>wmt-large-da-estimator-1719</code> from previous versions.)
 - <code>wmt20-comet-qe-da</code>: This was the model we used to participate in the QE-as-a-metric subtask. It is trained to predict _Direct Assessments_ using data ranging 2017 to 2019. This is a Referenceless Metric meaning that it uses **source and translation only!** (Same as <code>wmt-large-qe-estimator-1719</code> from previous versions.)
@@ -48,13 +49,11 @@ Our **Primary Metric** is <code>wmt20-comet-da</code>. This was one of the best 
 
 ### MQM Metrics
 
-In  [our participation to the WMT21 shared task](https://aclanthology.org/2021.wmt-1.111.pdf) we steer COMET towards higher correlations with MQM. We do so by first pre-training on _Direct Assessments_ and then fine-tuning on z-normalized MQM scores.
+In  [our participation to the WMT21 shared task](https://aclanthology.org/2021.wmt-1.111.pdf) we steered COMET towards higher correlations with MQM. We do so by first pre-training on _Direct Assessments_ and then fine-tuning on z-normalized MQM scores.
 
 - <code>wmt21-comet-mqm</code>: This model was pre-trained on _Direct Assessments_ from WMT15 to WMT20 and then fine-tuned on MQM z-scores from [Freitag et al, 2021 (MQM)](https://aclanthology.org/2021.tacl-1.87/). This model was one of the best performing metrics that year [[Freitag et al. 2021 (WMT21)]](https://aclanthology.org/2021.wmt-1.73/).
 - <code>wmt21-comet-qe-mqm</code>: Reference-free version of <code>wmt21-comet-mqm</code>. This model was the best performing _QE-as-a-metric_ that year. [[Freitag et al. 2021 (WMT21)]](https://aclanthology.org/2021.wmt-1.73/).
 - <code>wmt21-cometinho-mqm</code>: Additionally, we introduced Cometinho, a light-weight COMET model that is built on top of a smaller XLM-R encoder ([MiniLMV2](https://aclanthology.org/2021.findings-acl.188/)). This model is NOT a distilled COMET model... It is simply built on top of a smaller pretrained encoder.
-
-**NOTE:** One thing we noticed in these MQM Models is that the variance between predicted scores is lower than models trained only DA's. The range of scores produced by these models is very narrow.
 
 ### DA Metrics
 Along with the MQM models we release the checkpoints trained only on DA's data. 
@@ -62,6 +61,9 @@ Along with the MQM models we release the checkpoints trained only on DA's data.
 - <code>wmt21-comet-da</code>: Regression Model trained on _Direct Assessments_ from WMT15 to WMT20. 
 - <code>wmt21-comet-qe-da</code>: Referenceless Model trained on _Direct Assessments_ from WMT15 to WMT20. 
 - <code>wmt21-cometinho-da</code>: Regression Model trained on top of a smaller [MiniLMV2](https://aclanthology.org/2021.findings-acl.188/) encoder using _Direct Assessments_ from WMT15 to WMT20 
+
+**NOTE:** One thing we noticed in this year's Models have a lower variance between predicted scores than 2020 models. Nonetheless, correlations with human judgments in form of both DA and MQM are high. Check our [FAQs for more insights on COMET scores](https://unbabel.github.io/COMET/html/faqs.html#is-there-a-theoretical-range-of-values-for-the-comet-regressor).
+
 
 ## Benchmark
 
