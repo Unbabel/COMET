@@ -61,6 +61,7 @@ Finally, Ranking Metrics expect two contrastive examples. E.g:
 
 where `pos` column contains a postive sample and `neg` a negative sample. 
 
+You can check the available [data from previous WMT editions in here](https://unbabel.github.io/COMET/html/faqs.html#where-can-i-find-the-data-used-to-train-comet-models).
 
 ## Available Encoders
 
