@@ -21,11 +21,9 @@ optional arguments:
   -h, --help            Show this help message and exit.
   -s SOURCES, --sources SOURCES
                         (required unless using -d, type: Path_fr)
-  -x SYSTEM_X, --system_x SYSTEM_X
-                        (required, type: Path_fr)
-  -y SYSTEM_Y, --system_y SYSTEM_Y
-                        (required, type: Path_fr)
   -r REFERENCES, --references REFERENCES
+                        (type: Path_fr, default: None)
+  -t TRANSLATIONS[, TRANSLATIONS], --translations TRANSLATIONS[, TRANSLATIONS]
                         (type: Path_fr, default: None)
   -d SACREBLEU_TESTSET, --sacrebleu_dataset SACREBLEU_TESTSET
                         (optional, use in place of -s and -r, type: str
@@ -244,10 +242,10 @@ def get_cfg() -> Namespace:
     """
     Parse the CLI options and arguments.
     """
-    parser = ArgumentParser(description="Command for comparing multiple MT systems.")
+    parser = ArgumentParser(description="Command for comparing multiple MT systems' translations.")
     parser.add_argument("-s", "--sources", type=Path_fr)
     parser.add_argument("-r", "--references", type=Path_fr)
-    parser.add_argument("systems", nargs="*", type=Path_fr)
+    parser.add_argument("-t", "--translations", nargs="*", type=Path_fr)
     parser.add_argument("-d", "--sacrebleu_dataset", type=str)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
@@ -380,13 +378,13 @@ def compare_command() -> None:
     cfg = get_cfg()
     seed_everything(cfg.seed_everything)
 
-    assert len(cfg.systems) > 1, "You must provide at least 2 systems"
+    assert len(cfg.translations) > 1, "You must provide at least 2 translation files"
 
     with open(cfg.sources()) as fp:
         sources = [line.strip() for line in fp.readlines()]
 
     translations = []
-    for system in cfg.systems:
+    for system in cfg.translations:
         with open(system, mode='r', encoding='UTF-8') as fp:
             translations.append([line.strip() for line in fp.readlines()])
 
@@ -407,7 +405,7 @@ def compare_command() -> None:
             num_splits=cfg.num_splits,
             )
 
-    t_test_results = list(pairwise_t_test(sys_scores, cfg.systems))
+    t_test_results = list(pairwise_t_test(sys_scores, cfg.translations))
     for data in t_test_results:
         display_ttest_result(data)
 
@@ -415,12 +413,12 @@ def compare_command() -> None:
             "model": cfg.model,
             "t_test": t_test_results,
             "source": sources,
-            "systems": [
+            "translations": [
                     {
                         "name": name,
                         "mt": trans,
                         "scores": scores.tolist(),
-                    } for name, trans, scores in zip(cfg.systems, translations, seg_scores)
+                    } for name, trans, scores in zip(cfg.translations, translations, seg_scores)
                 ],
             }
     if references is not None:
