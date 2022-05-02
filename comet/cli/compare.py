@@ -147,8 +147,8 @@ def pairwise_t_test(sys_scores: np.ndarray, systems: List[Path_fr]) -> Generator
     """
     assert sys_scores.shape[0] == len(systems), "Each system should have its sys_score."
 
-    from itertools import permutations
-    pairs = permutations(zip(systems, sys_scores), 2)
+    from itertools import combinations
+    pairs = combinations(zip(systems, sys_scores), 2)
     for (x_name, x_sys_scores), (y_name, y_sys_scores) in pairs:
         yield calculate_t_test(
                 x_sys_scores,
