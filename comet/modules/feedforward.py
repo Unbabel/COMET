@@ -62,8 +62,8 @@ class FeedForward(nn.Module):
         self.ff = nn.Sequential(*modules)
 
     def build_activation(self, activation: str) -> nn.Module:
-        if hasattr(nn, activation):
-            return getattr(nn, activation)()
+        if hasattr(nn, activation.title()):
+            return getattr(nn, activation.title())()
         else:
             raise Exception(f"{activation} is not a valid activation function!")
 
