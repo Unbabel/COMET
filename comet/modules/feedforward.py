@@ -64,6 +64,8 @@ class FeedForward(nn.Module):
     def build_activation(self, activation: str) -> nn.Module:
         if hasattr(nn, activation):
             return getattr(nn, activation)()
+        else:
+            raise Exception(f"{activation} is not a valid activation function!")
 
     def forward(self, in_features: torch.Tensor) -> torch.Tensor:
         return self.ff(in_features)
