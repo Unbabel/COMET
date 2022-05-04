@@ -58,12 +58,11 @@ import numpy as np
 import torch
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
+from comet.models.regression.referenceless import ReferencelessRegression
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 from sacrebleu.utils import get_reference_files, get_source_file
-
-_REFLESS_MODELS = ["comet-qe"]
 
 
 def score_command() -> None:
@@ -166,13 +165,6 @@ def score_command() -> None:
             print("SacreBLEU error:", e, file=sys.stderr)
             sys.exit(1)
 
-    if (cfg.references is None) and (
-        not any([i in cfg.model for i in _REFLESS_MODELS])
-    ):
-        parser.error(
-            "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
-        )
-
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         model_path = cfg.model
     elif cfg.model in available_metrics:
@@ -185,6 +177,11 @@ def score_command() -> None:
         )
     model = load_from_checkpoint(model_path)
     model.eval()
+
+    if (cfg.references is None) and (not isinstance(model, ReferencelessRegression)):
+        parser.error(
+            "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
+        )
 
     if not cfg.disable_cache:
         model.set_embedding_cache()
