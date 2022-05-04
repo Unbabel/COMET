@@ -194,6 +194,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def forward(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
         pass
+    
+    @abc.abstractmethod
+    def is_referenceless(self) -> bool:
+        pass
 
     def freeze_encoder(self) -> None:
         logger.info("Encoder model frozen.")
