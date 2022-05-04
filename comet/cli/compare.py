@@ -44,16 +44,12 @@ optional arguments:
 """
 import json
 import multiprocessing
-import os
-from typing import (
-        Dict,
-        Generator,
-        List,
-        Union,
-        )
-
 import numpy as np
+import os
 import torch
+
+from argparse import Namespace
+from collections import defaultdict
 from comet.cli.score import _REFLESS_MODELS
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
@@ -61,7 +57,16 @@ from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 from scipy import stats
-from argparse import Namespace
+from tabulate import tabulate
+from typing import (
+        Dict,
+        Generator,
+        List,
+        Tuple,
+        Union,
+        )
+
+T_test_info = Dict[str, Union[Path_fr, Dict[str, float]]]
 
 _REFLESS_MODELS = ["comet-qe"]  # All reference-free metrics are named with 'comet-qe'
 # Due to small numerical differences in scores we consider that any system comparison
@@ -69,7 +74,7 @@ _REFLESS_MODELS = ["comet-qe"]  # All reference-free metrics are named with 'com
 EPS = 0.001
 
 
-def display_ttest_result(data: Dict) -> None:
+def display_ttest_result(data: T_test_info) -> None:
     """
     Print out the T-test results for a system pair.
     """
@@ -99,13 +104,47 @@ def display_ttest_result(data: Dict) -> None:
     )
     if data["paired_t-test"]["p_value"] <= 0.05:
         print("Null hypothesis rejected according to t-test.")
-        print(f"Scores differ significantly across samples.")
+        print("Scores differ significantly across samples.")
         print(f"{best_system} outperforms {worse_system}.")
     else:
         print("Null hypothesis can't be rejected.\nBoth systems have equal averages.")
 
 
-def calculate_t_test(x_sys_scores: np.ndarray, y_sys_scores: np.ndarray, x_name: Path_fr, y_name: Path_fr) -> Dict:
+def t_tests_summary(t_test_results: List[T_test_info],
+        translations: Tuple[Path_fr],
+        threshold_p_value: float=0.05,
+        ) -> None:
+    """
+    T-tests Summary
+    """
+    n = len(translations)
+    name2id = { name:i for i, name in enumerate(translations)}
+    grid = [ [None]*n for name in translations ]
+    for t_test in t_test_results:
+        p_value = t_test["paired_t-test"]["p_value"]
+        x_id = name2id[t_test["x_name"]]
+        y_id = name2id[t_test["y_name"]]
+        grid[x_id][y_id] = False
+        grid[y_id][x_id] = False
+        if p_value < threshold_p_value:
+            x_seg_scores = t_test["bootstrap_resampling"]["x-mean"]
+            y_seg_scores = t_test["bootstrap_resampling"]["y-mean"]
+            if x_seg_scores > y_seg_scores:
+                grid[x_id][y_id] = True
+            else:
+                grid[y_id][x_id] = True
+
+    # Add the row's name aka the system's name.
+    grid = [ (name,) + tuple(row) for name, row in zip(translations, grid) ]
+
+    print("Summary")
+    print("If system_x is better than system_y then:")
+    print(f"Null hypothesis rejected according to t-test with p_value={threshold_p_value}.")
+    print("Scores differ significantly across samples.")
+    print(tabulate(grid, headers=("system_x \ system_y",) + translations))
+
+
+def calculate_t_test(x_sys_scores: np.ndarray, y_sys_scores: np.ndarray, x_name: Path_fr, y_name: Path_fr) -> T_test_info:
     """
     Calculate T-test score, wins and ties for a system pair.
     x_sys_scores: array of num_splits comet scores for system x
@@ -138,7 +177,7 @@ def calculate_t_test(x_sys_scores: np.ndarray, y_sys_scores: np.ndarray, x_name:
             }
 
 
-def pairwise_t_test(sys_scores: np.ndarray, systems: List[Path_fr]) -> Generator[Dict, None, None]:
+def pairwise_t_test(sys_scores: np.ndarray, systems: List[Path_fr]) -> Generator[T_test_info, None, None]:
     """
     Calculates the t_test between all systems' permutations.
     sys_scores: comet scores [num_systems x num_splits]
@@ -188,7 +227,7 @@ def score(cfg: Namespace, systems: List[Dict[str,List[str]]]) -> np.ndarray:
 
     # Create a single list that contains all systems' source, reference & translation.
     samples = [
-            dict(zip(system, values))
+            dict(zip(system.keys(), values))
             for system in systems
             for values in zip(*system.values())
             ]
@@ -406,12 +445,10 @@ def compare_command() -> None:
             )
 
     t_test_results = list(pairwise_t_test(sys_scores, cfg.translations))
-    for data in t_test_results:
-        display_ttest_result(data)
 
     info = {
             "model": cfg.model,
-            "t_test": t_test_results,
+            "t_tests": t_test_results,
             "source": sources,
             "translations": [
                     {
@@ -423,6 +460,11 @@ def compare_command() -> None:
             }
     if references is not None:
         info["reference"] = references
+
+    for data in t_test_results:
+        display_ttest_result(data)
+    print()
+    t_tests_summary(t_test_results, tuple(cfg.translations))
 
     if isinstance(cfg.to_json, str):
         with open(cfg.to_json, "w") as outfile:
