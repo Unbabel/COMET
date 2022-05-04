@@ -93,6 +93,9 @@ class RankingMetric(CometModel):
     def init_metrics(self):
         self.train_metrics = WMTKendall(prefix="train")
         self.val_metrics = WMTKendall(prefix="val")
+    
+    def is_referenceless(self) -> bool:
+        return False
 
     @property
     def loss(self):

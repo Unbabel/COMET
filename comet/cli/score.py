@@ -178,7 +178,7 @@ def score_command() -> None:
     model = load_from_checkpoint(model_path)
     model.eval()
 
-    if (cfg.references is None) and (not isinstance(model, ReferencelessRegression)):
+    if (cfg.references is None) and (not model.is_referenceless()):
         parser.error(
             "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
         )
@@ -194,7 +194,7 @@ def score_command() -> None:
         with open(path_fr(), encoding="utf-8") as fp:
             translations.append([line.strip() for line in fp.readlines()])
 
-    if isinstance(model, ReferencelessRegression):
+    if model.is_referenceless():
         data = {"src": [sources for _ in translations], "mt": translations}
     else:
         with open(cfg.references(), encoding="utf-8") as fp:

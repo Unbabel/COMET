@@ -103,6 +103,9 @@ class RegressionMetric(CometModel):
     def init_metrics(self):
         self.train_metrics = RegressionMetrics(prefix="train")
         self.val_metrics = RegressionMetrics(prefix="val")
+    
+    def is_referenceless(self) -> bool:
+        return False
 
     def configure_optimizers(
         self,
