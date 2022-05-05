@@ -51,15 +51,14 @@ from typing import Union
 
 import numpy as np
 import torch
-from comet.cli.score import _REFLESS_MODELS
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
+from sacrebleu.utils import get_reference_files, get_source_file
 from scipy import stats
 
-_REFLESS_MODELS = ["comet-qe"]  # All reference-free metrics are named with 'comet-qe'
 # Due to small numerical differences in scores we consider that any system comparison
 # with a difference bellow EPS to be considered a tie.
 EPS = 0.001
@@ -172,14 +171,6 @@ def compare_command() -> Union[None, int]:
 
             print("SacreBLEU error:", e, file=sys.stderr)
             sys.exit(1)
-
-    if (cfg.references is None) and (
-        not any([i in cfg.model for i in _REFLESS_MODELS])
-    ):
-        parser.error(
-            "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
-        )
-
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         model_path = cfg.model
     elif cfg.model in available_metrics:
@@ -193,6 +184,11 @@ def compare_command() -> Union[None, int]:
     model = load_from_checkpoint(model_path)
     model.eval()
 
+    if (cfg.references is None) and (not model.is_referenceless()):
+        parser.error(
+            "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
+        )
+    
     if not cfg.disable_cache:
         model.set_embedding_cache()
 
@@ -205,7 +201,7 @@ def compare_command() -> Union[None, int]:
     with open(cfg.system_y()) as fp:
         system_y = [line.strip() for line in fp.readlines()]
 
-    if "comet-qe" in cfg.model:
+    if model.is_referenceless():
         system_x = {"src": sources, "mt": system_x}
         system_y = {"src": sources, "mt": system_y}
     else:
