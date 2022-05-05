@@ -58,7 +58,6 @@ import numpy as np
 import torch
 from comet.download_utils import download_model
 from comet.models import available_metrics, load_from_checkpoint
-from comet.models.regression.referenceless import ReferencelessRegression
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
