@@ -52,7 +52,6 @@ optional arguments:
   --print_cache_info    Print information about COMET cache. (default: False)
 """
 import json
-import multiprocessing
 import os
 from itertools import combinations
 from typing import Dict, Generator, List, Tuple, Union
@@ -341,7 +340,7 @@ def get_cfg() -> Namespace:
         "--num_workers",
         help="Number of workers to use when loading data.",
         type=int,
-        default=multiprocessing.cpu_count(),
+        default=2,
     )
     parser.add_argument(
         "--disable_bar", action="store_true", help="Disables progress bar."
