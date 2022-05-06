@@ -96,7 +96,7 @@ comet-compare -s src.de -x hyp1.en -y hyp2.en -r ref.en
 
 **New: Minimum Bayes Risk Decoding:**
 
-Inspired by the work by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) we have developed a command to perform Minimum Bayes Risk decoding. This command receives a text file with source sentences and a text file containing all the MT samples and writes to an output file the best sample according to COMET.
+Inspired by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) work, we have developed a command to perform Minimum Bayes Risk decoding. This command receives a text file with source sentences and a text file containing all the MT samples and writes to an output file the best sample according to COMET.
 
 ```bash
 comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt --num_sample [X] -o [OUTPUT_FILE].txt
