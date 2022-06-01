@@ -8,11 +8,11 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-> Version 1.1 is out 🥳! whats new?
-> 1) Updated [documentation](https://unbabel.github.io/COMET/html/index.html)
-> 2) Updated Pytorch Lightning version to avoid security vulnerabilities (Untrusted Data & Code Injection)
-> 3) Inspired by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) we added the `comet-mbr` command for fast Minimum Bayes Risk Decoding.
-> 4) New encoder models
+> Version 1.1.1 is out 🥳! whats new?
+> 1) Update: `comet-compare` to support multiple system comparison. Thanks to @SamuelLarkin
+> 2) Bugfix: Broken link for `wmt21-comet-qe-da` (#78)
+> 3) Bugfix: protobuf dependency (#82)
+> 4) Models: New models from Cometinho [EAMT 22 paper](https://aclanthology.org/2022.eamt-1.9/) (`eamt22-cometinho-da` & `eamt22-comet-prune-da`)
 
 ## Quick Installation
 
@@ -24,7 +24,7 @@ pip install unbabel-comet
 ```
 or
 ```bash
-pip install unbabel-comet==1.1.0 --use-feature=2020-resolver
+pip install unbabel-comet==1.1.1 --use-feature=2020-resolver
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
@@ -88,10 +88,10 @@ Following the work on [Uncertainty-Aware MT Evaluation](https://aclanthology.org
 comet-score -s src.de -t hyp1.en -r ref.en --mc_dropout 30
 ```
 
-When comparing two MT systems we encourage you to run the `comet-compare` command to get **statistical significance** with Paired T-Test and bootstrap resampling [(Koehn, et al 2004)](https://aclanthology.org/W04-3250/).
+When comparing multiple MT systems we encourage you to run the `comet-compare` command to get **statistical significance** with Paired T-Test and bootstrap resampling [(Koehn, et al 2004)](https://aclanthology.org/W04-3250/).
 
 ```bash
-comet-compare -s src.de -x hyp1.en -y hyp2.en -r ref.en
+comet-compare -s src.de -t hyp1.en hyp2.en hyp3.en -r ref.en
 ```
 
 **New: Minimum Bayes Risk Decoding:**
