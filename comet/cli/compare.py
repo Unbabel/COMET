@@ -224,14 +224,13 @@ def score(cfg: Namespace, systems: List[Dict[str, List[str]]]) -> np.ndarray:
     if cfg.print_cache_info:
         print(model.retrieve_sentence_embedding.cache_info())
 
-    # Create a single list that contains all systems' source, reference & translation.
-    samples = [
-        dict(zip(system.keys(), values))
-        for system in systems
-        for values in zip(*system.values())
-    ]
-
     if cfg.gpus > 1 and cfg.accelerator == "ddp":
+        # Create a single list that contains all systems' source, reference & translation.
+        samples = [
+            dict(zip(system.keys(), values))
+            for system in systems
+            for values in zip(*system.values())
+        ]
         # raise NotImplementedError()
         gather_outputs = [
             None for _ in range(cfg.gpus)
@@ -256,16 +255,21 @@ def score(cfg: Namespace, systems: List[Dict[str, List[str]]]) -> np.ndarray:
             # TODO: what should be return here?
             return 0
 
-    else:  # This maximizes cache hits because batches will be equal!
-        seg_scores, _ = model.predict(
-            samples=samples,
-            batch_size=cfg.batch_size,
-            gpus=cfg.gpus,
-            progress_bar=(not cfg.disable_bar),
-            accelerator=cfg.accelerator,
-            num_workers=cfg.num_workers,
-            length_batching=(not cfg.disable_length_batching),
-        )
+    else:  
+        # This maximizes cache hits because batches will be equal!
+        seg_scores = []
+        for system in systems:
+            samples = [dict(zip(system,t)) for t in zip(*system.values())]
+            system_scores, _ = model.predict(
+                samples=samples,
+                batch_size=cfg.batch_size,
+                gpus=cfg.gpus,
+                progress_bar=(not cfg.disable_bar),
+                accelerator=cfg.accelerator,
+                num_workers=cfg.num_workers,
+                length_batching=(not cfg.disable_length_batching),
+            )
+            seg_scores += system_scores
 
     n = len(systems[0]["src"])
     # [grouper](https://docs.python.org/3/library/itertools.html#itertools-recipes)
