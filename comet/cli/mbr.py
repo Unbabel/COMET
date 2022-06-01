@@ -135,8 +135,8 @@ def mbr_decoding(
 
 def mbr_command() -> None:
     parser = ArgumentParser(description="Command for Minimum Bayes Risk Decoding.")
-    parser.add_argument("-s", "--sources", type=Path_fr)
-    parser.add_argument("-t", "--translations", type=Path_fr)
+    parser.add_argument("-s", "--sources", type=Path_fr, required=True)
+    parser.add_argument("-t", "--translations", type=Path_fr, required=True)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--num_samples", type=int, required=True)
     parser.add_argument(
@@ -158,13 +158,10 @@ def mbr_command() -> None:
         "-o",
         "--output",
         type=str,
-        default="mbr_result.txt",
+        required=True,
         help="Best candidates after running MBR decoding.",
     )
     cfg = parser.parse_args()
-
-    if cfg.sources is None:
-        parser.error("You must specify a source (-s)")
 
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         model_path = cfg.model
@@ -178,9 +175,9 @@ def mbr_command() -> None:
         )
     model = load_from_checkpoint(model_path)
 
-    if not isinstance(model, RegressionMetric):
+    if not isinstance(model, RegressionMetric) or model.is_referenceless():
         raise Exception(
-            "Incorrect model ({}). MBR command only works with RegressionMetric models.".format(
+            "Incorrect model ({}). MBR command only works with Reference-based Regression models!".format(
                 model.__class__.__name__
             )
         )
