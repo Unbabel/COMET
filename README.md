@@ -12,7 +12,7 @@
 > 1) Update: `comet-compare` to support multiple system comparison. Thanks to @SamuelLarkin
 > 2) Bugfix: Broken link for `wmt21-comet-qe-da` (#78)
 > 3) Bugfix: protobuf dependency (#82)
-> 4) Models: New models from Cometinho [EAMT 22 paper](https://aclanthology.org/2022.eamt-1.9/) (`eamt22-cometinho-da` & `eamt22-comet-prune-da`)
+> 4) New models added from Cometinho -- [Best paper award at EAMT 22 paper](https://aclanthology.org/2022.eamt-1.9/) 🥳!
 
 ## Quick Installation
 
