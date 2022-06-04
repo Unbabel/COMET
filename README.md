@@ -196,7 +196,7 @@ coverage report -m
 ## Publications
 If you use COMET please cite our work! Also, don't forget to say which model you used to evaluate your systems.
 
-- [Searching for Cometinho: The Little Metric That Could](https://aclanthology.org/2022.eamt-1.9/)
+- [Searching for Cometinho: The Little Metric That Could -- EAMT22 Best paper award](https://aclanthology.org/2022.eamt-1.9/)
 
 - [Are References Really Needed? Unbabel-IST 2021 Submission for the Metrics Shared Task](http://statmt.org/wmt21/pdf/2021.wmt-1.111.pdf)
 
