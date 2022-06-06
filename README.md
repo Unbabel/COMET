@@ -8,7 +8,7 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-> Version 1.1.1 is out 🥳! whats new?
+> Version 1.1.2 is out 🥳! whats new?
 > 1) Update: `comet-compare` to support multiple system comparison. Thanks to @SamuelLarkin
 > 2) Bugfix: Broken link for `wmt21-comet-qe-da` (#78)
 > 3) Bugfix: protobuf dependency (#82)
@@ -24,7 +24,7 @@ pip install unbabel-comet
 ```
 or
 ```bash
-pip install unbabel-comet==1.1.1 --use-feature=2020-resolver
+pip install unbabel-comet==1.1.2 --use-feature=2020-resolver
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
