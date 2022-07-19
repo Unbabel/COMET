@@ -1,5 +1,5 @@
 sentencepiece==0.1.96
-pandas==1.1.5
+pandas==1.4.1
 transformers>=4.8
 pytorch-lightning==1.6.4
 jsonargparse==3.13.1
