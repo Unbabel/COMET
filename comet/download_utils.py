@@ -30,8 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_cache_folder():
-    home_dir = Path(os.environ["HOME"]) if "HOME" in os.environ else Path.home()
-    cache_directory = home_dir / ".cache" / "torch" / "unbabel_comet"
+    cache_directory = Path.home() / ".cache" / "torch" / "unbabel_comet"
     if not cache_directory.exists():
         cache_directory.mkdir(exist_ok=True, parents=True)
 
