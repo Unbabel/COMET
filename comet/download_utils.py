@@ -18,6 +18,7 @@ import os
 import subprocess
 import urllib.request
 import zipfile
+from pathlib import Path
 from typing import List
 from urllib.parse import urlparse
 
@@ -29,13 +30,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_cache_folder():
-    if "HOME" in os.environ:
-        cache_directory = os.environ["HOME"] + "/.cache/torch/unbabel_comet/"
-        if not os.path.exists(cache_directory):
-            os.makedirs(cache_directory)
-        return cache_directory
-    else:
-        raise Exception("HOME environment variable is not defined.")
+    cache_directory = Path.home() / ".cache" / "torch" / "unbabel_comet"
+    if not cache_directory.exists():
+        cache_directory.mkdir(exist_ok=True, parents=True)
+
+    return str(cache_directory)
 
 
 def _reporthook(t):
