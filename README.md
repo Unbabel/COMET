@@ -8,11 +8,8 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-> Version 1.1.2 is out 🥳! whats new?
-> 1) Update: `comet-compare` to support multiple system comparison. Thanks to @SamuelLarkin
-> 2) Bugfix: Broken link for `wmt21-comet-qe-da` (#78)
-> 3) Bugfix: protobuf dependency (#82)
-> 4) New models added from Cometinho -- [Best paper award at EAMT 22 paper](https://aclanthology.org/2022.eamt-1.9/) 🥳!
+>  Whats new?
+> [CometKiwi](https://arxiv.org/abs/2209.06243) was the winning submission for the QE shared task 2022  🥳!. Code will be released soon!
 
 ## Quick Installation
 
