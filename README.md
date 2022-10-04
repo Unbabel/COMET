@@ -9,10 +9,12 @@
 </p>
 
 >  Whats new?
-
-> [CometKiwi](https://arxiv.org/abs/2209.06243) was the winning submission for the QE shared task 2022  🥳!. Code will be released soon!
+> 1) Bump some requirements in order to be easier to use COMET on Windows and Apple M1.   
+> 2) [CometKiwi](https://arxiv.org/abs/2209.06243) was the winning submission for the QE shared task 2022  🥳!. Code will be released soon!
 
 ## Quick Installation
+
+COMET requires python 3.8 or above! 
 
 Simple installation from PyPI
 
@@ -25,7 +27,7 @@ or
 pip install unbabel-comet==1.1.2 --use-feature=2020-resolver
 ```
 
-To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
+To develop locally install [Poetry](https://python-poetry.org/docs/#installation) (`pip install poetry`) and run the following commands:
 ```bash
 git clone https://github.com/Unbabel/COMET
 cd COMET
