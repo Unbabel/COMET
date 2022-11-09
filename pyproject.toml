@@ -39,7 +39,7 @@ comet-mbr = 'comet.cli.mbr:mbr_command'
 python = ">=3.8.0,<4.0.0"
 sentencepiece = "^0.1.96"
 pandas = ">=1.4.1"
-transformers = ">=4.8"
+transformers = ">=4.17"
 pytorch-lightning = "1.6.4"
 jsonargparse = "3.13.1"
 torch = ">=1.6.0,<2"
