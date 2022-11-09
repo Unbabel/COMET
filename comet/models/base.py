@@ -27,32 +27,15 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pytorch_lightning as ptl
 import torch
-import transformers
+from torch.utils.data import DataLoader, RandomSampler, Subset
+
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
-from packaging import version
-from torch import nn
-from torch.utils.data import DataLoader, RandomSampler, Sampler, Subset
 
 from .lru_cache import tensor_lru_cache
 from .pooling_utils import average_pooling, max_pooling
 from .predict_pbar import PredictProgressBar
-
-
-class OrderedSampler(Sampler[int]):
-    """
-    Sampler that returns the indices in a deterministic order.
-    """
-
-    def __init__(self, indices: List[int]):
-        self.indices = indices
-
-    def __iter__(self):
-        return iter(self.indices)
-
-    def __len__(self):
-        return len(self.indices)
-
+from .utils import OrderedSampler, Prediction, Target
 
 if "COMET_EMBEDDINGS_CACHE" in os.environ:
     CACHE_SIZE = int(os.environ["COMET_EMBEDDINGS_CACHE"])
@@ -80,7 +63,6 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     :param batch_size: Batch size used during training.
     :param train_data: Path to a csv file containing the training data.
     :param validation_data: Path to a csv file containing the validation data.
-    :param load_weights_from_checkpoint: Path to a checkpoint file.
     :param class_identifier: subclass identifier.
     """
 
@@ -96,27 +78,15 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         pretrained_model: str = "xlm-roberta-large",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
+        loss: str = "mse",
         dropout: float = 0.1,
         batch_size: int = 4,
-        train_data: Optional[str] = None,
-        validation_data: Optional[str] = None,
-        load_weights_from_checkpoint: Optional[str] = None,
+        train_data: Optional[List[str]] = None,
+        validation_data: Optional[List[str]] = None,
         class_identifier: Optional[str] = None,
     ) -> None:
         super().__init__()
-        self.save_hyperparameters(
-            ignore=["train_data", "validation_data", "load_weights_from_checkpoint"]
-        )
-
-        if self.hparams.encoder_model == "XLM-RoBERTa-XL":
-            # Ensure backwards compatibility with transformer versions
-            if version.parse(transformers.__version__) < version.parse("4.17.0"):
-                raise Exception(
-                    "XLM-RoBERTa-XL requires transformers>=4.17.0. Your current version is {}".format(
-                        transformers.__version__
-                    )
-                )
-
+        self.save_hyperparameters()
         self.encoder = str2encoder[self.hparams.encoder_model].from_pretrained(
             self.hparams.pretrained_model
         )
@@ -141,45 +111,28 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.encoder.freeze_embeddings()
 
         self.nr_frozen_epochs = self.hparams.nr_frozen_epochs
-
-        if load_weights_from_checkpoint is not None:
-            if os.path.exists(load_weights_from_checkpoint):
-                self.load_weights(load_weights_from_checkpoint)
-            else:
-                logger.warning(f"Path {load_weights_from_checkpoint} does not exist!")
-
         self.mc_dropout = False  # Flag used to control usage of MC Dropout
         self.caching = False  # Flag used to control Embedding Caching
 
     def set_mc_dropout(self, value: bool):
         self.mc_dropout = value
 
-    def load_weights(self, checkpoint: str) -> None:
-        """Function that loads the weights from a given checkpoint file.
-        Note:
-            If the checkpoint model architecture is different then `self`, only
-            the common parts will be loaded.
-
-        :param checkpoint: Path to the checkpoint containing the weights to be loaded.
-        """
-        logger.info(f"Loading weights from {checkpoint}.")
-        checkpoint = torch.load(checkpoint, map_location=lambda storage, loc: storage)
-        pretrained_dict = checkpoint["state_dict"]
-        model_dict = self.state_dict()
-        # 1. filter out unnecessary keys
-        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-        # 2. overwrite entries in the existing state dict
-        model_dict.update(pretrained_dict)
-        # 3. load the new state dict
-        self.load_state_dict(model_dict)
+    @abc.abstractmethod
+    def read_training_data(self):
+        pass
 
     @abc.abstractmethod
-    def read_csv(self):
+    def read_validation_data(self):
         pass
 
     @abc.abstractmethod
     def prepare_sample(
-        self, sample: List[Dict[str, Union[str, float]]], *args, **kwargs
+        self,
+        sample: List[Dict[str, Union[str, float]]],
+        stage: str = "fit",
+        # words: boolean = True,
+        *args,
+        **kwargs,
     ):
         pass
 
@@ -194,7 +147,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def forward(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
         pass
-    
+
     @abc.abstractmethod
     def is_referenceless(self) -> bool:
         pass
@@ -204,13 +157,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.encoder.freeze()
 
     @property
-    def loss(self) -> None:
-        return nn.MSELoss()
+    def loss(self):
+        return torch.nn.MSELoss()
 
-    def compute_loss(
-        self, predictions: Dict[str, torch.Tensor], targets: Dict[str, torch.Tensor]
-    ) -> torch.Tensor:
-        return self.loss(predictions["score"].view(-1), targets["score"])
+    def compute_loss(self, prediction: Prediction, target: Target) -> torch.Tensor:
+        return self.loss(prediction.score, target.score)
 
     def unfreeze_encoder(self) -> None:
         if self._frozen:
@@ -234,7 +185,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.caching = True
 
     def get_sentence_embedding(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        token_type_ids: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """Function that extracts sentence embeddings for
             a single sentence.
@@ -245,22 +199,41 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         :return: torch.Tensor [batch_size x hidden_size]
         """
         if self.caching:
-            return self.retrieve_sentence_embedding(input_ids, attention_mask)
+            return self.retrieve_sentence_embedding(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                token_type_ids=token_type_ids,
+            )
         else:
-            return self.compute_sentence_embedding(input_ids, attention_mask)
+            return self.compute_sentence_embedding(
+                input_ids,
+                attention_mask,
+                token_type_ids=token_type_ids,
+            )
 
     @tensor_lru_cache(maxsize=CACHE_SIZE)
     def retrieve_sentence_embedding(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        token_type_ids: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """Wrapper for `get_sentence_embedding` function that caches results."""
-        return self.compute_sentence_embedding(input_ids, attention_mask)
+        return self.compute_sentence_embedding(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+        )
 
     def compute_sentence_embedding(
-        self, input_ids: torch.Tensor, attention_mask: torch.Tensor
-    ) -> torch.Tensor:
-
-        encoder_out = self.encoder(input_ids, attention_mask)
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        token_type_ids: Optional[torch.Tensor] = None,
+    ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+        encoder_out = self.encoder(
+            input_ids, attention_mask, token_type_ids=token_type_ids
+        )
         if self.layerwise_attention:
             # HACK: LayerNorm is applied at the MiniBatch. This means that for big batch sizes the variance
             # and norm within the batch will create small differences in the final score
@@ -331,7 +304,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         if (
             self.nr_frozen_epochs < 1.0
             and self.nr_frozen_epochs > 0.0
-            and batch_nb > self.epoch_total_steps * self.nr_frozen_epochs
+            and batch_nb > self.first_epoch_total_steps * self.nr_frozen_epochs
         ):
             self.unfreeze_encoder()
             self._frozen = False
@@ -354,20 +327,15 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         """
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
-        loss_value = self.compute_loss(batch_prediction, batch_target)
+        if dataloader_idx == 0:
+            self.train_metrics.update(batch_prediction.score, batch_target["score"])
 
-        self.log("val_loss", loss_value, on_step=True, on_epoch=True)
-
-        # TODO: REMOVE if condition after torchmetrics bug fix
-        if batch_prediction["score"].view(-1).size() != torch.Size([1]):
-            if dataloader_idx == 0:
-                self.train_metrics.update(
-                    batch_prediction["score"].view(-1), batch_target["score"]
-                )
-            elif dataloader_idx == 1:
-                self.val_metrics.update(
-                    batch_prediction["score"].view(-1), batch_target["score"]
-                )
+        elif dataloader_idx > 0:
+            self.val_metrics[dataloader_idx - 1].update(
+                batch_prediction.score,
+                batch_target["score"],
+                batch_target["system"] if "system" in batch_target else None,
+            )
 
     def on_predict_start(self) -> None:
         """Called when predict begins."""
@@ -401,11 +369,25 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
     def validation_epoch_end(self, *args, **kwargs) -> None:
         """Computes and logs metrics."""
-        self.log_dict(self.train_metrics.compute(), prog_bar=True)
-        self.log_dict(self.val_metrics.compute(), prog_bar=True)
+        self.log_dict(self.train_metrics.compute(), prog_bar=False)
         self.train_metrics.reset()
-        self.val_metrics.reset()
-        
+
+        val_metrics = []
+        for i in range(len(self.hparams.validation_data)):
+            results = self.val_metrics[i].compute()
+            self.val_metrics[i].reset()
+            # Log to tensorboard the results for this validation set.
+            self.log_dict(results, prog_bar=False)
+            val_metrics.append(results)
+
+        average_results = {"val_" + k.split("_")[-1]: [] for k in val_metrics[0].keys()}
+        for i in range(len(val_metrics)):
+            for k, v in val_metrics[i].items():
+                average_results["val_" + k.split("_")[-1]].append(v)
+
+        self.log_dict(
+            {k: sum(v) / len(v) for k, v in average_results.items()}, prog_bar=True
+        )
 
     def setup(self, stage) -> None:
         """Data preparation function called before training by Lightning.
@@ -413,58 +395,71 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         :param stage: either 'fit', 'validate', 'test', or 'predict'
         """
         if stage in (None, "fit"):
-            self.train_dataset = self.read_csv(self.hparams.train_data)
-            self.validation_dataset = self.read_csv(self.hparams.validation_data)
+            train_dataset = self.read_training_data(self.hparams.train_data[0])
 
-            self.epoch_total_steps = len(self.train_dataset) // (
+            self.validation_sets = [
+                self.read_validation_data(d) for d in self.hparams.validation_data
+            ]
+
+            self.first_epoch_total_steps = len(train_dataset) // (
                 self.hparams.batch_size * max(1, self.trainer.num_devices)
             )
-            self.total_steps = self.epoch_total_steps * float(self.trainer.max_epochs)
-
-            # Always validate the model with 2k examples to control overfit.
-            train_subset = np.random.choice(a=len(self.train_dataset), size=2000)
-            self.train_subset = Subset(self.train_dataset, train_subset)
+            # Always validate the model with part of training.
+            train_subset = np.random.choice(
+                a=len(train_dataset), size=min(1000, len(train_dataset) * 0.2)
+            )
+            self.train_subset = Subset(train_dataset, train_subset)
             self.init_metrics()
 
     def train_dataloader(self) -> DataLoader:
         """Function that loads the train set."""
+        data_path = self.hparams.train_data[
+            self.current_epoch % len(self.hparams.train_data)
+        ]
+        train_dataset = self.read_training_data(data_path)
+        logger.info(f"Loading {data_path}.")
+
         return DataLoader(
-            dataset=self.train_dataset,
-            sampler=RandomSampler(self.train_dataset),
+            dataset=train_dataset,
+            sampler=RandomSampler(train_dataset),
             batch_size=self.hparams.batch_size,
-            collate_fn=self.prepare_sample,
+            collate_fn=lambda s: self.prepare_sample(s, stage="fit"),
             num_workers=2 * self.trainer.num_devices,
         )
 
     def val_dataloader(self) -> DataLoader:
         """Function that loads the validation set."""
-        return [
+        val_data = [
             DataLoader(
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
-                collate_fn=self.prepare_sample,
+                collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
                 num_workers=2 * self.trainer.num_devices,
-            ),
-            DataLoader(
-                dataset=self.validation_dataset,
-                batch_size=self.hparams.batch_size,
-                collate_fn=self.prepare_sample,
-                num_workers=2 * self.trainer.num_devices,
-            ),
+            )
         ]
+        for validation_set in self.validation_sets:
+            val_data.append(
+                DataLoader(
+                    dataset=validation_set,
+                    batch_size=self.hparams.batch_size,
+                    collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
+                    num_workers=2 * self.trainer.num_devices,
+                )
+            )
+        return val_data
 
     def prepare_for_inference(self, sample):
         """Ideally this should be a lamba function but for some reason python does not copy local lambda functions.
         This functions replaces `collate_fn=lambda x: self.prepare_sample(x, inference=True)` from line 434.
         """
-        return self.prepare_sample(sample, inference=True)
+        return self.prepare_sample(sample, stage="predict")
 
     def predict(
         self,
         samples: List[Dict[str, str]],
         batch_size: int = 8,
         gpus: int = 1,
-        mc_dropout: Union[int, bool] = False,
+        mc_dropout: int = 0,
         progress_bar: bool = True,
         accelerator: str = "ddp",
         num_workers: int = None,
@@ -502,7 +497,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         # setup, so currently raw chars are used as an approximation
         sampler = None
         if length_batching and gpus < 2:
-            sort_ids = np.argsort([len(sample["src"]) for sample in samples])
+            try:
+                sort_ids = np.argsort([len(sample["src"]) for sample in samples])
+            except KeyError:
+                sort_ids = np.argsort([len(sample["ref"]) for sample in samples])
             sampler = OrderedSampler(sort_ids)
 
         if num_workers is None:
@@ -530,7 +528,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 logger=False,
                 callbacks=[PredictProgressBar()],
                 accelerator=accelerator,
-                max_epochs=-1
+                max_epochs=-1,
             )
         else:
             trainer = ptl.Trainer(
@@ -539,7 +537,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 logger=False,
                 progress_bar_refresh_rate=0,
                 accelerator=accelerator,
-                max_epochs=-1
+                max_epochs=-1,
             )
 
         # TODO:
@@ -551,37 +549,16 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             message="Your `predict_dataloader`'s sampler has shuffling enabled.*",
         )
 
-        if mc_dropout:
+        if mc_dropout > 0:
             self.set_mc_dropout(mc_dropout)
-            predictions = trainer.predict(
-                self, dataloaders=dataloader, return_predictions=True
-            )
-            mean_scores = [out[0] for out in predictions]
-            std_scores = [out[1] for out in predictions]
-            mean_scores = torch.cat(mean_scores, dim=0).tolist()
-            std_scores = torch.cat(std_scores, dim=0).tolist()
-            if length_batching and gpus < 2:
-                unsorted_mean_scores = [None for _ in range(len(samples))]
-                unsorted_std_scores = [None for _ in range(len(samples))]
-                for idx, mean_score, std_score in zip(
-                    sort_ids, mean_scores, std_scores
-                ):
-                    unsorted_mean_scores[idx] = mean_score
-                    unsorted_std_scores[idx] = std_score
-                mean_scores = unsorted_mean_scores
-                std_scores = unsorted_std_scores
 
-            return mean_scores, std_scores, sum(mean_scores) / len(mean_scores)
+        predictions = trainer.predict(
+            self, dataloaders=dataloader, return_predictions=True
+        )
+        if length_batching and gpus < 2:
+            unsorted_predictions = [None for _ in range(len(samples))]
+            for idx, prediction in zip(sort_ids, predictions):
+                unsorted_predictions[idx] = prediction
+            predictions = unsorted_predictions
 
-        else:
-            predictions = trainer.predict(
-                self, dataloaders=dataloader, return_predictions=True
-            )
-            predictions = torch.cat(predictions, dim=0).tolist()
-            if length_batching and gpus < 2:
-                unsorted_predictions = [None for _ in range(len(samples))]
-                for idx, prediction in zip(sort_ids, predictions):
-                    unsorted_predictions[idx] = prediction
-                predictions = unsorted_predictions
-
-            return predictions, sum(predictions) / len(predictions)
+        return predictions, sum(predictions) / len(predictions)

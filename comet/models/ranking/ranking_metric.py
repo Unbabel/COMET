@@ -27,9 +27,11 @@ from typing import Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from transformers.optimization import Adafactor
+
 from comet.models.base import CometModel
 from comet.models.metrics import WMTKendall
-from transformers.optimization import Adafactor
+from comet.models.utils import Prediction
 
 
 class RankingMetric(CometModel):
@@ -47,9 +49,8 @@ class RankingMetric(CometModel):
     :param layer: Encoder layer to be used ('mix' for pooling info from all layers.)
     :param dropout: Dropout used in the top-layers.
     :param batch_size: Batch size used during training.
-    :param train_data: Path to a csv file containing the training data.
-    :param validation_data: Path to a csv file containing the validation data.
-    :param load_weights_from_checkpoint: Path to a checkpoint file.
+    :param train_data: List of paths to training files.
+    :param validation_data: List of paths to validation files.
     """
 
     def __init__(
@@ -66,34 +67,32 @@ class RankingMetric(CometModel):
         layer: Union[str, int] = "mix",
         dropout: float = 0.1,
         batch_size: int = 8,
-        train_data: Optional[str] = None,
-        validation_data: Optional[str] = None,
-        load_weights_from_checkpoint: Optional[str] = None,
+        train_data: Optional[List[str]] = None,
+        validation_data: Optional[List[str]] = None,
     ) -> None:
         super().__init__(
-            nr_frozen_epochs,
-            keep_embeddings_frozen,
-            optimizer,
-            encoder_learning_rate,
-            learning_rate,
-            layerwise_decay,
-            encoder_model,
-            pretrained_model,
-            pool,
-            layer,
-            dropout,
-            batch_size,
-            train_data,
-            validation_data,
-            load_weights_from_checkpoint,
-            "ranking_metric",
+            nr_frozen_epochs=nr_frozen_epochs,
+            keep_embeddings_frozen=keep_embeddings_frozen,
+            optimizer=optimizer,
+            encoder_learning_rate=encoder_learning_rate,
+            learning_rate=learning_rate,
+            layerwise_decay=layerwise_decay,
+            encoder_model=encoder_model,
+            pretrained_model=pretrained_model,
+            pool=pool,
+            layer=layer,
+            dropout=dropout,
+            batch_size=batch_size,
+            train_data=train_data,
+            validation_data=validation_data,
+            class_identifier="ranking_metric",
         )
         self.save_hyperparameters()
 
     def init_metrics(self):
         self.train_metrics = WMTKendall(prefix="train")
-        self.val_metrics = WMTKendall(prefix="val")
-    
+        self.val_metrics = [WMTKendall(prefix=d) for d in self.hparams.validation_data]
+
     def is_referenceless(self) -> bool:
         return False
 
@@ -132,12 +131,12 @@ class RankingMetric(CometModel):
         return [optimizer], []
 
     def prepare_sample(
-        self, sample: List[Dict[str, Union[str, float]]], inference: bool = False
+        self, sample: List[Dict[str, Union[str, float]]], stage: str = "fit"
     ) -> Dict[str, torch.Tensor]:
 
         sample = {k: [dic[k] for dic in sample] for k in sample[0]}
 
-        if inference:
+        if stage == "predict":
             src_inputs = self.encoder.prepare_sample(sample["src"])
             mt_inputs = self.encoder.prepare_sample(sample["mt"])
             ref_inputs = self.encoder.prepare_sample(sample["ref"])
@@ -170,7 +169,7 @@ class RankingMetric(CometModel):
         ref_attention_mask: torch.tensor,
         pos_attention_mask: torch.tensor,
         neg_attention_mask: torch.tensor,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, torch.Tensor]:
         src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
         ref_sentemb = self.get_sentence_embedding(ref_input_ids, ref_attention_mask)
@@ -201,7 +200,7 @@ class RankingMetric(CometModel):
             "distance_neg": distance_neg,
         }
 
-    def read_csv(self, path: str, regression: bool = False) -> List[dict]:
+    def read_training_data(self, path: str) -> List[dict]:
         """Reads a comma separated value file.
 
         :param path: path to a csv file.
@@ -209,21 +208,15 @@ class RankingMetric(CometModel):
         :return: List of records as dictionaries
         """
         df = pd.read_csv(path)
-
-        if regression:
-            df = df[["src", "mt", "ref", "score"]]
-            df["src"] = df["src"].astype(str)
-            df["mt"] = df["mt"].astype(str)
-            df["ref"] = df["ref"].astype(str)
-            df["score"] = df["score"].astype(float)
-            return df.to_dict("records")
-
         df = df[["src", "pos", "neg", "ref"]]
         df["src"] = df["src"].astype(str)
         df["pos"] = df["pos"].astype(str)
         df["neg"] = df["neg"].astype(str)
         df["ref"] = df["ref"].astype(str)
         return df.to_dict("records")
+
+    def read_validation_data(self, path: str) -> List[dict]:
+        return self.read_training_data(path)
 
     def training_step(
         self,
@@ -246,7 +239,7 @@ class RankingMetric(CometModel):
         if (
             self.nr_frozen_epochs < 1.0
             and self.nr_frozen_epochs > 0.0
-            and batch_nb > self.epoch_total_steps * self.nr_frozen_epochs
+            and batch_nb > self.first_epoch_total_steps * self.nr_frozen_epochs
         ):
             self.unfreeze_encoder()
             self._frozen = False
@@ -273,13 +266,12 @@ class RankingMetric(CometModel):
         loss_value = batch_prediction["loss"]
         self.log("val_loss", loss_value, on_step=True, on_epoch=True)
 
-        # TODO: REMOVE if condition after torchmetrics bug fix
         if dataloader_idx == 0:
             self.train_metrics.update(
                 batch_prediction["distance_pos"], batch_prediction["distance_neg"]
             )
-        elif dataloader_idx == 1:
-            self.val_metrics.update(
+        elif dataloader_idx > 0:
+            self.val_metrics[dataloader_idx - 1].update(
                 batch_prediction["distance_pos"], batch_prediction["distance_neg"]
             )
 
@@ -289,18 +281,40 @@ class RankingMetric(CometModel):
         batch_idx: Optional[int] = None,
         dataloader_idx: Optional[int] = None,
     ) -> List[float]:
-        src_sentemb = self.get_sentence_embedding(
-            batch["src_input_ids"], batch["src_attention_mask"]
-        )
-        ref_sentemb = self.get_sentence_embedding(
-            batch["ref_input_ids"], batch["ref_attention_mask"]
-        )
-        mt_sentemb = self.get_sentence_embedding(
-            batch["mt_input_ids"], batch["mt_attention_mask"]
-        )
+        def _predict_forward(batch):
+            src_sentemb = self.get_sentence_embedding(
+                batch["src_input_ids"], batch["src_attention_mask"]
+            )
+            ref_sentemb = self.get_sentence_embedding(
+                batch["ref_input_ids"], batch["ref_attention_mask"]
+            )
+            mt_sentemb = self.get_sentence_embedding(
+                batch["mt_input_ids"], batch["mt_attention_mask"]
+            )
+            src_distance = F.pairwise_distance(mt_sentemb, src_sentemb)
+            ref_distance = F.pairwise_distance(mt_sentemb, ref_sentemb)
+            distances = (2 * ref_distance * src_distance) / (
+                ref_distance + src_distance
+            )
+            return Prediction(
+                scores=torch.ones_like(distances) / (1 + distances),
+                src_distance=src_distance,
+                ref_distance=ref_distance,
+            )
 
-        src_distance = F.pairwise_distance(mt_sentemb, src_sentemb)
-        ref_distance = F.pairwise_distance(mt_sentemb, ref_sentemb)
+        if self.mc_dropout:
+            outputs = [_predict_forward(batch) for _ in range(self.mc_dropout)]
+            mcd_output = {
+                k: torch.stack([dic[k] for dic in outputs]) for k in outputs[0]
+            }
+            output = Prediction()
+            for k, v in mcd_output.items():
+                output[f"{k}_mean"] = v.mean(dim=0)
+                output[f"{k}_std"] = v.std(dim=0)
 
-        distances = (2 * ref_distance * src_distance) / (ref_distance + src_distance)
-        return torch.ones_like(distances) / (1 + distances)
+            output["std"] = mcd_output["scores"].std(dim=0)
+            output["mcd_scores"] = mcd_output["scores"].T
+            output["scores"] = mcd_output["scores"].mean(dim=0)
+            return output
+        else:
+            return _predict_forward(batch)

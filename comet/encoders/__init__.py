@@ -15,11 +15,11 @@ from .bert import BERTEncoder
 from .minilm import MiniLMEncoder
 from .xlmr import XLMREncoder
 
-from.xlmr_xl import XLMRobertaXLModel
+from .xlmr_xl import XLMRobertaXLModel
 
 str2encoder = {
-    "BERT": BERTEncoder, 
-    "XLM-RoBERTa": XLMREncoder, 
+    "BERT": BERTEncoder,
+    "XLM-RoBERTa": XLMREncoder,
     "MiniLM": MiniLMEncoder,
-    "XLM-RoBERTa-XL": XLMRobertaXLModel
+    "XLM-RoBERTa-XL": XLMRobertaXLModel,
 }

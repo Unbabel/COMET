@@ -255,11 +255,11 @@ def score(cfg: Namespace, systems: List[Dict[str, List[str]]]) -> np.ndarray:
             # TODO: what should be return here?
             return 0
 
-    else:  
+    else:
         # This maximizes cache hits because batches will be equal!
         seg_scores = []
         for system in systems:
-            samples = [dict(zip(system,t)) for t in zip(*system.values())]
+            samples = [dict(zip(system, t)) for t in zip(*system.values())]
             system_scores, _ = model.predict(
                 samples=samples,
                 batch_size=cfg.batch_size,

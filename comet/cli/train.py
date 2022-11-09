@@ -34,12 +34,19 @@ import warnings
 
 from jsonargparse import ActionConfigFile, ArgumentParser, namespace_to_dict
 from pytorch_lightning import seed_everything
-from pytorch_lightning.callbacks import (EarlyStopping, LearningRateMonitor,
-                                         ModelCheckpoint)
+from pytorch_lightning.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+)
 from pytorch_lightning.trainer.trainer import Trainer
 
-from comet.models import (CometModel, RankingMetric, ReferencelessRegression,
-                          RegressionMetric)
+from comet.models import (
+    CometModel,
+    RankingMetric,
+    ReferencelessRegression,
+    RegressionMetric,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,11 +74,12 @@ def read_arguments() -> ArgumentParser:
         default=None,
     )
     parser.add_argument(
-        "--strict_load", 
-        action="store_true", 
-        help="Strictly enforce that the keys in checkpoint_path match the keys returned by this module's state dict."
+        "--strict_load",
+        action="store_true",
+        help="Strictly enforce that the keys in checkpoint_path match the keys returned by this module's state dict.",
     )
     return parser
+
 
 def initialize_trainer(configs) -> Trainer:
     checkpoint_callback = ModelCheckpoint(
@@ -81,19 +89,22 @@ def initialize_trainer(configs) -> Trainer:
         **namespace_to_dict(configs.early_stopping.init_args)
     )
     trainer_args = namespace_to_dict(configs.trainer.init_args)
-    lr_monitor = LearningRateMonitor(logging_interval='step')
+    lr_monitor = LearningRateMonitor(logging_interval="step")
     trainer_args["callbacks"] = [early_stop_callback, checkpoint_callback, lr_monitor]
     print("TRAINER ARGUMENTS: ")
     print(json.dumps(trainer_args, indent=4, default=lambda x: x.__dict__))
     trainer = Trainer(**trainer_args)
     return trainer
 
+
 def initialize_model(configs):
     print("MODEL ARGUMENTS: ")
     if configs.regression_metric is not None:
         print(
             json.dumps(
-                configs.regression_metric.init_args, indent=4, default=lambda x: x.__dict__
+                configs.regression_metric.init_args,
+                indent=4,
+                default=lambda x: x.__dict__,
             )
         )
         if configs.load_from_checkpoint is not None:
@@ -104,7 +115,9 @@ def initialize_model(configs):
                 **namespace_to_dict(configs.regression_metric.init_args),
             )
         else:
-            model = RegressionMetric(**namespace_to_dict(configs.regression_metric.init_args))
+            model = RegressionMetric(
+                **namespace_to_dict(configs.regression_metric.init_args)
+            )
     elif configs.referenceless_regression_metric is not None:
         print(
             json.dumps(
@@ -169,9 +182,9 @@ def train_command() -> None:
         default=None,
     )
     parser.add_argument(
-        "--strict_load", 
-        action="store_true", 
-        help="Strictly enforce that the keys in checkpoint_path match the keys returned by this module's state dict."
+        "--strict_load",
+        action="store_true",
+        help="Strictly enforce that the keys in checkpoint_path match the keys returned by this module's state dict.",
     )
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)
@@ -226,6 +239,7 @@ def train_command() -> None:
         message=".*Consider increasing the value of the `num_workers` argument` .*",
     )
     trainer.fit(model)
+
 
 def train_command() -> None:
     parser = read_arguments()

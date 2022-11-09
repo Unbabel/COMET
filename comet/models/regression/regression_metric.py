@@ -23,10 +23,12 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
+from transformers.optimization import Adafactor
+
 from comet.models.base import CometModel
 from comet.models.metrics import RegressionMetrics
+from comet.models.utils import Prediction, Target
 from comet.modules import FeedForward
-from transformers.optimization import Adafactor
 
 
 class RegressionMetric(CometModel):
@@ -44,66 +46,68 @@ class RegressionMetric(CometModel):
     :param layer: Encoder layer to be used ('mix' for pooling info from all layers.)
     :param dropout: Dropout used in the top-layers.
     :param batch_size: Batch size used during training.
-    :param train_data: Path to a csv file containing the training data.
-    :param validation_data: Path to a csv file containing the validation data.
+    :param train_data: List of paths to training files.
+    :param validation_data: List of paths to validation files.
     :param hidden_sizes: Hidden sizes for the Feed Forward regression.
     :param activations: Feed Forward activation function.
-    :param load_weights_from_checkpoint: Path to a checkpoint file.
+    :param final_activation: Feed Forward final activation.
     """
 
     def __init__(
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
-        keep_embeddings_frozen: bool = False,
+        keep_embeddings_frozen: bool = True,
         optimizer: str = "AdamW",
-        encoder_learning_rate: float = 1e-05,
-        learning_rate: float = 3e-05,
+        encoder_learning_rate: float = 5e-06,
+        learning_rate: float = 1.5e-05,
         layerwise_decay: float = 0.95,
         encoder_model: str = "XLM-RoBERTa",
-        pretrained_model: str = "xlm-roberta-base",
+        pretrained_model: str = "xlm-roberta-large",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
+        loss: str = "mse",
         dropout: float = 0.1,
         batch_size: int = 4,
-        train_data: Optional[str] = None,
-        validation_data: Optional[str] = None,
-        hidden_sizes: List[int] = [2304, 768],
+        train_data: Optional[List[str]] = None,
+        validation_data: Optional[List[str]] = None,
+        hidden_sizes: List[int] = [3072, 1024],
         activations: str = "Tanh",
         final_activation: Optional[str] = None,
-        load_weights_from_checkpoint: Optional[str] = None,
     ) -> None:
         super().__init__(
-            nr_frozen_epochs,
-            keep_embeddings_frozen,
-            optimizer,
-            encoder_learning_rate,
-            learning_rate,
-            layerwise_decay,
-            encoder_model,
-            pretrained_model,
-            pool,
-            layer,
-            dropout,
-            batch_size,
-            train_data,
-            validation_data,
-            load_weights_from_checkpoint,
-            "regression_metric",
+            nr_frozen_epochs=nr_frozen_epochs,
+            keep_embeddings_frozen=keep_embeddings_frozen,
+            optimizer=optimizer,
+            encoder_learning_rate=encoder_learning_rate,
+            learning_rate=learning_rate,
+            layerwise_decay=layerwise_decay,
+            encoder_model=encoder_model,
+            pretrained_model=pretrained_model,
+            pool=pool,
+            layer=layer,
+            loss=loss,
+            dropout=dropout,
+            batch_size=batch_size,
+            train_data=train_data,
+            validation_data=validation_data,
+            class_identifier="regression_metric",
         )
         self.save_hyperparameters()
-
         self.estimator = FeedForward(
             in_dim=self.encoder.output_units * 6,
             hidden_sizes=self.hparams.hidden_sizes,
             activations=self.hparams.activations,
             dropout=self.hparams.dropout,
             final_activation=self.hparams.final_activation,
+            out_dim=1,
         )
 
     def init_metrics(self):
         self.train_metrics = RegressionMetrics(prefix="train")
-        self.val_metrics = RegressionMetrics(prefix="val")
-    
+        self.val_metrics = [
+            RegressionMetrics(prefix=d) for d in self.hparams.validation_data
+        ]
+
     def is_referenceless(self) -> bool:
         return False
 
@@ -137,11 +141,10 @@ class RegressionMetric(CometModel):
             )
         else:
             optimizer = torch.optim.AdamW(params, lr=self.hparams.learning_rate)
-        # scheduler = self._build_scheduler(optimizer)
         return [optimizer], []
 
     def prepare_sample(
-        self, sample: List[Dict[str, Union[str, float]]], inference: bool = False
+        self, sample: List[Dict[str, Union[str, float]]], stage: str = "train"
     ) -> Union[
         Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]], Dict[str, torch.Tensor]
     ]:
@@ -164,10 +167,13 @@ class RegressionMetric(CometModel):
         ref_inputs = {"ref_" + k: v for k, v in ref_inputs.items()}
         inputs = {**src_inputs, **mt_inputs, **ref_inputs}
 
-        if inference:
+        if stage == "predict":
             return inputs
 
-        targets = {"score": torch.tensor(sample["score"], dtype=torch.float)}
+        targets = Target(score=torch.tensor(sample["score"], dtype=torch.float))
+        if "system" in sample:
+            targets["system"] = sample["system"]
+
         return inputs, targets
 
     def estimate(
@@ -186,7 +192,7 @@ class RegressionMetric(CometModel):
             (mt_sentemb, ref_sentemb, prod_ref, diff_ref, prod_src, diff_src),
             dim=1,
         )
-        return {"score": self.estimator(embedded_sequences)}
+        return Prediction(score=self.estimator(embedded_sequences).view(-1))
 
     def forward(
         self,
@@ -203,8 +209,8 @@ class RegressionMetric(CometModel):
         ref_sentemb = self.get_sentence_embedding(ref_input_ids, ref_attention_mask)
         return self.estimate(src_sentemb, mt_sentemb, ref_sentemb)
 
-    def read_csv(self, path: str) -> List[dict]:
-        """Reads a comma separated value file.
+    def read_training_data(self, path: str) -> List[dict]:
+        """Reads a comma separated value file for training.
 
         :param path: path to a csv file.
 
@@ -216,4 +222,25 @@ class RegressionMetric(CometModel):
         df["mt"] = df["mt"].astype(str)
         df["ref"] = df["ref"].astype(str)
         df["score"] = df["score"].astype("float16")
+        return df.to_dict("records")
+
+    def read_validation_data(self, path: str) -> List[dict]:
+        """Reads a comma separated value file for validation.
+
+        :param path: path to a csv file.
+
+        :return: List of records as dictionaries
+        """
+        df = pd.read_csv(path)
+        columns = ["src", "mt", "ref", "score"]
+        # If system in columns we will use this to calculate system-level accuracy
+        if "system" in df.columns:
+            columns.append("system")
+            df["system"] = df["system"].astype(str)
+
+        df = df[columns]
+        df["score"] = df["score"].astype("float16")
+        df["src"] = df["src"].astype(str)
+        df["mt"] = df["mt"].astype(str)
+        df["ref"] = df["ref"].astype(str)
         return df.to_dict("records")
