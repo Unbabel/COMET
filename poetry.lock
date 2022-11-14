@@ -106,6 +106,14 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
 toml = ["toml"]
 
 [[package]]
+name = "entmax"
+version = "1.0"
+description = "The entmax mapping and its loss, a family of sparse alternatives to softmax."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "filelock"
 version = "3.8.0"
 description = "A platform independent file lock."
@@ -127,7 +135,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "fsspec"
-version = "2022.10.0"
+version = "2022.11.0"
 description = "File-system specification"
 category = "main"
 optional = false
@@ -728,11 +736,11 @@ widechars = ["wcwidth"]
 
 [[package]]
 name = "tensorboard"
-version = "2.9.0"
+version = "2.11.0"
 description = "TensorBoard lets you watch Tensors Flow"
 category = "main"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.7"
 
 [package.dependencies]
 absl-py = ">=0.4"
@@ -741,7 +749,7 @@ google-auth-oauthlib = ">=0.4.1,<0.5"
 grpcio = ">=1.24.3"
 markdown = ">=2.6.8"
 numpy = ">=1.12.0"
-protobuf = ">=3.9.2"
+protobuf = ">=3.9.2,<4"
 requests = ">=2.21.0,<3"
 setuptools = ">=41.0.0"
 tensorboard-data-server = ">=0.6.0,<0.7.0"
@@ -943,7 +951,7 @@ watchdog = ["watchdog"]
 
 [[package]]
 name = "wheel"
-version = "0.38.3"
+version = "0.38.4"
 description = "A built-package format for Python"
 category = "main"
 optional = false
@@ -979,7 +987,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.0,<4.0.0"
-content-hash = "eed32212c6eed9cc49998394b9a001f90d6c40e6d21e5fc744365b2a8888f004"
+content-hash = "26bf2e6c87037a7e22f055dbea38f172083d3e44657fa66f1a3273e153bfcd7e"
 
 [metadata.files]
 absl-py = [
@@ -1157,6 +1165,9 @@ coverage = [
     {file = "coverage-5.5-pp37-none-any.whl", hash = "sha256:2a3859cb82dcbda1cfd3e6f71c27081d18aa251d20a17d87d26d4cd216fb0af4"},
     {file = "coverage-5.5.tar.gz", hash = "sha256:ebe78fe9a0e874362175b02371bdfbee64d8edc42a044253ddf4ee7d3c15212c"},
 ]
+entmax = [
+    {file = "entmax-1.0.tar.gz", hash = "sha256:1cd9721c34935824e071c8c20900711cad60c3d84bc9e4668f3b7a8873bf62cf"},
+]
 filelock = [
     {file = "filelock-3.8.0-py3-none-any.whl", hash = "sha256:617eb4e5eedc82fc5f47b6d61e4d11cb837c56cb4544e39081099fa17ad109d4"},
     {file = "filelock-3.8.0.tar.gz", hash = "sha256:55447caa666f2198c5b6b13a26d2084d26fa5b115c00d065664b2124680c4edc"},
@@ -1238,8 +1249,8 @@ frozenlist = [
     {file = "frozenlist-1.3.3.tar.gz", hash = "sha256:58bcc55721e8a90b88332d6cd441261ebb22342e238296bb330968952fbb3a6a"},
 ]
 fsspec = [
-    {file = "fsspec-2022.10.0-py3-none-any.whl", hash = "sha256:6b7c6ab3b476cdf17efcfeccde7fca28ef5a48f73a71010aaceec5fc15bf9ebf"},
-    {file = "fsspec-2022.10.0.tar.gz", hash = "sha256:cb6092474e90487a51de768170f3afa50ca8982c26150a59072b16433879ff1d"},
+    {file = "fsspec-2022.11.0-py3-none-any.whl", hash = "sha256:d6e462003e3dcdcb8c7aa84c73a228f8227e72453cd22570e2363e8844edfe7b"},
+    {file = "fsspec-2022.11.0.tar.gz", hash = "sha256:259d5fd5c8e756ff2ea72f42e7613c32667dc2049a4ac3d84364a7ca034acb8b"},
 ]
 google-auth = [
     {file = "google-auth-2.14.1.tar.gz", hash = "sha256:ccaa901f31ad5cbb562615eb8b664b3dd0bf5404a67618e642307f00613eda4d"},
@@ -1907,7 +1918,7 @@ tabulate = [
     {file = "tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c"},
 ]
 tensorboard = [
-    {file = "tensorboard-2.9.0-py3-none-any.whl", hash = "sha256:bd78211076dca5efa27260afacfaa96cd05c7db12a6c09cc76a1d6b2987ca621"},
+    {file = "tensorboard-2.11.0-py3-none-any.whl", hash = "sha256:a0e592ee87962e17af3f0dce7faae3fbbd239030159e9e625cce810b7e35c53d"},
 ]
 tensorboard-data-server = [
     {file = "tensorboard_data_server-0.6.1-py3-none-any.whl", hash = "sha256:809fe9887682d35c1f7d1f54f0f40f98bb1f771b14265b453ca051e2ce58fca7"},
@@ -2007,8 +2018,8 @@ werkzeug = [
     {file = "Werkzeug-2.2.2.tar.gz", hash = "sha256:7ea2d48322cc7c0f8b3a215ed73eabd7b5d75d0b50e31ab006286ccff9e00b8f"},
 ]
 wheel = [
-    {file = "wheel-0.38.3-py3-none-any.whl", hash = "sha256:f3c99240da8d26989dca2d67a7a431015eb91fb301eecacc6e452133689d9d59"},
-    {file = "wheel-0.38.3.tar.gz", hash = "sha256:4066646ef77d0e56cc44004c100381ee1957955cfc3151345dda96886f9896a5"},
+    {file = "wheel-0.38.4-py3-none-any.whl", hash = "sha256:b60533f3f5d530e971d6737ca6d58681ee434818fab630c83a734bb10c083ce8"},
+    {file = "wheel-0.38.4.tar.gz", hash = "sha256:965f5259b566725405b05e7cf774052044b1ed30119b5d586b2703aafe8719ac"},
 ]
 yarl = [
     {file = "yarl-1.8.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:abc06b97407868ef38f3d172762f4069323de52f2b70d133d096a48d72215d28"},

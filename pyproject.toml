@@ -47,6 +47,7 @@ numpy = ">=1.20.0"
 torchmetrics = "0.8.2"
 sacrebleu = ">=2.0.0"
 scipy = ">=1.5.4"
+entmax = "1.0.0"
 
 [tool.poetry.dev-dependencies]
 sphinx-markdown-tables = "0.0.15"

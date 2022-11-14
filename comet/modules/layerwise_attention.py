@@ -18,14 +18,11 @@ Layer-Wise Attention Mechanism
     Computes a parameterised scalar mixture of N tensors,
         `mixture = gamma * sum(s_k * tensor_k)`
     where `s = softmax(w)`, with `w` and `gamma` scalar parameters.
-
     If `layer_norm=True` then apply layer normalization.
-
     If `dropout > 0`, then for each scalar weight, adjust its softmax
     weight mass to 0 with the dropout probability (i.e., setting the
     unnormalized weight to -inf). This effectively should redistribute
     dropped probability mass to all other weights.
-
     Original implementation:
         - https://github.com/Hyperparticle/udify
 """
@@ -42,11 +39,17 @@ class LayerwiseAttention(torch.nn.Module):
         layer_norm: bool = False,
         layer_weights: Optional[List[int]] = None,
         dropout: float = None,
+        layer_transformation: str = "softmax",
     ) -> None:
         super(LayerwiseAttention, self).__init__()
         self.num_layers = num_layers
         self.layer_norm = layer_norm
         self.dropout = dropout
+        
+        self.transform_fn = torch.softmax
+        if layer_transformation == "sparsemax":
+            from entmax import sparsemax
+            self.transform_fn = sparsemax
 
         if layer_weights is None:
             layer_weights = [0.0] * num_layers
@@ -113,7 +116,7 @@ class LayerwiseAttention(torch.nn.Module):
                 self.dropout_mask.uniform_() > self.dropout, weights, self.dropout_fill
             )
 
-        normed_weights = torch.nn.functional.softmax(weights, dim=0)
+        normed_weights = self.transform_fn(weights, dim=0)
         normed_weights = torch.split(normed_weights, split_size_or_sections=1)
 
         if not self.layer_norm:
