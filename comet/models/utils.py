@@ -18,6 +18,16 @@ from torch.utils.data import Sampler
 from transformers.utils import ModelOutput
 
 
+class Prediction(ModelOutput):
+    "Renamed ModelOutput"
+    pass
+
+
+class Target(ModelOutput):
+    "Renamed ModelOutput into Targets to keep same behaviour"
+    pass
+
+
 class OrderedSampler(Sampler[int]):
     """
     Sampler that returns the indices in a deterministic order.
@@ -33,11 +43,37 @@ class OrderedSampler(Sampler[int]):
         return len(self.indices)
 
 
-class Prediction(ModelOutput):
-    "Renamed ModelOutput"
-    pass
+class LabelEncoder:
+    def __init__(self, reserved_labels: List[str]):
+        self.token_to_index = {
+            token: index for index, token in enumerate(reserved_labels)
+        }
+        self.index_to_token = reserved_labels.copy()
 
+    @property
+    def vocab(self):
+        return self.index_to_token
 
-class Target(ModelOutput):
-    "Renamed ModelOutput into Targets to keep same behaviour"
-    pass
+    @property
+    def vocab_size(self):
+        """
+        Returns:
+            int: Number of labels in the dictionary.
+        """
+        return len(self.vocab)
+
+    def encode(self, sequence: List[str]):
+        return [self.token_to_index[t] for t in sequence]
+
+    def decode(self, sequence: List[int], join: bool):
+        if join:
+            return " ".join([self.index_to_token[idx] for idx in sequence])
+        return [self.index_to_token[idx] for idx in sequence]
+
+    def batch_encode(self, batch, split=True):
+        if split:
+            return [self.encode(seq.split()) for seq in batch]
+        return [self.encode(seq) for seq in batch]
+
+    def batch_decode(self, batch, join=True):
+        return [self.decode(seq, join) for seq in batch]
