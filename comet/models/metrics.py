@@ -26,7 +26,7 @@ import pandas as pd
 import scipy.stats as stats
 import torch
 from torch import Tensor
-from torchmetrics import Metric
+from torchmetrics import Metric, MatthewsCorrCoef
 
 
 def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> float:
@@ -52,6 +52,17 @@ def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> fl
 
     accuracy = tp / len(pairs) if len(pairs) != 0 else 0
     return float(accuracy)
+
+
+class MCCMetric(MatthewsCorrCoef):
+    def __init__(self, prefix: str = "", **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.prefix = prefix
+
+    def compute(self) -> Tensor:
+        """Computes matthews correlation coefficient."""
+        mcc = super(MCCMetric, self).compute()
+        return {self.prefix + "_mcc": mcc}
 
 
 class RegressionMetrics(Metric):
