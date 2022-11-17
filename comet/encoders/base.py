@@ -44,6 +44,18 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         """Number of model layers available."""
         pass
 
+    @property
+    @abc.abstractmethod
+    def size_separator(self):
+        """Number of tokens used between two segments. For BERT is just 1 ([SEP])
+        but models such as XLM-R use 2 (</s></s>)"""
+        pass
+
+    @property
+    @abc.abstractmethod
+    def uses_token_type_ids(self):
+        pass
+
     @classmethod
     @abc.abstractmethod
     def from_pretrained(cls, pretrained_model):
@@ -52,22 +64,6 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         :return: Encoder model
         """
         raise NotImplementedError
-
-    def prepare_sample(self, sample: List[str]) -> Dict[str, torch.Tensor]:
-        """Receives a list of strings and applies tokenization and vectorization.
-
-        :param sample: List with text segments to be tokenized and padded.
-
-        :return: Dictionary with HF model inputs.
-        """
-        tokenizer_output = self.tokenizer(
-            sample,
-            return_tensors="pt",
-            padding=True,
-            truncation=True,
-            max_length=self.max_positions - 2,
-        )
-        return tokenizer_output
 
     def freeze(self) -> None:
         """Frezees the entire encoder."""
@@ -99,3 +95,51 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         self, tokens: torch.Tensor, lengths: torch.Tensor
     ) -> Dict[str, torch.Tensor]:
         pass
+
+    @abc.abstractmethod
+    def subword_tokenize_to_ids(self, tokens) -> Dict[str, torch.Tensor]:
+        """Segment each token into subwords while keeping track of
+            token boundaries and convert subwords into IDs.
+
+        :param tokens: A sequence of strings, representing input tokens.
+        :return: dict with 'input_ids', 'attention_mask', 'subword_mask'
+        """
+        pass
+
+    def prepare_sample(
+        self, sample: List[str], word_level_training: bool = False
+    ) -> Dict[str, torch.Tensor]:
+        """Receives a list of strings and applies tokenization and vectorization.
+
+        :param sample: List with text segments to be tokenized and padded.
+
+        :return: Dictionary with HF model inputs.
+        """
+        if word_level_training:
+            tokenizer_output = self.subword_tokenize_to_ids(sample)
+            return tokenizer_output
+        else:
+            tokenizer_output = self.tokenizer(
+                sample,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=self.max_positions - 2,
+            )
+            return tokenizer_output
+
+    def pad_tensor(self, tensor, length, padding_index):
+        """Pad a tensor to length with padding_index.
+
+        :param tensor: Tensor to pad.
+        :param length: Sequence length after padding.
+        :param padding_index: Index to pad tensor with.
+
+        :return: Padded Tensor.
+        """
+        n_padding = length - tensor.shape[0]
+        assert n_padding >= 0
+        if n_padding == 0:
+            return tensor
+        padding = tensor.new(n_padding, *tensor.shape[1:]).fill_(padding_index)
+        return torch.cat((tensor, padding), dim=0)
