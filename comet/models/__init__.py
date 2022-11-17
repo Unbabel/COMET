@@ -59,7 +59,11 @@ def load_from_checkpoint(checkpoint_path: str) -> CometModel:
     if not os.path.exists(checkpoint_path):
         raise Exception(f"Invalid checkpoint path: {checkpoint_path}")
 
-    hparams_file = "/".join(checkpoint_path.split("/")[:-2] + ["hparams.yaml"])
+    hparams_file = os.path.normpath(checkpoint_path).split(os.path.sep)[:-2] + [
+        "hparams.yaml"
+    ]
+    hparams_file = os.path.join(*hparams_file)
+
     if os.path.exists(hparams_file):
         with open(hparams_file) as yaml_file:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)
