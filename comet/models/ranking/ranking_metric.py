@@ -27,6 +27,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 import torch.nn.functional as F
+from torch import nn
 from transformers.optimization import Adafactor
 
 from comet.models.base import CometModel
@@ -91,7 +92,9 @@ class RankingMetric(CometModel):
 
     def init_metrics(self):
         self.train_metrics = WMTKendall(prefix="train")
-        self.val_metrics = [WMTKendall(prefix=d) for d in self.hparams.validation_data]
+        self.val_metrics = nn.ModuleList(
+            [WMTKendall(prefix=d) for d in self.hparams.validation_data]
+        )
 
     def is_referenceless(self) -> bool:
         return False
