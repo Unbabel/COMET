@@ -114,6 +114,9 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.mc_dropout = False  # Flag used to control usage of MC Dropout
         self.caching = False  # Flag used to control Embedding Caching
 
+        # If not defined here, metrics will not live in the same device as our model.
+        self.init_metrics()
+
     def set_mc_dropout(self, value: bool):
         self.mc_dropout = value
 
@@ -409,7 +412,6 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 a=len(train_dataset), size=min(1000, len(train_dataset) * 0.2)
             )
             self.train_subset = Subset(train_dataset, train_subset)
-            self.init_metrics()
 
     def train_dataloader(self) -> DataLoader:
         """Function that loads the train set."""
@@ -481,6 +483,27 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         :return: List with segment-level scores and a system-score or segment-level scores, segment-level
             confidence and a system-score.
         """
+
+        def restore_list_order(sorted_list, sort_ids):
+            """Restores the original ids of a given list."""
+            unsorted_list = [None for _ in range(len(sorted_list))]
+            for i, s in zip(sort_ids, sorted_list):
+                unsorted_list[i] = s
+            return unsorted_list
+
+        def flatten_predictions(predictions):
+            predictions = Prediction(
+                **{k: [dic[k] for dic in predictions] for k in predictions[0]}
+            )
+            for k, v in predictions.items():
+                if torch.is_tensor(v[0]):
+                    # If we have tensors we can use cat to flatten them.
+                    predictions[k] = torch.cat(v, dim=0).tolist()
+                else:
+                    # for other predictions such as word tags we have to flatten the list.
+                    predictions[k] = [item for sublist in v for item in sublist]
+            return predictions
+
         # HACK: Workaround pytorch bug that prevents ParameterList to be used in DP
         # https://github.com/pytorch/pytorch/issues/36035
         if self.layerwise_attention is not None and gpus > 1:
@@ -555,10 +578,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         predictions = trainer.predict(
             self, dataloaders=dataloader, return_predictions=True
         )
+        predictions = flatten_predictions(predictions)
         if length_batching and gpus < 2:
-            unsorted_predictions = [None for _ in range(len(samples))]
-            for idx, prediction in zip(sort_ids, predictions):
-                unsorted_predictions[idx] = prediction
-            predictions = unsorted_predictions
+            predictions = Prediction(
+                **{k: restore_list_order(v, sort_ids) for k, v in predictions.items()}
+            )
 
-        return predictions, sum(predictions) / len(predictions)
+        predictions["system_score"] = sum(predictions.score) / len(predictions.score)
+        return predictions
