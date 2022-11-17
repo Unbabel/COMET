@@ -1,0 +1,40 @@
+unified_metric:
+  class_path: comet.models.UnifiedMetric
+  init_args:
+    nr_frozen_epochs: 0.9
+    keep_embeddings_frozen: True
+    optimizer: AdamW
+    encoder_learning_rate: 3.0e-06
+    learning_rate: 3.0e-05
+    layerwise_decay: 0.95
+    encoder_model: XLM-RoBERTa
+    pretrained_model: microsoft/infoxlm-large
+    sent_layer: mix
+    layer_transformation: sparsemax
+    word_layer: 24
+    loss: mse
+    dropout: 0.1
+    batch_size: 2
+    train_data:
+      - data/word-level-train.csv
+    validation_data: 
+      - data/word-level-dev.en-ru.csv
+      - data/word-level-dev.en-de.csv
+      - data/word-level-dev.zh-en.csv
+    hidden_sizes:
+      - 3072
+      - 1024
+    activations: Tanh
+    input_segments:
+      - mt
+      - src
+      - ref
+    word_weights:
+      - 0.15     # OK weight
+      - 0.85     # BAD weight
+    word_level_training: true
+    loss_lambda: 0.65 # word-level weight loss
+    
+trainer: ../trainer.yaml
+early_stopping: ../early_stopping.yaml
+model_checkpoint: ../model_checkpoint.yaml
