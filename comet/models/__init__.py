@@ -22,11 +22,13 @@ from .base import CometModel
 from .ranking.ranking_metric import RankingMetric
 from .regression.referenceless import ReferencelessRegression
 from .regression.regression_metric import RegressionMetric
+from .multitask.unified_metric import UnifiedMetric
 
 str2model = {
     "referenceless_regression_metric": ReferencelessRegression,
     "regression_metric": RegressionMetric,
     "ranking_metric": RankingMetric,
+    "unified_metric": UnifiedMetric,
 }
 
 available_metrics = {
