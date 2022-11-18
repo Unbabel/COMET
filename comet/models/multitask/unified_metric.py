@@ -123,7 +123,7 @@ class UnifiedMetric(CometModel):
                 layer_transformation=layer_transformation,
                 num_layers=self.encoder.num_layers,
                 dropout=self.hparams.dropout,
-                layer_norm=False,
+                layer_norm=True,
             )
         else:
             self.layerwise_attention = None
@@ -527,12 +527,15 @@ class UnifiedMetric(CometModel):
 
         def decode_labels(logits, subword_mask):
             predicted_tags = logits.argmax(dim=2)
-            word_labels = []
+            probabilities = nn.functional.softmax(logits, dim=2)        
+            word_labels, word_probs = [], []
             for i in range(predicted_tags.shape[0]):
                 mask, tags = subword_mask[i, :], predicted_tags[i, :]
                 tag_sequence = torch.masked_select(tags, mask).tolist()
+                word_probs.append(probabilities[i, mask, :].tolist())
                 word_labels.append(self.label_encoder.decode(tag_sequence, join=False))
-            return word_labels
+                
+            return word_labels, word_probs
 
         if self.mc_dropout:
             raise NotImplementedError("MCD not implemented for this model!")
@@ -545,9 +548,11 @@ class UnifiedMetric(CometModel):
             )
             batch_prediction = Prediction(
                 score=avg_scores,
-                src_score=predictions[0].score,
-                ref_score=predictions[1].score,
-                unified_score=predictions[2].score,
+                metadata=Prediction(
+                    src_score=predictions[0].score,
+                    ref_score=predictions[1].score,
+                    unified_score=predictions[2].score,
+                )
             )
             if self.word_level_training:
                 # For world-level tagging we will have to convert logits into tag sequences.
@@ -556,13 +561,16 @@ class UnifiedMetric(CometModel):
                 subword_mask = batch[min_input]["subwords_mask"] == 1
                 logits = [o.logits[:, :min_len, :] for o in predictions]
                 logits = torch.mean(torch.stack(logits), dim=0)
-                batch_prediction["word_labels"] = decode_labels(logits, subword_mask)
-
+                word_labels, word_logits = decode_labels(logits, subword_mask)
+                batch_prediction.metadata["word_labels"] = word_labels
+                batch_prediction.metadata["word_probs"] = word_logits
         else:
             batch_prediction = self.forward(**batch[0])
             subword_mask = batch[0]["subwords_mask"] == 1
             batch_prediction = Prediction(
                 score=batch_prediction.score,
-                word_labels=decode_labels(batch_prediction.logits, subword_mask),
+                metadata=Prediction(
+                    word_labels=decode_labels(batch_prediction.logits, subword_mask)
+                ),
             )
         return batch_prediction

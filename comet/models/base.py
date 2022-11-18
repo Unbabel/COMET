@@ -133,7 +133,6 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self,
         sample: List[Dict[str, Union[str, float]]],
         stage: str = "fit",
-        # words: boolean = True,
         *args,
         **kwargs,
     ):
@@ -361,14 +360,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         :param dataloader_idx: Integer displaying which dataloader this is.
         """
         if self.mc_dropout:
-            mcd_outputs = torch.stack(
-                [self(**batch)["score"].view(-1) for _ in range(self.mc_dropout)]
-            )
+            mcd_outputs = torch.stack([self(**batch) for _ in range(self.mc_dropout)])
             mcd_mean = mcd_outputs.mean(dim=0)
             mcd_std = mcd_outputs.std(dim=0)
             return mcd_mean, mcd_std
 
-        return self(**batch)["score"].view(-1)
+        return self(**batch)
 
     def validation_epoch_end(self, *args, **kwargs) -> None:
         """Computes and logs metrics."""
@@ -491,18 +488,18 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 unsorted_list[i] = s
             return unsorted_list
 
-        def flatten_predictions(predictions):
-            predictions = Prediction(
-                **{k: [dic[k] for dic in predictions] for k in predictions[0]}
+        def flatten_metadata(metadata):
+            metadata = Prediction(
+                **{k: [dic[k] for dic in metadata] for k in metadata[0]}
             )
-            for k, v in predictions.items():
+            for k, v in metadata.items():
                 if torch.is_tensor(v[0]):
                     # If we have tensors we can use cat to flatten them.
-                    predictions[k] = torch.cat(v, dim=0).tolist()
+                    metadata[k] = torch.cat(v, dim=0).tolist()
                 else:
                     # for other predictions such as word tags we have to flatten the list.
-                    predictions[k] = [item for sublist in v for item in sublist]
-            return predictions
+                    metadata[k] = [item for sublist in v for item in sublist]
+            return metadata
 
         # HACK: Workaround pytorch bug that prevents ParameterList to be used in DP
         # https://github.com/pytorch/pytorch/issues/36035
@@ -578,11 +575,18 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         predictions = trainer.predict(
             self, dataloaders=dataloader, return_predictions=True
         )
-        predictions = flatten_predictions(predictions)
-        if length_batching and gpus < 2:
-            predictions = Prediction(
-                **{k: restore_list_order(v, sort_ids) for k, v in predictions.items()}
-            )
+        scores = torch.cat([pred.score for pred in predictions], dim=0).tolist()
+        if "metadata" in predictions[0]:
+            metadata = flatten_metadata([pred.metadata for pred in predictions])
+        else:
+            metadata = []
 
-        predictions["system_score"] = sum(predictions.score) / len(predictions.score)
-        return predictions
+        if length_batching and gpus < 2:
+            output = Prediction(scores=restore_list_order(scores, sort_ids))
+            if metadata:
+                output["metadata"] = Prediction(
+                    **{k: restore_list_order(v, sort_ids) for k, v in metadata.items()}
+                )
+
+        output["system_score"] = sum(output.scores) / len(output.scores)
+        return output
