@@ -28,40 +28,50 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
-    def output_units(self):
+    def output_units(self) -> int:
         """Max number of tokens the encoder handles."""
         pass
 
     @property
     @abc.abstractmethod
-    def max_positions(self):
+    def max_positions(self) -> int:
         """Max number of tokens the encoder handles."""
         pass
 
     @property
     @abc.abstractmethod
-    def num_layers(self):
+    def num_layers(self) -> int:
         """Number of model layers available."""
         pass
 
     @property
     @abc.abstractmethod
-    def size_separator(self):
-        """Number of tokens used between two segments. For BERT is just 1 ([SEP])
-        but models such as XLM-R use 2 (</s></s>)"""
+    def size_separator(self) -> int:
+        """Size of the seperator.
+        E.g: For BERT is just 1 ([SEP]) but models such as XLM-R use 2 (</s></s>).
+
+        Returns:
+            int: Number of tokens used between two segments.
+        """
         pass
 
     @property
     @abc.abstractmethod
-    def uses_token_type_ids(self):
+    def uses_token_type_ids(self) -> bool:
+        """Whether or not the model uses token type ids to differentiate sentences.
+
+        Returns:
+            bool: True for models that use token_type_ids such as BERT.
+        """
         pass
 
     @classmethod
     @abc.abstractmethod
-    def from_pretrained(cls, pretrained_model):
+    def from_pretrained(cls, pretrained_model: str):
         """Function that loads a pretrained encoder and the respective tokenizer.
 
-        :return: Encoder model
+        Returns:
+            Encoder: Pretrained model from Hugging Face.
         """
         raise NotImplementedError
 
@@ -82,27 +92,44 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def layerwise_lr(self, lr: float, decay: float):
-        """
-        :param lr: Learning rate for the highest encoder layer.
-        :param decay: decay percentage for the lower layers.
+        """Calculates the learning rate for each layer by applying a small decay.
 
-        :return: List of model parameters with layer-wise decay learning rate
+        Args:
+            lr (float): Learning rate for the highest encoder layer.
+            decay (float): decay percentage for the lower layers.
+
+        Returns:
+            list: List of model parameters for all layers and the corresponding lr.
         """
         pass
 
     @abc.abstractmethod
     def forward(
-        self, tokens: torch.Tensor, lengths: torch.Tensor
+        self, input_ids: torch.Tensor, attention_mask: torch.Tensor, **kwargs
     ) -> Dict[str, torch.Tensor]:
+        """Encoder model forward
+
+        Args:
+            input_ids (torch.Tensor): tokenized batch.
+            attention_mask (torch.Tensor): batch attention mask.
+
+        Returns:
+            Dict[str, torch.Tensor]: dictionary with 'sentemb', 'wordemb', 'all_layers'
+                and 'attention_mask'.
+        """
         pass
 
     @abc.abstractmethod
-    def subword_tokenize_to_ids(self, tokens) -> Dict[str, torch.Tensor]:
+    def subword_tokenize_to_ids(self, tokens: List[str]) -> Dict[str, torch.Tensor]:
         """Segment each token into subwords while keeping track of
-            token boundaries and convert subwords into IDs.
+        token boundaries and convert subwords into IDs.
 
-        :param tokens: A sequence of strings, representing input tokens.
-        :return: dict with 'input_ids', 'attention_mask', 'subword_mask'
+        Args:
+            tokens (List[str]): A sequence of strings, representing input tokens.
+
+        Returns:
+            Dict[str, torch.Tensor]: dict with 'input_ids', 'attention_mask',
+                'subword_mask'
         """
         pass
 
@@ -111,9 +138,14 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
     ) -> Dict[str, torch.Tensor]:
         """Receives a list of strings and applies tokenization and vectorization.
 
-        :param sample: List with text segments to be tokenized and padded.
+        Args:
+            sample (List[str]): List with text segments to be tokenized and padded.
+            word_level_training (bool, optional): True for subword tokenization.
+                Defaults to False.
 
-        :return: Dictionary with HF model inputs.
+        Returns:
+            Dict[str, torch.Tensor]: dict with 'input_ids', 'attention_mask' and
+                'subword_mask' if word_level_training=True
         """
         if word_level_training:
             tokenizer_output = self.subword_tokenize_to_ids(sample)
@@ -128,14 +160,18 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
             )
             return tokenizer_output
 
-    def pad_tensor(self, tensor, length, padding_index):
+    def pad_tensor(
+        self, tensor: torch.Tensor, length: torch.Tensor, padding_index: int
+    ) -> torch.Tensor:
         """Pad a tensor to length with padding_index.
 
-        :param tensor: Tensor to pad.
-        :param length: Sequence length after padding.
-        :param padding_index: Index to pad tensor with.
+        Args:
+            tensor (torch.Tensor): Tensor to pad.
+            length (torch.Tensor): Sequence length after padding.
+            padding_index (int): Index to pad tensor with.
 
-        :return: Padded Tensor.
+        Returns:
+            torch.Tensor: Input batch
         """
         n_padding = length - tensor.shape[0]
         assert n_padding >= 0

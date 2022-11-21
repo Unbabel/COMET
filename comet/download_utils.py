@@ -29,7 +29,12 @@ from comet.models import available_metrics
 logger = logging.getLogger(__name__)
 
 
-def get_cache_folder():
+def get_cache_folder() -> str:
+    """Cache folder path.
+
+    Returns:
+        str: cache folder path.
+    """
     cache_directory = Path.home() / ".cache" / "torch" / "unbabel_comet"
     if not cache_directory.exists():
         cache_directory.mkdir(exist_ok=True, parents=True)
@@ -129,20 +134,26 @@ def download_file_maybe_extract(
     filename: str = None,
     extension: str = None,
     check_files: List[str] = [],
-):
+) -> str:
     """Download the file at ``url`` to ``directory``.
         Extract to ``directory`` if tar or zip.
 
-    :param url: Url of file (str or Path).
-    :param directory: Directory to download to.
-    :param filename: Name of the file to download; Otherwise, a filename is extracted
-        from the url.
-    :param extension: Extension of the file; Otherwise, attempts to extract extension
-        from the filename.
-    :param check_files: Check if these files exist, ensuring the download
-        succeeded. If these files exist before the download, the download is skipped.
+    Args:
+        url (str): Url of file (str or Path).
+        directory (str): Directory to download to.
+        filename (str, optional): Name of the file to download; Otherwise, a filename
+            is extracted from the url. Defaults to None.
+        extension (str, optional): Extension of the file; Otherwise, attempts to
+            extract extension from the filename. Defaults to None.
+        check_files (List[str], optional): Check if these files exist, ensuring the
+            download succeeded. If these files exist before the download, the download
+            is skipped. Defaults to [].
 
-    :return: Filename of download file.
+    Raises:
+        ValueError: [DOWNLOAD FAILED] `*check_files` not found
+
+    Returns:
+        str: Filename of download file.
     """
     if filename is None:
         filename = _get_filename_from_url(url)
@@ -174,16 +185,26 @@ def download_file_maybe_extract(
 
 
 def download_model(model: str, saving_directory: str = None) -> str:
-    """
-    Function that loads pretrained models from AWS.
+    """Function that loads pretrained models from AWS.
 
-    :param model: Name of the model to be loaded.
-    :param saving_directory: RELATIVE path to the saving folder (must end with /).
+    :param model:
+    :param saving_directory:
 
     Return:
         - Path to model checkpoint.
-    """
 
+    Args:
+        model (str): Name of the model to be loaded.
+        saving_directory (str, optional): RELATIVE path to the saving folder (must end
+            with /). Defaults to None.
+
+    Raises:
+        Exception: if model name is not in the list of available metrics or if it is
+            not a checkpoint path.
+
+    Returns:
+        str: checkpoint path
+    """
     if saving_directory is None:
         saving_directory = get_cache_folder()
 
@@ -200,7 +221,7 @@ def download_model(model: str, saving_directory: str = None) -> str:
 
     elif model not in available_metrics.keys():
         raise Exception(
-            f"{model} is not in the `available_metrics` or is a valid checkpoint folder."
+            f"{model} is not in the `available_metrics` or is a valid checkpoint path."
         )
 
     elif available_metrics[model].startswith("https://"):
