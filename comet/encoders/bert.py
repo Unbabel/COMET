@@ -18,7 +18,7 @@ BERT Encoder
     Pretrained BERT encoder from Hugging Face.
 """
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 class BERTEncoder(Encoder):
     """BERT encoder.
 
-    :param pretrained_model: Pretrained model from hugging face.
+    Args:
+        pretrained_model (str): Pretrained model from hugging face.
     """
 
     def __init__(self, pretrained_model: str) -> None:
@@ -42,36 +43,45 @@ class BERTEncoder(Encoder):
         self.model.encoder.output_hidden_states = True
 
     @property
-    def output_units(self):
+    def output_units(self) -> int:
         """Max number of tokens the encoder handles."""
         return self.model.config.hidden_size
 
     @property
-    def max_positions(self):
+    def max_positions(self) -> int:
         """Max number of tokens the encoder handles."""
         return self.model.config.max_position_embeddings - 2
 
     @property
-    def num_layers(self):
+    def num_layers(self) -> int:
         """Number of model layers available."""
         return self.model.config.num_hidden_layers + 1
 
     @property
-    def size_separator(self):
-        """Number of tokens used between two segments. For BERT is just 1 ([SEP])
-        but models such as XLM-R use 2 (</s></s>)"""
+    def size_separator(self) -> int:
+        """Size of the seperator.
+        E.g: For BERT is just 1 ([SEP]) but models such as XLM-R use 2 (</s></s>).
+
+        Returns:
+            int: Number of tokens used between two segments.
+        """
         return 1
 
     @property
-    def uses_token_type_ids(self):
+    def uses_token_type_ids(self) -> bool:
+        """Whether or not the model uses token type ids to differentiate sentences.
+
+        Returns:
+            bool: True for models that use token_type_ids such as BERT.
+        """
         return True
 
     @classmethod
-    def from_pretrained(cls, pretrained_model: str) -> Encoder:
-        """Function that loads a pretrained encoder from Hugging Face.
-        :param pretrained_model: Name of the pretrain model to be loaded.
+    def from_pretrained(cls, pretrained_model: str):
+        """Function that loads a pretrained encoder and the respective tokenizer.
 
-        :return: Encoder model
+        Returns:
+            Encoder: Pretrained model from Hugging Face.
         """
         return BERTEncoder(pretrained_model)
 
@@ -81,11 +91,14 @@ class BERTEncoder(Encoder):
             param.requires_grad = False
 
     def layerwise_lr(self, lr: float, decay: float):
-        """
-        :param lr: Learning rate for the highest encoder layer.
-        :param decay: decay percentage for the lower layers.
+        """Calculates the learning rate for each layer by applying a small decay.
 
-        :return: List of model parameters with layer-wise decay learning rate
+        Args:
+            lr (float): Learning rate for the highest encoder layer.
+            decay (float): decay percentage for the lower layers.
+
+        Returns:
+            list: List of model parameters for all layers and the corresponding lr.
         """
         # Embedding Layer
         opt_parameters = [
@@ -111,6 +124,18 @@ class BERTEncoder(Encoder):
         token_type_ids: Optional[torch.tensor] = None,
         **kwargs
     ) -> Dict[str, torch.Tensor]:
+        """BERT model forward
+
+        Args:
+            input_ids (torch.Tensor): tokenized batch.
+            attention_mask (torch.Tensor): batch attention mask.
+            token_type_ids (Optional[torch.tensor]): batch attention mask. Defaults to
+                None
+
+        Returns:
+            Dict[str, torch.Tensor]: dictionary with 'sentemb', 'wordemb', 'all_layers'
+                and 'attention_mask'.
+        """
         last_hidden_states, pooler_output, all_layers = self.model(
             input_ids=input_ids,
             token_type_ids=token_type_ids,
@@ -145,24 +170,26 @@ class BERTEncoder(Encoder):
                     mask[i][j] = 1
         return mask
 
-    def subword_tokenize(self, tokens, pad=True):
+    def subword_tokenize(
+        self, tokens: List[str], pad: bool = True
+    ) -> Tuple[List[int], List[int], List[int]]:
         """
-        Parameters
-        ----------
-        tokens: A sequence of strings, representing input tokens.
-        Returns
-        -------
-        A tuple consisting of:
-            - A list of subwords, flanked by the special symbols required
-                by Bert (CLS and SEP).
-            - An array of indices into the list of subwords, indicating
-                that the corresponding subword is the start of a new
-                token. For example, [1, 3, 4, 7] means that the subwords
-                1, 3, 4, 7 are token starts, while all other subwords
-                (0, 2, 5, 6, 8...) are in or at the end of tokens.
-                This list allows selecting Bert hidden states that
-                represent tokens, which is necessary in sequence
-                labeling.
+        Args:
+            tokens (List[str]): A sequence of strings, representing input tokens.
+            pad (bool): Adds padding.
+
+        Returns:
+            A tuple consisting of:
+                - A list of subwords, flanked by the special symbols required
+                    by Bert (CLS and SEP).
+                - An array of indices into the list of subwords, indicating
+                    that the corresponding subword is the start of a new
+                    token. For example, [1, 3, 4, 7] means that the subwords
+                    1, 3, 4, 7 are token starts, while all other subwords
+                    (0, 2, 5, 6, 8...) are in or at the end of tokens.
+                    This list allows selecting Bert hidden states that
+                    represent tokens, which is necessary in sequence
+                    labeling.
         """
         subwords = list(map(self.tokenizer.tokenize, tokens))
         for i, subword in enumerate(subwords):
@@ -185,10 +212,14 @@ class BERTEncoder(Encoder):
 
     def subword_tokenize_to_ids(self, tokens) -> Dict[str, torch.Tensor]:
         """Segment each token into subwords while keeping track of
-            token boundaries and convert subwords into IDs.
+        token boundaries and convert subwords into IDs.
 
-        :param tokens: A sequence of strings, representing input tokens.
-        :return: dict with 'input_ids', 'attention_mask', 'subword_mask'
+        Args:
+            tokens (List[str]): A sequence of strings, representing input tokens.
+
+        Returns:
+            Dict[str, torch.Tensor]: dict with 'input_ids', 'attention_mask',
+                'subword_mask'
         """
         subwords, subword_masks, subword_lengths = self.subword_tokenize(tokens)
         subword_ids, mask = self.convert_tokens_to_ids(subwords, subword_lengths)
@@ -202,16 +233,16 @@ class BERTEncoder(Encoder):
     def concat_sequences(
         self, inputs: List[Dict[str, torch.Tensor]], word_outputs=False
     ) -> Dict[str, torch.Tensor]:
-        """ Receives a list of model input sentences and concatenates them into
+        """Receives a list of model input sentences and concatenates them into
         one single sequence.
 
         Args:
             inputs (List[Dict[str, torch.Tensor]]): List of model inputs
-            word_outputs (bool, optional): For word-level models we also need to 
+            word_outputs (bool, optional): For word-level models we also need to
                 concatenate subword masks. Defaults to False.
 
         Returns:
-            Dict[str, torch.Tensor]: Returns a single model input with all sentences 
+            Dict[str, torch.Tensor]: Returns a single model input with all sentences
                 concatenated into a single input.
         """
         concat_input_ids = []
@@ -247,7 +278,6 @@ class BERTEncoder(Encoder):
                 )
             if sum(lengths) > self.max_positions - special_tokens:
                 new_sequence = new_sequence[: self.max_positions]
-                # logger.warning("Sequence with {} tokens truncated at {} tokens".format(sum(lengths), self.max_positions))
 
             batch.append(torch.tensor(new_sequence))
 
