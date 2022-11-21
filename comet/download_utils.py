@@ -56,10 +56,10 @@ def _reporthook(t):
 
     def inner(b: int = 1, bsize: int = 1, tsize: int = None):
         """
-        :param b: Number of blocks just transferred [default: 1].
-        :param bsize: Size of each block (in tqdm units) [default: 1].
-        :param tsize: Total size (in tqdm units).
-            If [default: None] remains unchanged.
+        Args:
+            b (int, optional): Number of blocks just transferred. Defaults to 1.
+            bsize (int, optional): Size of each block (in tqdm units). Defaults to 1.
+            tsize (int, optional): Total size (in tqdm units). Defaults to None.
         """
         if tsize is not None:
             t.total = tsize
