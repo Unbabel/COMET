@@ -66,6 +66,8 @@ class RankingMetric(CometModel):
         pretrained_model: str = "xlm-roberta-base",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
+        layer_transformation: str = "softmax",
+        layer_norm: bool = True,
         dropout: float = 0.1,
         batch_size: int = 8,
         train_data: Optional[List[str]] = None,
@@ -82,6 +84,8 @@ class RankingMetric(CometModel):
             pretrained_model=pretrained_model,
             pool=pool,
             layer=layer,
+            layer_transformation=layer_transformation,
+            layer_norm=layer_norm,
             dropout=dropout,
             batch_size=batch_size,
             train_data=train_data,
@@ -300,24 +304,15 @@ class RankingMetric(CometModel):
                 ref_distance + src_distance
             )
             return Prediction(
-                scores=torch.ones_like(distances) / (1 + distances),
-                src_distance=src_distance,
-                ref_distance=ref_distance,
+                score=torch.ones_like(distances) / (1 + distances),
+                metadata=Prediction(
+                    src_distance=src_distance,
+                    ref_distance=ref_distance,
+                )
             )
 
         if self.mc_dropout:
-            outputs = [_predict_forward(batch) for _ in range(self.mc_dropout)]
-            mcd_output = {
-                k: torch.stack([dic[k] for dic in outputs]) for k in outputs[0]
-            }
-            output = Prediction()
-            for k, v in mcd_output.items():
-                output[f"{k}_mean"] = v.mean(dim=0)
-                output[f"{k}_std"] = v.std(dim=0)
-
-            output["std"] = mcd_output["scores"].std(dim=0)
-            output["mcd_scores"] = mcd_output["scores"].T
-            output["scores"] = mcd_output["scores"].mean(dim=0)
-            return output
+            raise NotImplementedError("MCD not implemented for this model!")
+    
         else:
             return _predict_forward(batch)

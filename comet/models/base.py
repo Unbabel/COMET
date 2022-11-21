@@ -78,6 +78,8 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         pretrained_model: str = "xlm-roberta-large",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
+        layer_transformation: str = "sparsemax",
+        layer_norm: bool = True,
         loss: str = "mse",
         dropout: float = 0.1,
         batch_size: int = 4,
@@ -94,9 +96,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.epoch_nr = 0
         if self.hparams.layer == "mix":
             self.layerwise_attention = LayerwiseAttention(
+                layer_transformation=layer_transformation,
                 num_layers=self.encoder.num_layers,
                 dropout=self.hparams.dropout,
-                layer_norm=True,
+                layer_norm=self.hparams.layer_norm,
             )
         else:
             self.layerwise_attention = None
@@ -239,8 +242,8 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         if self.layerwise_attention:
             # HACK: LayerNorm is applied at the MiniBatch. This means that for big batch sizes the variance
             # and norm within the batch will create small differences in the final score
-            # If we are predicting we split the data into equal size batches to minimize this variance.
-            if not self.training:
+            # If we are predicting we split the data into equal size batches to minimize variance.
+            if not self.training and self.layerwise_attention.layer_norm:
                 n_splits = len(torch.split(encoder_out["all_layers"][-1], 8))
                 embeddings = []
                 for split in range(n_splits):
@@ -406,7 +409,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             )
             # Always validate the model with part of training.
             train_subset = np.random.choice(
-                a=len(train_dataset), size=min(1000, len(train_dataset) * 0.2)
+                a=len(train_dataset), size=min(1000, int(len(train_dataset) * 0.2))
             )
             self.train_subset = Subset(train_dataset, train_subset)
 

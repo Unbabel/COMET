@@ -15,9 +15,10 @@
 
 r"""
 Unified Metric
-========================
-    Unified Metric is a multitask metric that performs word-level and segment-level evaluation
-    in a multitask manner. It can also be used with and without reference translations.
+==============
+    Unified Metric is a multitask metric that performs word-level and segment-level 
+    evaluation in a multitask manner. It can also be used with and without reference 
+    translations.
     
     Inspired on [UniTE](https://arxiv.org/pdf/2204.13346.pdf)
 """
@@ -37,31 +38,52 @@ from comet.modules import FeedForward, LayerwiseAttention
 
 
 class UnifiedMetric(CometModel):
-    """UnifiedMetric:
+    """UnifiedMetric is a multitask metric that performs word-level classification along
+    with sentence-level regression. This metric has the ability to work with and without
+    reference translations.
 
-    :param nr_frozen_epochs: Number of epochs (% of epoch) that the encoder is frozen.
-    :param keep_embeddings_frozen: Keeps the encoder frozen during training.
-    :param optimizer: Optimizer used during training.
-    :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.
-    :param learning_rate: Learning rate used to fine-tune the top layers.
-    :param layerwise_decay: Learning rate % decay from top-to-bottom encoder layers.
-    :param encoder_model: Encoder model to be used.
-    :param pretrained_model: Pretrained model from Hugging Face.
-    :param pool: Pooling strategy to derive a sentence embedding ['cls', 'max', 'avg'].
-    :param layer: Encoder layer to be used ('mix' for pooling info from all layers.)
-    :param dropout: Dropout used in the top-layers.
-    :param batch_size: Batch size used during training.
-    :param train_data: Path to a csv file containing the training data.
-    :param validation_data: Path to a csv file containing the validation data.
-    :param hidden_sizes: Hidden sizes for the Feed Forward regression.
-    :param activations: Feed Forward activation function.
-    :param final_activation: Feed Forward final activation.
-    :param input_segments: Input sequences used during training/inference.
-        ["mt", "src"] for QE, ["mt", "ref"] for reference-base evaluation and ["mt", "src", "ref"]
-        for full sequence evaluation.
-    :param unite_training: If set to true the model is trained with UniTE loss that combines QE
-        with Metrics.
-    :param load_weights_from_checkpoint: Path to a checkpoint file.
+    Args:
+        nr_frozen_epochs (Union[float, int]): Number of epochs (% of epoch) that the
+            encoder is frozen. Defaults to 0.9.
+        keep_embeddings_frozen (bool): Keeps the encoder frozen during training. Defaults
+            to True.
+        optimizer (str): Optimizer used during training. Defaults to 'AdamW'.
+        encoder_learning_rate (float): Learning rate used to fine-tune the encoder model.
+            Defaults to 3.0e-06.
+        learning_rate (float): Learning rate used to fine-tune the top layers. Defaults
+            to 3.0e-05.
+        layerwise_decay (float): Learning rate % decay from top-to-bottom encoder layers.
+            Defaults to 0.95.
+        encoder_model (str): Encoder model to be used. Defaults to 'XLM-RoBERTa'.
+        pretrained_model (str): Pretrained model from Hugging Face. Defaults to
+            'microsoft/infoxlm-large'.
+        sent_layer (Union[str, int]): Encoder layer to be used for regression task ('mix'
+            for pooling info from all layers). Defaults to 'mix'.
+        layer_transformation (str): Transformation applied when pooling info from all
+            layers (options: 'softmax', 'sparsemax'). Defaults to 'sparsemax'.
+        layer_norm (bool): Apply layer normalization. Defaults to 'False'.
+        word_layer (int): Encoder layer to be used for word-level classification. Defaults
+            to 24.
+        loss (str): Loss function to be used. Defaults to 'mse'.
+        dropout (float): Dropout used in the top-layers. Defaults to 0.1.
+        batch_size (int): Batch size used during training. Defaults to 4.
+        train_data (Optional[List[str]]): List of paths to training data. Each file is
+            loaded consecutively for each epoch. Defaults to None.
+        validation_data (Optional[List[str]]): List of paths to validation data.
+            Validation results are averaged across validation set. Defaults to None.
+        hidden_sizes (List[int]): Size of hidden layers used in the regression head.
+            Defaults to [3072, 1024].
+        activations (Optional[str]): Activation function used in the regression head.
+            Defaults to 'Tanh'.
+        final_activation (Optional[str]): Activation function used in the last layer of
+            the regression head. Defaults to None.
+        input_segments (Optional[List[str]]): List with input segment names to be used.
+            Defaults to ["mt", "src", "ref"].
+        word_level_training (bool): If True, the model is trained with multitask
+            objective. Defaults to False.
+        word_weights (List[float]): Loss weight for OK/BAD tags. Defaults to [0.15,
+            0.85].
+        loss_lambda (foat): Weight assigned to the word-level loss. Defaults to 0.65.
     """
 
     def __init__(
@@ -75,8 +97,9 @@ class UnifiedMetric(CometModel):
         encoder_model: str = "XLM-RoBERTa",
         pretrained_model: str = "microsoft/infoxlm-large",
         sent_layer: Union[str, int] = "mix",
-        word_layer: int = 24,
         layer_transformation: str = "sparsemax",
+        layer_norm: bool = True,
+        word_layer: int = 24,
         loss: str = "mse",
         dropout: float = 0.1,
         batch_size: int = 4,
@@ -85,10 +108,10 @@ class UnifiedMetric(CometModel):
         hidden_sizes: List[int] = [3072, 1024],
         activations: str = "Tanh",
         final_activation: Optional[str] = None,
-        input_segments: Optional[List[str]] = ["mt", "src", "ref"],
-        word_level_training: Optional[bool] = False,
+        input_segments: List[str] = ["mt", "src", "ref"],
+        word_level_training: bool = False,
         word_weights: List[float] = [0.15, 0.85],
-        loss_lambda: Optional[float] = 0.65,
+        loss_lambda: float = 0.65,
     ) -> None:
         super().__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -123,7 +146,7 @@ class UnifiedMetric(CometModel):
                 layer_transformation=layer_transformation,
                 num_layers=self.encoder.num_layers,
                 dropout=self.hparams.dropout,
-                layer_norm=True,
+                layer_norm=self.hparams.layer_norm,
             )
         else:
             self.layerwise_attention = None
@@ -135,6 +158,7 @@ class UnifiedMetric(CometModel):
         self.init_losses()
 
     def init_metrics(self):
+        """Initializes training and validation metrics"""
         # Train and Dev correlation metrics
         self.train_corr = RegressionMetrics(prefix="train")
         self.val_corr = nn.ModuleList(
@@ -147,6 +171,7 @@ class UnifiedMetric(CometModel):
         )
 
     def init_losses(self) -> None:
+        """Initializes Loss functions to be used."""
         self.sentloss = nn.MSELoss()
         if self.hparams.word_level_training:
             self.wordloss = nn.CrossEntropyLoss(
@@ -161,7 +186,13 @@ class UnifiedMetric(CometModel):
     def configure_optimizers(
         self,
     ) -> Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
-        """Sets the optimizers to be used during training."""
+        """Pytorch Lightning method to initialize a training Optimizer and learning
+        rate scheduler.
+
+        Returns:
+            Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
+                List with Optimizers and a List with lr_schedulers.
+        """
         layer_parameters = self.encoder.layerwise_lr(
             self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
         )
@@ -205,11 +236,13 @@ class UnifiedMetric(CometModel):
         return [optimizer], []
 
     def read_training_data(self, path: str) -> List[dict]:
-        """Reads a comma separated value file.
+        """Reads a csv file with training data.
 
-        :param path: path to a csv file.
+        Args:
+            path (str): Path to the csv file to be loaded.
 
-        :return: List of records as dictionaries
+        Returns:
+            List[dict]: Returns a list of training examples.
         """
         df = pd.read_csv(path)
         if self.word_level_training:
@@ -227,17 +260,30 @@ class UnifiedMetric(CometModel):
         return df.to_dict("records")
 
     def read_validation_data(self, path: str) -> List[dict]:
-        """Reads a comma separated value file for validation.
+        """Reads a csv file with validation data.
 
-        :param path: path to a csv file.
+        Args:
+            path (str): Path to the csv file to be loaded.
 
-        :return: List of records as dictionaries
+        Returns:
+            List[dict]: Returns a list of validation examples.
         """
         return self.read_training_data(path)
 
     def prepare_target(
         self, labels: List[List[int]], subword_masks: List[List[float]], max_len: int
-    ):
+    ) -> torch.Tensor:
+        """Prepares the target labels for word-level training.
+
+        Args:
+            labels (List[List[int]]): Encoded OK/BAD tags
+            subword_masks (List[List[float]]): Mask indicating the which tokens are
+                subword prefixes.
+            max_len (int): Longest sequence
+
+        Returns:
+            torch.Tensor: Word-level targets.
+        """
         expanded_labels = torch.sub(
             torch.zeros(subword_masks.size(0), max_len),
             torch.ones(subword_masks.size(0), max_len),
@@ -254,6 +300,16 @@ class UnifiedMetric(CometModel):
     def concat_inputs(
         self, input_sequences: Tuple[Dict[str, torch.Tensor]]
     ) -> Tuple[Dict[str, torch.Tensor]]:
+        """Prepares tokenized src, ref and mt for joint encoding by putting
+        everything into a single contiguous sequence.
+
+        Args:
+            input_sequences (Tuple[Dict[str, torch.Tensor]]): Tokenized Source, MT and
+                Reference.
+
+        Returns:
+            Tuple[Dict[str, torch.Tensor]]: Contiguous sequence.
+        """
         model_inputs = OrderedDict()
         # If we are using source and reference we will have to create 3 different input
         if len(input_sequences) == 3:
@@ -286,7 +342,8 @@ class UnifiedMetric(CometModel):
             model_inputs["min_len"] = min_len
             return model_inputs
 
-        # Otherwise we will have one single input sequence that concatenates the MT with SRC/REF.
+        # Otherwise we will have one single input sequence that concatenates the MT
+        # with SRC/REF.
         else:
             model_inputs["inputs"] = (
                 self.encoder.concat_sequences(input_sequences, word_outputs=True)[0],
@@ -295,15 +352,16 @@ class UnifiedMetric(CometModel):
 
     def prepare_sample(
         self, sample: List[Dict[str, Union[str, float]]], stage: str = "train"
-    ) -> Union[
-        Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]], Dict[str, torch.Tensor]
-    ]:
-        """
-        Function that prepares a sample to input the model.
-        :param sample: list of dictionaries.
-        :param stage: either 'fit', 'validate', 'test', or 'predict'
-        :returns: Tuple with 2 dictionaries (model inputs and targets).
-            If `inference=True` returns only the model inputs.
+    ) -> Union[Tuple[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]:
+        """Tokenizes input data and prepares targets for training.
+
+        Args:
+            sample (List[Dict[str, Union[str, float]]]): Mini-batch
+            stage (str, optional): Model stage ('train' or 'predict'). Defaults to "train".
+
+        Returns:
+            Union[Tuple[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]: Model input
+                and targets.
         """
         sample = {k: [dic[k] for dic in sample] for k in sample[0]}
         input_sequences = [
@@ -339,6 +397,22 @@ class UnifiedMetric(CometModel):
         token_type_ids: Optional[torch.tensor] = None,
         **kwargs
     ) -> Dict[str, torch.Tensor]:
+        """Forward function.
+
+        Args:
+            input_ids (torch.tensor): Input sequence.
+            attention_mask (torch.tensor): Attention mask.
+            token_type_ids (Optional[torch.tensor], optional): Token type ids for
+                BERT-like models. Defaults to None.
+
+        Raises:
+            Exception: Invalid model word/sent layer if self.{word/sent}_layer are not
+                valid encoder model layers .
+
+        Returns:
+            Dict[str, torch.Tensor]: Sentence scores and word-level logits (if
+                word_level_training = True)
+        """
         encoder_out = self.encoder(
             input_ids, attention_mask, token_type_ids=token_type_ids
         )
@@ -378,6 +452,16 @@ class UnifiedMetric(CometModel):
         return Prediction(score=self.estimator(sentemb).view(-1))
 
     def compute_loss(self, prediction: Prediction, target: Target) -> torch.Tensor:
+        """Receives model batch prediction and respective targets and computes
+        a loss value
+
+        Args:
+            prediction (Prediction): Batch prediction
+            target (Target): Batch targets
+
+        Returns:
+            torch.Tensor: Loss value
+        """
         sentence_loss = self.sentloss(prediction.score, target.score)
         if self.word_level_training:
             sentence_loss = self.sentloss(prediction.score, target.score)
@@ -390,17 +474,17 @@ class UnifiedMetric(CometModel):
         return sentence_loss
 
     def training_step(
-        self,
-        batch: Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]],
-        batch_nb: int,
+        self, batch: Tuple[Dict[str, torch.Tensor]], batch_nb: int
     ) -> torch.Tensor:
-        """
-        Runs one training step and logs the training loss.
+        """Pytorch Lightning training_step.
 
-        :param batch: The output of your prepare_sample function.
-        :param batch_nb: Integer displaying which batch this is.
+        Args:
+            batch (Tuple[Dict[str, torch.Tensor]]): The output of your prepare_sample
+                function.
+            batch_nb (int): Integer displaying which batch this is.
 
-        :returns: Loss value
+        Returns:
+            torch.Tensor: Loss value
         """
         batch_input, batch_target = batch
         if len(batch_input) == 3:
@@ -433,17 +517,15 @@ class UnifiedMetric(CometModel):
         return loss_value
 
     def validation_step(
-        self,
-        batch: Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]],
-        batch_nb: int,
-        dataloader_idx: int,
+        self, batch: Tuple[Dict[str, torch.Tensor]], batch_nb: int, dataloader_idx: int
     ) -> None:
-        """
-        Runs one validation step and logs metrics.
+        """Pytorch Lightning validation_step.
 
-        :param batch: The output of your prepare_sample function.
-        :param batch_nb: Integer displaying which batch this is.
-        :param dataloader_idx: Integer displaying which dataloader this is.
+        Args:
+            batch (Tuple[Dict[str, torch.Tensor]]): The output of your prepare_sample
+                function.
+            batch_nb (int): Integer displaying which batch this is.
+            dataloader_idx (int): Integer displaying which dataloader this is.
         """
         batch_input, batch_target = batch
         if len(batch_input) == 3:
@@ -516,25 +598,30 @@ class UnifiedMetric(CometModel):
         batch: Dict[str, torch.Tensor],
         batch_idx: Optional[int] = None,
         dataloader_idx: Optional[int] = None,
-    ) -> torch.Tensor:
-        """
-        Runs one prediction step and returns the predicted values.
+    ) -> Prediction:
+        """Pytorch Lightning predict_step
 
-        :param batch: The output of your prepare_sample function.
-        :param batch_nb: Integer displaying which batch this is.
-        :param dataloader_idx: Integer displaying which dataloader this is.
+        Args:
+            batch (Dict[str, torch.Tensor]): The output of your prepare_sample function
+            batch_idx (Optional[int], optional): Integer displaying which batch this is
+                Defaults to None.
+            dataloader_idx (Optional[int], optional): Integer displaying which
+                dataloader this is. Defaults to None.
+
+        Returns:
+            Prediction: Model Prediction
         """
 
         def decode_labels(logits, subword_mask):
             predicted_tags = logits.argmax(dim=2)
-            probabilities = nn.functional.softmax(logits, dim=2)        
+            probabilities = nn.functional.softmax(logits, dim=2)
             word_labels, word_probs = [], []
             for i in range(predicted_tags.shape[0]):
                 mask, tags = subword_mask[i, :], predicted_tags[i, :]
                 tag_sequence = torch.masked_select(tags, mask).tolist()
                 word_probs.append(probabilities[i, mask, :].tolist())
                 word_labels.append(self.label_encoder.decode(tag_sequence, join=False))
-                
+
             return word_labels, word_probs
 
         if self.mc_dropout:
@@ -552,7 +639,7 @@ class UnifiedMetric(CometModel):
                     src_score=predictions[0].score,
                     ref_score=predictions[1].score,
                     unified_score=predictions[2].score,
-                )
+                ),
             )
             if self.word_level_training:
                 # For world-level tagging we will have to convert logits into tag sequences.
