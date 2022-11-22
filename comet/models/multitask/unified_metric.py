@@ -246,18 +246,19 @@ class UnifiedMetric(CometModel):
             List[dict]: Returns a list of training examples.
         """
         df = pd.read_csv(path)
+        # Deep copy input segments
+        columns = self.input_segments[:]
+        # Add word level labels if word_level
         if self.word_level:
-            df = df[self.input_segments + ["score"] + ["labels"]]
-        else:
-            df = df[self.input_segments + ["score"]]
-
-        for segment in self.input_segments:
-            df[segment] = df[segment].astype(str)
-
-        if self.word_level:
-            df["labels"] = df["labels"].astype(str)
+            columns.append("labels")
+        # Make sure everything except score is str type
+        for col in columns:
+            df[col] = df[col].astype(str)
+        
+        columns.append("score")
 
         df["score"] = df["score"].astype("float16")
+        df = df[columns]
         return df.to_dict("records")
 
     def read_validation_data(self, path: str) -> List[dict]:
@@ -269,7 +270,22 @@ class UnifiedMetric(CometModel):
         Returns:
             List[dict]: Returns a list of validation examples.
         """
-        return self.read_training_data(path)
+        df = pd.read_csv(path)
+        # Deep copy input segments
+        columns = self.input_segments[:]
+        # Add word level labels if word_level
+        if self.word_level:
+            columns.append("labels")
+        # If system in columns we will use this to calculate system-level accuracy
+        if "system" in df.columns:
+            columns.append("system")
+        # Make sure everything except score is str type
+        for col in columns:
+            df[col] = df[col].astype(str)
+        columns.append("score")
+        df["score"] = df["score"].astype("float16")
+        df = df[columns]
+        return df.to_dict("records")
 
     def prepare_target(
         self, labels: List[List[int]], subword_masks: List[List[float]], max_len: int
@@ -567,7 +583,9 @@ class UnifiedMetric(CometModel):
 
         elif dataloader_idx > 0:
             self.val_corr[dataloader_idx - 1].update(
-                batch_prediction.score, batch_target.score
+                batch_prediction.score, 
+                batch_target.score,
+                batch_target["system"] if "system" in batch_target else None,
             )
             if self.word_level:
                 self.val_mcc[dataloader_idx - 1].update(logits, targets)
