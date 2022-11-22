@@ -138,8 +138,6 @@ class UnifiedMetric(CometModel):
             dropout=self.hparams.dropout,
             final_activation=self.hparams.final_activation,
         )
-        # CZ-TODO: remove hardcoding of num_classes for wordlevel
-        self.hidden2tag = nn.Linear(self.encoder.output_units, 2)
 
         if self.hparams.sent_layer == "mix":
             self.layerwise_attention = LayerwiseAttention(
@@ -154,6 +152,7 @@ class UnifiedMetric(CometModel):
         self.input_segments = input_segments
         self.word_level = word_level_training
         if word_level_training:
+            self.hidden2tag = nn.Linear(self.encoder.output_units, 2)
             self.label_encoder = LabelEncoder(reserved_labels=["OK", "BAD"])
         self.init_losses()
 
@@ -194,35 +193,24 @@ class UnifiedMetric(CometModel):
             Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
                 List with Optimizers and a List with lr_schedulers.
         """
-        layer_parameters = self.encoder.layerwise_lr(
+        params = self.encoder.layerwise_lr(
             self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
         )
-        top_layers_parameters = [
+        params += [
             {"params": self.estimator.parameters(), "lr": self.hparams.learning_rate}
         ]
+        if self.word_level:
+            params += [
+                {"params": self.hidden2tag.parameters(), "lr": self.hparams.learning_rate},
+            ]
 
-        word_level_parameters = [
-            {"params": self.hidden2tag.parameters(), "lr": self.hparams.learning_rate},
-        ]
-
-        layerwise_attn_params = []
         if self.layerwise_attention:
-            layerwise_attn_params.append(
+            params += [
                 {
                     "params": self.layerwise_attention.parameters(),
                     "lr": self.hparams.learning_rate,
                 }
-            )
-
-        if self.layerwise_attention:
-            params = (
-                layer_parameters
-                + top_layers_parameters
-                + word_level_parameters
-                + layerwise_attn_params
-            )
-        else:
-            params = layer_parameters + top_layers_parameters + word_level_parameters
+            ]
 
         if self.hparams.optimizer == "Adafactor":
             optimizer = Adafactor(
