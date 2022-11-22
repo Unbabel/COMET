@@ -74,13 +74,11 @@ class RegressionMetrics(Metric):
     def __init__(
         self,
         prefix: str = "",
-        compute_on_step: bool = False,
         dist_sync_on_step: bool = False,
         process_group: Optional[Any] = None,
         dist_sync_fn: Optional[Callable] = None,
     ) -> None:
         super().__init__(
-            compute_on_step=compute_on_step,
             dist_sync_on_step=dist_sync_on_step,
             process_group=process_group,
             dist_sync_fn=dist_sync_fn,
@@ -133,13 +131,11 @@ class WMTKendall(Metric):
     def __init__(
         self,
         prefix: str = "",
-        compute_on_step: bool = False,
         dist_sync_on_step: bool = False,
         process_group: Optional[Any] = None,
         dist_sync_fn: Optional[Callable] = None,
     ) -> None:
         super().__init__(
-            compute_on_step=compute_on_step,
             dist_sync_on_step=dist_sync_on_step,
             process_group=process_group,
             dist_sync_fn=dist_sync_fn,
