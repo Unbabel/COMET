@@ -17,36 +17,45 @@ os.environ["OMP_NUM_THREADS"] = "1"
 
 
 class TestReferencelessRegression(unittest.TestCase):
+    """Testing if we can overfit a small dataset using ReferencelessRegression class."""
+
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(os.path.join(DATA_PATH, "checkpoints"))
 
     def test_training(self):
         seed_everything(12)
-        warnings.filterwarnings(
-            "ignore",
-            #category=PossibleUserWarning,
-            message="GPU available but not used.*",
-        )
         trainer = Trainer(
-            accelerator="cpu",
+            devices="auto",
+            accelerator="auto",
             max_epochs=10,
             deterministic=True,
             enable_checkpointing=True,
             default_root_dir=DATA_PATH,
             logger=False,
-            enable_progress_bar=False,
+            enable_progress_bar=True,
         )
         model = ReferencelessRegression(
+            nr_frozen_epochs=1,
+            keep_embeddings_frozen=False,
+            optimizer="AdamW",
+            encoder_learning_rate=1e-04,
+            learning_rate=1e-04,
+            layerwise_decay=0.95,
             encoder_model="BERT",
             pretrained_model="google/bert_uncased_L-2_H-128_A-2",
-            train_data=os.path.join(DATA_PATH, "test_regression_data.csv"),
-            validation_data=os.path.join(DATA_PATH, "test_regression_data.csv"),
-            hidden_sizes=[256],
-            layerwise_decay=0.95,
+            pool="avg",
+            layer="mix",
+            layer_transformation="sparsemax",
+            layer_norm=True,
+            loss="mse",
+            dropout=0.1,
             batch_size=32,
-            learning_rate=1e-04,
-            encoder_learning_rate=1e-04,
+            train_data=[os.path.join(DATA_PATH, "regression_data.csv")],
+            validation_data=[os.path.join(DATA_PATH, "regression_data.csv")],
+            hidden_sizes=[384],
+            activations="Tanh",
+            final_activation=None,
         )
         warnings.filterwarnings(
             "ignore",
@@ -56,31 +65,25 @@ class TestReferencelessRegression(unittest.TestCase):
         trainer.fit(model)
         self.assertTrue(
             os.path.exists(
-                os.path.join(DATA_PATH, "checkpoints", "epoch=9-step=160.ckpt")
+                os.path.join(DATA_PATH, "checkpoints", "epoch=9-step=130.ckpt")
             )
         )
 
         saved_model = ReferencelessRegression.load_from_checkpoint(
-            os.path.join(DATA_PATH, "checkpoints", "epoch=9-step=160.ckpt")
+            os.path.join(DATA_PATH, "checkpoints", "epoch=9-step=130.ckpt")
         )
-        dataset = saved_model.read_csv(
-            os.path.join(DATA_PATH, "test_regression_data.csv")
+        dataset = saved_model.read_validation_data(
+            os.path.join(DATA_PATH, "regression_data.csv")
         )
         y = [s["score"] for s in dataset]
         dataloader = DataLoader(
             dataset=dataset,
             batch_size=256,
-            collate_fn=lambda x: saved_model.prepare_sample(x, inference=True),
+            collate_fn=lambda x: saved_model.prepare_sample(x, stage="predict"),
             num_workers=2,
         )
-        y_hat = (
-            torch.cat(
-                trainer.predict(
-                    ckpt_path="best", dataloaders=dataloader, return_predictions=True
-                ),
-                dim=0,
-            )
-            .cpu()
-            .tolist()
+        predictions = trainer.predict(
+            ckpt_path="best", dataloaders=dataloader, return_predictions=True
         )
-        assert pearsonr(y_hat, y)[0] > 0.77
+        y_hat = torch.cat([p.score for p in predictions], dim=0).tolist()
+        assert pearsonr(y_hat, y)[0] > 0.85

@@ -11,6 +11,8 @@ from pytorch_lightning import seed_everything
 
 
 class TestFeedForward(unittest.TestCase):
+    """Testing if our FeedForward module is able to overfit on MNIST."""
+
     def test_MNIST(self):
         seed_everything(3)
         """
