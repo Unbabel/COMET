@@ -1,7 +1,7 @@
 class_path: pytorch_lightning.trainer.trainer.Trainer
 init_args:
   accelerator: gpu
-  devices: null
+  devices: auto
   accumulate_grad_batches: 4
   amp_backend: native
   amp_level: null
@@ -30,7 +30,6 @@ init_args:
   min_steps: null
   max_time: null
   num_nodes: 1
-  num_processes: 1
   num_sanity_val_steps: 10
   reload_dataloaders_every_n_epochs: 0
   replace_sampler_ddp: True
