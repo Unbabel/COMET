@@ -463,7 +463,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         gpus: int = 1,
         mc_dropout: int = 0,
         progress_bar: bool = True,
-        accelerator: str = "ddp",
+        accelerator: str = "auto",
         num_workers: int = None,
         length_batching: bool = True,
     ) -> Union[Tuple[List[float], float], Tuple[List[float], List[float], float]]:
@@ -537,7 +537,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             collate_fn=self.prepare_for_inference,
             num_workers=num_workers,
         )
-        accelerator = accelerator if gpus > 1 else None
+        if gpus == 0:
+            accelerator = "cpu"
+        elif gpus == 1:
+            accelerator = "cpu"
+        else:
+            accelerator = accelerator
 
         warnings.filterwarnings(
             "ignore",
@@ -546,7 +551,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         )
         if progress_bar:
             trainer = ptl.Trainer(
-                gpus=gpus,
+                devices=gpus if accelerator != "cpu" else "auto",
                 deterministic=True,
                 logger=False,
                 callbacks=[PredictProgressBar()],
@@ -555,12 +560,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             )
         else:
             trainer = ptl.Trainer(
-                gpus=gpus,
+                devices=gpus if accelerator != "cpu" else "auto",
                 deterministic=True,
                 logger=False,
                 progress_bar_refresh_rate=0,
                 accelerator=accelerator,
-                max_epochs=-1,
             )
 
         # TODO:
@@ -585,11 +589,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             metadata = []
 
         if length_batching and gpus < 2:
-            output = Prediction(scores=restore_list_order(scores, sort_ids))
+            scores = restore_list_order(scores, sort_ids)
+            output = Prediction(scores=scores, system_score=sum(scores) / len(scores))
             if metadata:
                 output["metadata"] = Prediction(
                     **{k: restore_list_order(v, sort_ids) for k, v in metadata.items()}
                 )
-
-        output["system_score"] = sum(output.scores) / len(output.scores)
-        return output
+            return output
+        else:
+            return Prediction(scores=scores, system_score=sum(scores) / len(scores))
