@@ -14,7 +14,7 @@
 from .bert import BERTEncoder
 from .minilm import MiniLMEncoder
 from .xlmr import XLMREncoder
-
+from .rembert import RemBERTEncoder
 from .xlmr_xl import XLMRobertaXLModel
 
 str2encoder = {
@@ -22,4 +22,5 @@ str2encoder = {
     "XLM-RoBERTa": XLMREncoder,
     "MiniLM": MiniLMEncoder,
     "XLM-RoBERTa-XL": XLMRobertaXLModel,
+    "RemBERT": RemBERTEncoder,
 }

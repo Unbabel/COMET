@@ -15,7 +15,7 @@ class TestBERTEncoder(unittest.TestCase):
         self.assertEqual(self.bert.output_units, 128)
 
     def test_max_positions(self):
-        self.assertEqual(self.bert.max_positions, 512)
+        self.assertEqual(self.bert.max_positions, 510)
 
     def test_prepare_sample(self):
         sample = ["hello world, welcome to COMET!", "This is a batch"]
@@ -31,3 +31,71 @@ class TestBERTEncoder(unittest.TestCase):
         self.assertIn("sentemb", model_output)
         self.assertIn("all_layers", model_output)
         self.assertIn("attention_mask", model_output)
+
+    def test_exception_for_bpe_encoders(self):
+        with self.assertRaises(NotImplementedError) as cm:
+            sample = ["hello world, welcome to COMET!", "This is a batch"]
+            self.bert.prepare_sample(sample, word_level_training=True)
+        
+        self.assertEqual(str(cm.exception), "Only SentencePiese models support subword_tokenize_to_ids.")
+
+    def test_concat_sequences(self):
+        """Basic testcase to check if we can joint two sequences into a contiguous input"""
+        source = ["Bem vindos ao COMET", "Isto é um exemplo!"]
+        translations = ["Welcome to COMET!", "This is an example!"]
+        source_input = self.bert.prepare_sample(source)
+        translations_input = self.bert.prepare_sample(translations)
+
+        expected_tokens = [
+            [
+                101,
+                2022,
+                2213,
+                19354,
+                12269,
+                20118,
+                15699,
+                102,
+                6160,
+                2000,
+                15699,
+                999,
+                102,
+                0,
+                0,
+                0,
+                0,
+            ],
+            [
+                101,
+                21541,
+                2080,
+                1041,
+                8529,
+                4654,
+                6633,
+                24759,
+                2080,
+                999,
+                102,
+                2023,
+                2003,
+                2019,
+                2742,
+                999,
+                102,
+            ],
+        ]
+        token_types = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+        ]
+        seq_size = [13, 17]
+        continuous_input = self.bert.concat_sequences(
+            [source_input, translations_input]
+        )
+        self.assertListEqual(continuous_input[0]["input_ids"].tolist(), expected_tokens)
+        self.assertListEqual(
+            continuous_input[0]["token_type_ids"].tolist(), token_types
+        )
+        self.assertListEqual(continuous_input[1].tolist(), seq_size)

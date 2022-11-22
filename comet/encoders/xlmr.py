@@ -17,12 +17,14 @@ XLM-RoBERTa Encoder
 ==============
     Pretrained XLM-RoBERTa  encoder from Hugging Face.
 """
-from typing import Dict
+from typing import Dict, List, Tuple
 
+import numpy as np
 import torch
+from transformers import XLMRobertaModel, XLMRobertaTokenizer
+
 from comet.encoders.base import Encoder
 from comet.encoders.bert import BERTEncoder
-from transformers import XLMRobertaModel, XLMRobertaTokenizer
 
 
 class XLMREncoder(BERTEncoder):
@@ -73,3 +75,92 @@ class XLMREncoder(BERTEncoder):
             "all_layers": all_layers,
             "attention_mask": attention_mask,
         }
+
+    def is_word_piece(self, subword: str) -> bool:
+        """Whether or not a string is a word piece
+
+        Returns:
+            bool: True for wordpieces (▁cos).
+        """
+        return not subword.startswith("▁")
+
+    def convert_tokens_to_ids(self, tokens, seg_lengths, pad=True):
+        token_ids = list(map(self.tokenizer.convert_tokens_to_ids, tokens))
+        ids = torch.tensor(token_ids)
+        assert ids.size(1) <= self.max_positions
+        if pad:
+            attention_mask = torch.zeros(ids.size()).to(ids)
+            for i, l in enumerate(seg_lengths):
+                attention_mask[i, :l] = 1
+            return ids, attention_mask
+        else:
+            return ids
+
+    def mask_start_tokens(self, subwords, seq_len, pad=True):
+        def special_tokens():
+            return [
+                self.tokenizer.bos_token,
+                self.tokenizer.eos_token,
+                self.tokenizer.sep_token,
+                self.tokenizer.pad_token,
+            ]
+
+        mask = torch.zeros(len(subwords), np.max(seq_len))
+        for i, sent in enumerate(subwords):
+            for j, subword in enumerate(sent):
+                if self.is_word_piece(subword) or subword in special_tokens():
+                    continue
+                else:
+                    mask[i][j] = 1
+
+        return mask
+
+    def subword_tokenize(
+        self, sentences: List[str], pad: bool = True
+    ) -> Tuple[List[int], List[int], List[int]]:
+        """
+        Args:
+            sentences (List[str]): A list of sentences.
+            pad (bool): Adds padding.
+
+        Returns:
+
+        """
+        subwords = list(map(self.tokenizer.tokenize, sentences))
+        for i, subword in enumerate(subwords):
+            # Truncate Long sentences!
+            if len(subword) > self.max_positions:
+                subword = subword[: self.max_positions - 2]
+            subword = [self.tokenizer.bos_token] + subword + [self.tokenizer.eos_token]
+            assert len(subword) <= self.max_positions
+            subwords[i] = subword
+
+        subword_lengths = list(map(len, subwords))
+        max_len = np.max(subword_lengths)
+        if pad:
+            for i, subword in enumerate(subwords):
+                for _ in range(max_len - len(subword)):
+                    subword.append(self.tokenizer.pad_token)
+                subwords[i] = subword
+        subword_mask = self.mask_start_tokens(subwords, subword_lengths)
+        return subwords, subword_mask, subword_lengths
+
+    def subword_tokenize_to_ids(self, tokens) -> Dict[str, torch.Tensor]:
+        """Segment each token into subwords while keeping track of
+        token boundaries and convert subwords into IDs.
+
+        Args:
+            tokens (List[str]): A sequence of strings, representing input tokens.
+
+        Returns:
+            Dict[str, torch.Tensor]: dict with 'input_ids', 'attention_mask',
+                'subword_mask'
+        """
+        subwords, subword_masks, subword_lengths = self.subword_tokenize(tokens)
+        subword_ids, mask = self.convert_tokens_to_ids(subwords, subword_lengths)
+        input_dict = {
+            "input_ids": subword_ids,
+            "attention_mask": mask,
+            "subword_mask": subword_masks,
+        }
+        return input_dict

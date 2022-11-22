@@ -179,3 +179,87 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
             return tensor
         padding = tensor.new(n_padding, *tensor.shape[1:]).fill_(padding_index)
         return torch.cat((tensor, padding), dim=0)
+
+    def concat_sequences(
+        self, inputs: List[Dict[str, torch.Tensor]], word_outputs=False
+    ) -> Dict[str, torch.Tensor]:
+        """Receives a list of model input sentences and concatenates them into
+        one single sequence.
+
+        Args:
+            inputs (List[Dict[str, torch.Tensor]]): List of model inputs
+            word_outputs (bool, optional): For word-level models we also need to
+                concatenate subword masks. Defaults to False.
+
+        Returns:
+            Dict[str, torch.Tensor]: Returns a single model input with all sentences
+                concatenated into a single input.
+        """
+        concat_input_ids = []
+        # Remove padding before concatenation
+        for encoder_input in inputs:
+            input_ids = encoder_input["input_ids"]
+            input_ids = [
+                x.masked_select(x.ne(self.tokenizer.pad_token_id)).tolist()
+                for x in input_ids.unbind(dim=0)
+            ]
+            concat_input_ids.append(input_ids)
+
+        # Concatenate inputs into a single batch
+        batch_size = len(concat_input_ids[0])
+        batch = []
+        token_type_ids = []
+        for i in range(batch_size):
+            # Exclude [CLS] and [SEP] before build_inputs_with_special_tokens
+            # because that method adds them again
+            lengths = tuple(len(x[i][1:-1]) for x in concat_input_ids)
+
+            # self.max_positions = 512 but we need to remove 4 aditional tokens
+            # [CLS]...[SEP]...[SEP]...[SEP]
+            special_tokens = 1 + len(inputs) * self.size_separator
+            new_sequence = concat_input_ids[0][i]
+
+            token_type_ids.append(
+                torch.zeros(len(new_sequence[1:-1]) + 2, dtype=torch.int)
+            )
+            for j in range(1, len(inputs)):
+                new_sequence = self.tokenizer.build_inputs_with_special_tokens(
+                    new_sequence[1:-1], concat_input_ids[j][i][1:-1]
+                )
+            if sum(lengths) > self.max_positions - special_tokens:
+                new_sequence = new_sequence[: self.max_positions]
+
+            batch.append(torch.tensor(new_sequence))
+
+        lengths = [t.shape[0] for t in batch]
+        max_len = max(lengths)
+        padded = [
+            self.pad_tensor(t, max_len, self.tokenizer.pad_token_id) for t in batch
+        ]
+        lengths = torch.tensor(lengths, dtype=torch.long)
+        padded = torch.stack(padded, dim=0).contiguous()
+        attention_mask = torch.arange(max_len)[None, :] < lengths[:, None]
+
+        if word_outputs:
+            subword_mask = []
+            for padseg, pmask in zip(padded, inputs[0]["subword_mask"]):
+                sub_mask = torch.zeros(padseg.size())
+                sub_mask[: pmask.size(-1)] = pmask
+                subword_mask.append(sub_mask.unsqueeze(0))
+            subword_mask = torch.cat(subword_mask, dim=0)
+
+            encoder_input = {
+                "input_ids": padded,
+                "attention_mask": attention_mask,
+                "subwords_mask": subword_mask,
+            }
+
+        else:
+            encoder_input = {"input_ids": padded, "attention_mask": attention_mask}
+
+        if self.uses_token_type_ids:
+            token_type_ids = [self.pad_tensor(t, max_len, 1) for t in token_type_ids]
+            token_type_ids = torch.stack(token_type_ids, dim=0).contiguous()
+            encoder_input["token_type_ids"] = token_type_ids
+
+        return encoder_input, lengths, max_len

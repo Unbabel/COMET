@@ -13,29 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-XLM-RoBERTa-XL Encoder
-==============
-    Pretrained XLM-RoBERTa-XL  encoder from Hugging Face.
+RemBERT Encoder
+===============
+    Pretrained RemBERT encoder from Google. This encoder is similar to BERT but uses 
+    sentencepiece like XLMR.
 """
-from transformers import XLMRobertaTokenizer, XLMRobertaXLModel
+from transformers import RemBertModel, RemBertTokenizer
 
-from comet.encoders.base import Encoder
-from comet.encoders.xlmr import XLMREncoder
+from comet.encoders.xlmr import Encoder, XLMREncoder
 
 
-class XLMRXLEncoder(XLMREncoder):
-    """XLM-RoBERTA-XL Encoder encoder.
+class RemBERTEncoder(XLMREncoder):
+    """RemBERT encoder.
 
     :param pretrained_model: Pretrained model from hugging face.
     """
 
     def __init__(self, pretrained_model: str) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = XLMRobertaTokenizer.from_pretrained(pretrained_model)
-        self.model = XLMRobertaXLModel.from_pretrained(
-            pretrained_model, add_pooling_layer=False
+        self.tokenizer = RemBertTokenizer.from_pretrained(
+            pretrained_model, use_fast=True
         )
+        self.model = RemBertModel.from_pretrained(pretrained_model)
         self.model.encoder.output_hidden_states = True
+
+    @property
+    def size_separator(self):
+        """Number of tokens used between two segments. For BERT is just 1 ([SEP])"""
+        return 1
+
+    @property
+    def uses_token_type_ids(self):
+        return True
 
     @classmethod
     def from_pretrained(cls, pretrained_model: str) -> Encoder:
@@ -44,4 +53,4 @@ class XLMRXLEncoder(XLMREncoder):
 
         :return: Encoder model
         """
-        return XLMRXLEncoder(pretrained_model)
+        return RemBERTEncoder(pretrained_model)
