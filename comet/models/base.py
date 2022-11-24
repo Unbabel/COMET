@@ -240,24 +240,9 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             input_ids, attention_mask, token_type_ids=token_type_ids
         )
         if self.layerwise_attention:
-            # HACK: LayerNorm is applied at the MiniBatch. This means that for big batch sizes the variance
-            # and norm within the batch will create small differences in the final score
-            # If we are predicting we split the data into equal size batches to minimize variance.
-            if not self.training and self.layerwise_attention.layer_norm:
-                n_splits = len(torch.split(encoder_out["all_layers"][-1], 8))
-                embeddings = []
-                for split in range(n_splits):
-                    all_layers = []
-                    for layer in range(len(encoder_out["all_layers"])):
-                        layer_embs = torch.split(encoder_out["all_layers"][layer], 8)
-                        all_layers.append(layer_embs[split])
-                    split_attn = torch.split(attention_mask, 8)[split]
-                    embeddings.append(self.layerwise_attention(all_layers, split_attn))
-                embeddings = torch.cat(embeddings, dim=0)
-            else:
-                embeddings = self.layerwise_attention(
-                    encoder_out["all_layers"], attention_mask
-                )
+            embeddings = self.layerwise_attention(
+                encoder_out["all_layers"], attention_mask
+            )
 
         elif self.hparams.layer >= 0 and self.hparams.layer < self.encoder.num_layers:
             embeddings = encoder_out["all_layers"][self.hparams.layer]
@@ -540,7 +525,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         if gpus == 0:
             accelerator = "cpu"
         elif gpus == 1:
-            accelerator = "cpu"
+            accelerator = "gpu"
         else:
             accelerator = accelerator
 

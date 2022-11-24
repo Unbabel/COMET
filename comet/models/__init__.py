@@ -46,6 +46,9 @@ available_metrics = {
     # EAMT22 Models
     "eamt22-cometinho-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-cometinho-da.tar.gz",
     "eamt22-prune-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-prune-comet-da.tar.gz",
+    # WMT22 Models
+    "wmt22-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt22/wmt22-comet-da.tar.gz",
+    "wmt22-cometkiwi-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt22/wmt22-cometkiwi-da.tar.gz",
 }
 
 
@@ -64,9 +67,11 @@ def load_from_checkpoint(checkpoint_path: str) -> CometModel:
     # If the checkpoint starts with the root folder then we have an absolute path
     # and we need to add root before joining the folders
     if checkpoint_path.startswith(os.sep):
-        hparams_file = [os.path.abspath(os.sep), ] + hparams_file
+        hparams_file = [
+            os.path.abspath(os.sep),
+        ] + hparams_file
     hparams_file = os.path.join(*hparams_file)
-    
+
     if os.path.exists(hparams_file):
         with open(hparams_file) as yaml_file:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)

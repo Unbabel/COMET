@@ -26,7 +26,7 @@ import pandas as pd
 import scipy.stats as stats
 import torch
 from torch import Tensor
-from torchmetrics import Metric, MatthewsCorrCoef
+from torchmetrics import MatthewsCorrCoef, Metric
 
 
 def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> float:

@@ -66,7 +66,7 @@ class RegressionMetric(CometModel):
         pretrained_model: str = "xlm-roberta-large",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
-        layer_transformation: str = "sparsemax",
+        layer_transformation: str = "softmax",
         layer_norm: bool = True,
         loss: str = "mse",
         dropout: float = 0.1,

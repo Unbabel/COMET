@@ -24,7 +24,7 @@ pip install unbabel-comet
 ```
 or
 ```bash
-pip install unbabel-comet==1.1.2 --use-feature=2020-resolver
+pip install unbabel-comet==1.1.3 --use-feature=2020-resolver
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) (`pip install poetry`) and run the following commands:
@@ -79,7 +79,7 @@ comet-score -s src.de -t hyp1.en -r ref.en --quiet
 You can select another model/metric with the --model flag and for reference-free (QE-as-a-metric) models you don't need to pass a reference.
 
 ```bash
-comet-score -s src.de -t hyp1.en --model wmt21-comet-qe-mqm
+comet-score -s src.de -t hyp1.en --model wmt22-cometkiwi-da
 ```
 
 Following the work on [Uncertainty-Aware MT Evaluation](https://aclanthology.org/2021.findings-emnlp.330/) you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric is less confident in that prediction.
@@ -129,7 +129,7 @@ by default the COMET cache size is 1024.
 ```python
 from comet import download_model, load_from_checkpoint
 
-model_path = download_model("wmt20-comet-da")
+model_path = download_model("wmt22-comet-da")
 model = load_from_checkpoint(model_path)
 data = [
     {
@@ -158,17 +158,11 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 
 We recommend the two following models to evaluate your translations:
 
-- `wmt20-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-da-estimator-1719` from previous versions.
-- `wmt21-comet-qe-mqm`: **Reference-FREE** Regression model build on top of XLM-R (large), trained on Direct Assessments and fine-tuned on MQM.
+- `wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT20.
+- `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 + MLQE-PE Data.
 - `eamt22-cometinho-da`: **Lightweight** Reference-based Regression model that was distilled from an ensemble of COMET models similar to `wmt20-comet-da`.
 
-The default model was developed to [participate in the WMT20 Metrics shared task](https://aclanthology.org/2020.wmt-1.101/) [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf) and were among the best metrics that year. Also, in a large-scale study performed by Microsoft Research this metrics ranked 1st in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf). 
-
-Our recommended QE system was [developed for the WMT21 Metrics shared task](https://aclanthology.org/2021.wmt-1.111/) and was the best performing _QE as a Metric_ that year [(Freitag et al. 2021)](https://aclanthology.org/2021.wmt-1.73/).
-
-**Note:** The range of scores between different models can be totally different. To better understand COMET scores please [take a look at our FAQs](https://unbabel.github.io/COMET/html/faqs.html)
-
-For more information about the available COMET models read our metrics descriptions [here](https://unbabel.github.io/COMET/html/models.html)
+The default models are new! Older versions (`<1.1.2`) used another default model and scores are not comparable! The new model is better in terms of correlations with human judgments and returns scores between 0 and 1 for better interpretability.
 
 ## Train your own Metric: 
 
@@ -195,6 +189,8 @@ coverage report -m
 
 ## Publications
 If you use COMET please cite our work! Also, don't forget to say which model you used to evaluate your systems.
+
+- [CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task -- Winning submission](https://arxiv.org/pdf/2209.06243.pdf)
 
 - [Searching for Cometinho: The Little Metric That Could -- EAMT22 Best paper award](https://aclanthology.org/2022.eamt-1.9/)
 
