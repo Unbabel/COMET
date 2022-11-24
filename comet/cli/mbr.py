@@ -143,7 +143,7 @@ def mbr_command() -> None:
         "--model",
         type=str,
         required=False,
-        default="wmt20-comet-da",
+        default="wmt22-comet-da",
         help="COMET model to be used.",
     )
     parser.add_argument(
