@@ -9,8 +9,7 @@
 </p>
 
 >  Whats new?
-> 1) Bump some requirements in order to be easier to use COMET on Windows and Apple M1.   
-> 2) [CometKiwi](https://arxiv.org/abs/2209.06243) was the winning submission for the QE shared task 2022  🥳!. Code will be released soon!
+> 1) 3 new models from WMT22 QE/Metrics shared tasks: `wmt22-comet-da`, `wmt22-cometkiwi-da`, `wmt22-seqtag-mqm`
 
 ## Quick Installation
 
@@ -24,7 +23,7 @@ pip install unbabel-comet
 ```
 or
 ```bash
-pip install unbabel-comet==1.1.3 --use-feature=2020-resolver
+pip install unbabel-comet==1.1.4 --use-feature=2020-resolver
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) (`pip install poetry`) and run the following commands:
@@ -34,7 +33,9 @@ cd COMET
 poetry install
 ```
 
-Alternately, for development, you can run the CLI tools directly, e.g.,
+if poetry fails because of entmax try to install entmax first and then run poetry install.
+
+For development, you can run the CLI tools directly, e.g.,
 
 ```bash
 PYTHONPATH=. ./comet/cli/score.py
@@ -70,22 +71,14 @@ WMT test sets via [SacreBLEU](https://github.com/mjpost/sacrebleu):
 comet-score -d wmt20:en-de -t PATH/TO/TRANSLATIONS
 ```
 
-The default setting of `comet-score` prints the score for each segment individually. If you are only interested in the score for the whole dataset (computed as the average of the segment scores), you can use the `--quiet` flag.
+The default setting of `comet-score` prints the score for each segment individually. If you are only interested in a system-level score, you can use the `--quiet` flag.
 
 ```bash
 comet-score -s src.de -t hyp1.en -r ref.en --quiet
 ```
 
-You can select another model/metric with the --model flag and for reference-free (QE-as-a-metric) models you don't need to pass a reference.
-
 ```bash
 comet-score -s src.de -t hyp1.en --model wmt22-cometkiwi-da
-```
-
-Following the work on [Uncertainty-Aware MT Evaluation](https://aclanthology.org/2021.findings-emnlp.330/) you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric is less confident in that prediction.
-
-```bash
-comet-score -s src.de -t hyp1.en -r ref.en --mc_dropout 30
 ```
 
 When comparing multiple MT systems we encourage you to run the `comet-compare` command to get **statistical significance** with Paired T-Test and bootstrap resampling [(Koehn, et al 2004)](https://aclanthology.org/W04-3250/).
@@ -94,14 +87,15 @@ When comparing multiple MT systems we encourage you to run the `comet-compare` c
 comet-compare -s src.de -t hyp1.en hyp2.en hyp3.en -r ref.en
 ```
 
-**New: Minimum Bayes Risk Decoding:**
+## Minimum Bayes Risk Decoding:
 
-Inspired by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) work, we have developed a command to perform Minimum Bayes Risk decoding. This command receives a text file with source sentences and a text file containing all the MT samples and writes to an output file the best sample according to COMET.
+The MBR command allows you to rank MT hypotheses and select the best one according to COMET. For more details you can read our paper on [Quality-Aware Decoding for Neural Machine Translation](https://aclanthology.org/2022.naacl-main.100.pdf).
+
+Our implementation is inspired by [Amrhein et al, 2022](https://aclanthology.org/2022.aacl-main.83.pdf) where sentences are cached during inference to avoid quadratic computations while creating the sentence embeddings.
 
 ```bash
 comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt --num_sample [X] -o [OUTPUT_FILE].txt
 ```
-
 
 #### Multi-GPU Inference:
 
@@ -114,15 +108,6 @@ comet-score -s src.de -t hyp1.en -r ref.en --gpus 2 --quiet
 ```
 
 **Warning:** Segment-level scores using multigpu will be out of order. This is only useful for system scoring.
-
-#### Changing Embedding Cache Size:
-You can change the cache size of COMET using the following env variable:
-
-```bash
-export COMET_EMBEDDINGS_CACHE="2048"
-```
-by default the COMET cache size is 1024.
-
 
 ### Scoring within Python:
 
@@ -162,7 +147,9 @@ We recommend the two following models to evaluate your translations:
 - `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 + MLQE-PE Data.
 - `eamt22-cometinho-da`: **Lightweight** Reference-based Regression model that was distilled from an ensemble of COMET models similar to `wmt20-comet-da`.
 
-The default models are new! Older versions (`<1.1.2`) used another default model and scores are not comparable! The new model is better in terms of correlations with human judgments and returns scores between 0 and 1 for better interpretability.
+**The default models are new! Older versions (`<1.1.3`) used another default model and scores are not comparable!**
+
+The new models are better in terms of correlations with human judgments and output scores between 0 and 1 for better interpretability.
 
 ## Train your own Metric: 
 
@@ -186,11 +173,14 @@ In order to run the toolkit tests you must run the following command:
 coverage run --source=comet -m unittest discover
 coverage report -m
 ```
+**Note:** Testing on CPU takes a long time
 
 ## Publications
-If you use COMET please cite our work! Also, don't forget to say which model you used to evaluate your systems.
+If you use COMET please cite our work and don't forget to say which model you used to evaluate your systems.
 
 - [CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task -- Winning submission](https://arxiv.org/pdf/2209.06243.pdf)
+
+- [COMET-22: Unbabel-IST 2022 Submission for the Metrics Shared Task](https://www.statmt.org/wmt22/pdf/2022.wmt-1.52.pdf)
 
 - [Searching for Cometinho: The Little Metric That Could -- EAMT22 Best paper award](https://aclanthology.org/2022.eamt-1.9/)
 
@@ -203,6 +193,3 @@ If you use COMET please cite our work! Also, don't forget to say which model you
 - [Unbabel's Participation in the WMT20 Metrics Shared Task](https://aclanthology.org/2020.wmt-1.101/)
 
 - [COMET: A Neural Framework for MT Evaluation](https://www.aclweb.org/anthology/2020.emnlp-main.213)
-
-
-

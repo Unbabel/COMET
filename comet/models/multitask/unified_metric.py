@@ -33,7 +33,7 @@ from transformers.optimization import Adafactor
 
 from comet.models.base import CometModel
 from comet.models.metrics import MCCMetric, RegressionMetrics
-from comet.models.utils import LabelEncoder, Prediction, Target
+from comet.models.utils import Prediction, Target
 from comet.modules import FeedForward, LayerwiseAttention
 
 
@@ -152,8 +152,8 @@ class UnifiedMetric(CometModel):
         self.input_segments = input_segments
         self.word_level = word_level_training
         if word_level_training:
+            self.encoder.add_span_tokens("<v>", "</v>")
             self.hidden2tag = nn.Linear(self.encoder.output_units, 2)
-            self.label_encoder = LabelEncoder(reserved_labels=["OK", "BAD"])
         self.init_losses()
 
     def init_metrics(self):
@@ -167,7 +167,10 @@ class UnifiedMetric(CometModel):
             # Train and Dev MCC
             self.train_mcc = MCCMetric(num_classes=2, prefix="train")
             self.val_mcc = nn.ModuleList(
-                [MCCMetric(num_classes=2, prefix=d) for d in self.hparams.validation_data]
+                [
+                    MCCMetric(num_classes=2, prefix=d)
+                    for d in self.hparams.validation_data
+                ]
             )
 
     def init_losses(self) -> None:
@@ -180,8 +183,17 @@ class UnifiedMetric(CometModel):
                 ignore_index=-1,
             )
 
-    def is_referenceless(self) -> bool:
-        return True
+    def requires_references(self) -> bool:
+        """ Unified models can be developed to exclusively use [mt, ref] or to use both
+        [mt, src, ref]. Models developed to use the source will work in a quality
+        estimation scenario but models trained with [mt, ref] won't!
+        
+        Return:
+            [bool]: True if the model was trained to work exclusively with references. 
+        """
+        if self.input_segments == ["mt", "ref"]:
+            return True
+        return False
 
     def configure_optimizers(
         self,
@@ -201,7 +213,10 @@ class UnifiedMetric(CometModel):
         ]
         if self.word_level:
             params += [
-                {"params": self.hidden2tag.parameters(), "lr": self.hparams.learning_rate},
+                {
+                    "params": self.hidden2tag.parameters(),
+                    "lr": self.hparams.learning_rate,
+                },
             ]
 
         if self.layerwise_attention:
@@ -236,15 +251,10 @@ class UnifiedMetric(CometModel):
         df = pd.read_csv(path)
         # Deep copy input segments
         columns = self.input_segments[:]
-        # Add word level labels if word_level
-        if self.word_level:
-            columns.append("labels")
         # Make sure everything except score is str type
         for col in columns:
             df[col] = df[col].astype(str)
-        
         columns.append("score")
-
         df["score"] = df["score"].astype("float16")
         df = df[columns]
         return df.to_dict("records")
@@ -261,9 +271,6 @@ class UnifiedMetric(CometModel):
         df = pd.read_csv(path)
         # Deep copy input segments
         columns = self.input_segments[:]
-        # Add word level labels if word_level
-        if self.word_level:
-            columns.append("labels")
         # If system in columns we will use this to calculate system-level accuracy
         if "system" in df.columns:
             columns.append("system")
@@ -274,34 +281,6 @@ class UnifiedMetric(CometModel):
         df["score"] = df["score"].astype("float16")
         df = df[columns]
         return df.to_dict("records")
-
-    def prepare_target(
-        self, labels: List[List[int]], subword_masks: List[List[float]], max_len: int
-    ) -> torch.Tensor:
-        """Prepares the target labels for word-level training.
-
-        Args:
-            labels (List[List[int]]): Encoded OK/BAD tags
-            subword_masks (List[List[float]]): Mask indicating the which tokens are
-                subword prefixes.
-            max_len (int): Longest sequence
-
-        Returns:
-            torch.Tensor: Word-level targets.
-        """
-        expanded_labels = torch.sub(
-            torch.zeros(subword_masks.size(0), max_len),
-            torch.ones(subword_masks.size(0), max_len),
-            alpha=1,
-        )
-        for i in range(len(subword_masks)):
-            cnt = 0
-            for k in range(max_len):
-                if subword_masks[i][k] == 1:
-                    expanded_labels[i][k] = labels[i][cnt]
-                    cnt += 1
-                    
-        return expanded_labels
 
     def concat_inputs(
         self, input_sequences: Tuple[Dict[str, torch.Tensor]]
@@ -319,41 +298,30 @@ class UnifiedMetric(CometModel):
         model_inputs = OrderedDict()
         # If we are using source and reference we will have to create 3 different input
         if len(input_sequences) == 3:
-            mt_src, mt_ref = input_sequences[:1], [
+            mt_src, mt_ref = input_sequences[:2], [
                 input_sequences[0],
                 input_sequences[2],
             ]
-            src_input, _, src_max_len = self.encoder.concat_sequences(
-                mt_src, word_outputs=self.word_level
+            src_input, _, _ = self.encoder.concat_sequences(
+                mt_src, return_in_span_mask=self.word_level
             )
-            ref_input, _, ref_max_len = self.encoder.concat_sequences(
-                mt_ref, word_outputs=self.word_level
+            ref_input, _, _ = self.encoder.concat_sequences(
+                mt_ref, return_in_span_mask=self.word_level
             )
-            full_input, _, full_max_len = self.encoder.concat_sequences(
-                input_sequences, word_outputs=self.word_level
+            full_input, _, _ = self.encoder.concat_sequences(
+                input_sequences, return_in_span_mask=self.word_level
             )
-            mt_length = input_sequences[0]["attention_mask"].sum(dim=1)
-            
-            src_input["mt_length"] = mt_length
-            ref_input["mt_length"] = mt_length
-            full_input["mt_length"] = mt_length
             model_inputs["inputs"] = (src_input, ref_input, full_input)
-            
-            if self.word_level:
-                shorter_input = np.argmin([src_max_len, ref_max_len, full_max_len])
-                min_len = min(src_max_len, ref_max_len, full_max_len)
-                model_inputs["subwords_mask"] = model_inputs["inputs"][shorter_input][
-                    "subwords_mask"
-                ]
-                model_inputs["min_len"] = min_len
-            
+            model_inputs["mt_length"] = input_sequences[0]["attention_mask"].sum(dim=1)
             return model_inputs
 
         # Otherwise we will have one single input sequence that concatenates the MT
         # with SRC/REF.
         else:
             model_inputs["inputs"] = (
-                self.encoder.concat_sequences(input_sequences, word_outputs=self.word_level)[0],
+                self.encoder.concat_sequences(
+                    input_sequences, return_in_span_mask=self.word_level
+                )[0],
             )
         return model_inputs
 
@@ -376,39 +344,46 @@ class UnifiedMetric(CometModel):
         ]
 
         if ("src" in sample) and ("src" in self.hparams.input_segments):
-            input_sequences.append(self.encoder.prepare_sample(sample["src"], self.word_level))
+            input_sequences.append(
+                self.encoder.prepare_sample(sample["src"], self.word_level)
+            )
 
         if ("ref" in sample) and ("ref" in self.hparams.input_segments):
-            input_sequences.append(self.encoder.prepare_sample(sample["ref"], self.word_level))
-        
+            input_sequences.append(
+                self.encoder.prepare_sample(sample["ref"], self.word_level)
+            )
+
         model_inputs = self.concat_inputs(input_sequences)
         if stage == "predict":
             return model_inputs["inputs"]
 
         targets = Target(score=torch.tensor(sample["score"], dtype=torch.float))
+        if "system" in sample:
+            targets["system"] = sample["system"]
+
         if self.word_level:
-            #  Word Labels will be exactly the same accross all inputs!
-            #  We will choose the smallest segment
-            targets["labels"] = self.prepare_target(
-                self.label_encoder.batch_encode(sample["labels"], split=True),
-                model_inputs["subwords_mask"],
-                model_inputs["min_len"],
-            )
+            # Labels will be the same accross all inputs because we are only
+            # doing sequence tagging on the MT. We will only use the mask corresponding
+            # to the MT segment.
+            seq_len = model_inputs["mt_length"].max()
+            targets["mt_length"] = model_inputs["mt_length"]
+            targets["labels"] = model_inputs["inputs"][0]["in_span_mask"][:, :seq_len]
+
         return model_inputs["inputs"], targets
 
     def forward(
         self,
-        input_ids: torch.tensor,
-        attention_mask: torch.tensor,
-        token_type_ids: Optional[torch.tensor] = None,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        token_type_ids: Optional[torch.Tensor] = None,
         **kwargs
     ) -> Dict[str, torch.Tensor]:
         """Forward function.
 
         Args:
-            input_ids (torch.tensor): Input sequence.
-            attention_mask (torch.tensor): Attention mask.
-            token_type_ids (Optional[torch.tensor], optional): Token type ids for
+            input_ids (torch.Tensor): Input sequence.
+            attention_mask (torch.Tensor): Attention mask.
+            token_type_ids (Optional[torch.Tensor], optional): Token type ids for
                 BERT-like models. Defaults to None.
 
         Raises:
@@ -502,12 +477,11 @@ class UnifiedMetric(CometModel):
             predictions = [self.forward(**input_seq) for input_seq in batch_input]
             loss_value = 0
             for pred in predictions:
-                # We created the target according to the shortest segment.
-                # We have to remove padding for all predictions
+                # We created the target according to the MT.
                 if self.word_level:
-                    seq_len = batch_target.labels.shape[1]
+                    seq_len = batch_target.mt_length.max()
                     pred.logits = pred.logits[:, :seq_len, :]
-                
+
                 loss_value += self.compute_loss(pred, batch_target)
 
         else:
@@ -546,13 +520,14 @@ class UnifiedMetric(CometModel):
             batch_prediction = Prediction(score=scores)
 
             if self.word_level:
-                seq_len = batch_target.labels.shape[1]
+                seq_len = batch_target.mt_length.max()
                 # Final Logits for each word is the average of the 3 scores!
                 batch_prediction["logits"] = (
                     predictions[0].logits[:, :seq_len, :]
                     + predictions[1].logits[:, :seq_len, :]
                     + predictions[2].logits[:, :seq_len, :]
                 ) / 3
+
         else:
             batch_prediction = self.forward(**batch_input[0])
 
@@ -571,7 +546,7 @@ class UnifiedMetric(CometModel):
 
         elif dataloader_idx > 0:
             self.val_corr[dataloader_idx - 1].update(
-                batch_prediction.score, 
+                batch_prediction.score,
                 batch_target.score,
                 batch_target["system"] if "system" in batch_target else None,
             )
@@ -618,7 +593,7 @@ class UnifiedMetric(CometModel):
         batch_idx: Optional[int] = None,
         dataloader_idx: Optional[int] = None,
     ) -> Prediction:
-        """Pytorch Lightning predict_step
+        """PyTorch Lightning predict_step
 
         Args:
             batch (Dict[str, torch.Tensor]): The output of your prepare_sample function
@@ -631,17 +606,19 @@ class UnifiedMetric(CometModel):
             Prediction: Model Prediction
         """
 
-        def decode_labels(logits, subword_mask):
-            predicted_tags = logits.argmax(dim=2)
-            probabilities = nn.functional.softmax(logits, dim=2)
-            word_labels, word_probs = [], []
-            for i in range(predicted_tags.shape[0]):
-                mask, tags = subword_mask[i, :], predicted_tags[i, :]
-                tag_sequence = torch.masked_select(tags, mask).tolist()
-                word_probs.append(probabilities[i, mask, :].tolist())
-                word_labels.append(self.label_encoder.decode(tag_sequence, join=False))
-
-            return word_labels, word_probs
+        def decode(subword_probs, input_ids, mt_length):
+            decoded_output = []
+            for i in range(mt_length.shape[0]):
+                tokens = self.encoder.tokenizer.convert_ids_to_tokens(
+                    input_ids[i][: mt_length[i]]
+                )
+                token_probs = subword_probs[i][: mt_length[i]]
+                # remove BOS and EOS
+                tokens, token_probs = tokens[1:-1], token_probs[1:-1]
+                decoded_output.append(
+                    [(token, prob.item()) for token, prob in zip(tokens, token_probs)]
+                )
+            return decoded_output
 
         if self.mc_dropout:
             raise NotImplementedError("MCD not implemented for this model!")
@@ -653,31 +630,39 @@ class UnifiedMetric(CometModel):
                 dim=0
             )
             batch_prediction = Prediction(
-                score=avg_scores,
+                scores=avg_scores,
                 metadata=Prediction(
-                    src_score=predictions[0].score,
-                    ref_score=predictions[1].score,
-                    unified_score=predictions[2].score,
+                    src_scores=predictions[0].score,
+                    ref_scores=predictions[1].score,
+                    unified_scores=predictions[2].score,
                 ),
             )
             if self.word_level:
-                # For world-level tagging we will have to convert logits into tag sequences.
-                min_len = min([o.logits.shape[1] for o in predictions])
-                min_input = np.argmin([o.logits.shape[1] for o in predictions])
-                subword_mask = batch[min_input]["subwords_mask"] == 1
-                logits = [o.logits[:, :min_len, :] for o in predictions]
-                logits = torch.mean(torch.stack(logits), dim=0)
-                word_labels, word_logits = decode_labels(logits, subword_mask)
-                batch_prediction.metadata["word_labels"] = word_labels
-                batch_prediction.metadata["word_probs"] = word_logits
+                mt_mask = batch[0]["in_span_mask"] != -1
+                mt_length = mt_mask.sum(dim=1)
+                seq_len = mt_length.max()
+                subword_probs = [
+                    nn.functional.softmax(o.logits, dim=2)[:, :seq_len, :]
+                    for o in predictions
+                ]
+                subword_probs = torch.mean(torch.stack(subword_probs), dim=0)[:, :, 1]
+                subword_scores = decode(subword_probs, batch[0]["input_ids"], mt_length)
+                batch_prediction.metadata["subword_scores"] = subword_scores
+
         else:
-            batch_prediction = self.forward(**batch[0])
+            model_output = self.forward(**batch[0])
+            batch_prediction = Prediction(scores=model_output.score)
             if self.word_level:
-                subword_mask = batch[0]["subwords_mask"] == 1
+                mt_mask = batch[0]["in_span_mask"] != -1
+                mt_length = mt_mask.sum(dim=1)
+                seq_len = mt_length.max()
+                subword_probs = nn.functional.softmax(model_output.logits, dim=2)[
+                    :, :seq_len, :
+                ][:, :, 1]
+                subword_scores = decode(subword_probs, batch[0]["input_ids"], mt_length)
+
                 batch_prediction = Prediction(
-                    score=batch_prediction.score,
-                    metadata=Prediction(
-                        word_labels=decode_labels(batch_prediction.logits, subword_mask)
-                    ),
+                    scores=model_output.score,
+                    metadata=Prediction(subword_scores=subword_scores),
                 )
         return batch_prediction

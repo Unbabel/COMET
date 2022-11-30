@@ -34,12 +34,19 @@ import warnings
 
 from jsonargparse import ActionConfigFile, ArgumentParser, namespace_to_dict
 from pytorch_lightning import seed_everything
-from pytorch_lightning.callbacks import (EarlyStopping, LearningRateMonitor,
-                                         ModelCheckpoint)
+from pytorch_lightning.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+)
 from pytorch_lightning.trainer.trainer import Trainer
 
-from comet.models import (RankingMetric, ReferencelessRegression,
-                          RegressionMetric, UnifiedMetric)
+from comet.models import (
+    RankingMetric,
+    ReferencelessRegression,
+    RegressionMetric,
+    UnifiedMetric,
+)
 
 logger = logging.getLogger(__name__)
 

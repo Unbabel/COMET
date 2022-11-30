@@ -45,10 +45,11 @@ class LayerwiseAttention(torch.nn.Module):
         self.num_layers = num_layers
         self.layer_norm = layer_norm
         self.dropout = dropout
-        
+
         self.transform_fn = torch.softmax
         if layer_transformation == "sparsemax":
             from entmax import sparsemax
+
             self.transform_fn = sparsemax
 
         if layer_weights is None:

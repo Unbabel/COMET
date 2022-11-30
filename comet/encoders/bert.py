@@ -17,7 +17,7 @@ BERT Encoder
 ==============
     Pretrained BERT encoder from Hugging Face.
 """
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import torch
 from transformers import AutoModel, AutoTokenizer
@@ -145,18 +145,3 @@ class BERTEncoder(Encoder):
             "all_layers": all_layers,
             "attention_mask": attention_mask,
         }
-
-    def subword_tokenize_to_ids(self, tokens: List[str]) -> Dict[str, torch.Tensor]:
-        """Segment each token into subwords while keeping track of
-        token boundaries and convert subwords into IDs.
-
-        Args:
-            tokens (List[str]): A sequence of strings, representing input tokens.
-
-        Returns:
-            Dict[str, torch.Tensor]: dict with 'input_ids', 'attention_mask',
-                'subword_mask'
-        """
-        raise NotImplementedError(
-            "Only SentencePiese models support subword_tokenize_to_ids."
-        )

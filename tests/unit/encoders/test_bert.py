@@ -32,20 +32,15 @@ class TestBERTEncoder(unittest.TestCase):
         self.assertIn("all_layers", model_output)
         self.assertIn("attention_mask", model_output)
 
-    def test_exception_for_bpe_encoders(self):
-        with self.assertRaises(NotImplementedError) as cm:
-            sample = ["hello world, welcome to COMET!", "This is a batch"]
-            self.bert.prepare_sample(sample, word_level_training=True)
-        
-        self.assertEqual(str(cm.exception), "Only SentencePiese models support subword_tokenize_to_ids.")
-
     def test_concat_sequences(self):
         """Basic testcase to check if we can joint two sequences into a contiguous input"""
-        source = ["Bem vindos ao COMET", "Isto é um exemplo!"]
-        translations = ["Welcome to COMET!", "This is an example!"]
+        translations = ["Bem vindos ao <v>COMET</v>", "Isto é um exemplo!"]
+        source = ["Welcome to COMET!", "This is an example!"]
+        self.bert.add_span_tokens("<v>", "</v>")
+        translations_input = self.bert.prepare_sample(
+            translations, word_level_training=True
+        )
         source_input = self.bert.prepare_sample(source)
-        translations_input = self.bert.prepare_sample(translations)
-
         expected_tokens = [
             [
                 101,
@@ -86,16 +81,23 @@ class TestBERTEncoder(unittest.TestCase):
                 102,
             ],
         ]
-        token_types = [
+        expected_in_span_mask = [
+            [0, 0, 0, 0, 0, 0, 1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1],
+        ]
+        expected_token_type_ids = [
             [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
         ]
         seq_size = [13, 17]
         continuous_input = self.bert.concat_sequences(
-            [source_input, translations_input]
+            [translations_input, source_input], return_in_span_mask=True
         )
         self.assertListEqual(continuous_input[0]["input_ids"].tolist(), expected_tokens)
         self.assertListEqual(
-            continuous_input[0]["token_type_ids"].tolist(), token_types
+            continuous_input[0]["token_type_ids"].tolist(), expected_token_type_ids
         )
         self.assertListEqual(continuous_input[1].tolist(), seq_size)
+        self.assertListEqual(
+            continuous_input[0]["in_span_mask"].tolist(), expected_in_span_mask
+        )

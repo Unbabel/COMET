@@ -28,13 +28,13 @@ optional arguments:
   -d SACREBLEU_DATASET, --sacrebleu_dataset SACREBLEU_DATASET
                         (type: str, default: null)
   --batch_size BATCH_SIZE
-                        (type: int, default: 8)
+                        (type: int, default: 16)
   --gpus GPUS           (type: int, default: 1)
   --quiet               Prints only the final system score. (default: False)
   --accelerator {dp,ddp}
                         Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
   --to_json TO_JSON     Exports results to a json file. (type: Union[bool, str], default: False)
-  --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
+  --model MODEL         COMET model to be used. (type: str, default: wmt22-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
                         Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
   --mc_dropout MC_DROPOUT
@@ -70,7 +70,7 @@ def score_command() -> None:
     parser.add_argument("-t", "--translations", type=Path_fr, nargs="+")
     parser.add_argument("-r", "--references", type=Path_fr)
     parser.add_argument("-d", "--sacrebleu_dataset", type=str)
-    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
         "--quiet", action="store_true", help="Prints only the final system score."
@@ -177,7 +177,7 @@ def score_command() -> None:
     model = load_from_checkpoint(model_path)
     model.eval()
 
-    if (cfg.references is None) and (not model.is_referenceless()):
+    if model.requires_references() and (cfg.references is None):
         parser.error(
             "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
         )
@@ -193,9 +193,7 @@ def score_command() -> None:
         with open(path_fr(), encoding="utf-8") as fp:
             translations.append([line.strip() for line in fp.readlines()])
 
-    if model.is_referenceless():
-        data = {"src": [sources for _ in translations], "mt": translations}
-    else:
+    if cfg.references is not None:
         with open(cfg.references(), encoding="utf-8") as fp:
             references = [line.strip() for line in fp.readlines()]
         data = {
@@ -203,6 +201,8 @@ def score_command() -> None:
             "mt": translations,
             "ref": [references for _ in translations],
         }
+    else:
+        data = {"src": [sources for _ in translations], "mt": translations}
 
     if cfg.gpus > 1 and cfg.accelerator == "ddp":
         # Flatten all data to score across multiple GPUs

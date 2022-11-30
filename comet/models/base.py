@@ -47,38 +47,52 @@ logger = logging.getLogger(__name__)
 
 
 class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
-    """CometModel:
+    """CometModel: Base class for all COMET models.
 
-    :param nr_frozen_epochs: Number of epochs (% of epoch) that the encoder is frozen.
-    :param keep_embeddings_frozen: Keeps the encoder frozen during training.
-    :param optimizer: Optimizer used during training.
-    :param encoder_learning_rate: Learning rate used to fine-tune the encoder model.
-    :param learning_rate: Learning rate used to fine-tune the top layers.
-    :param layerwise_decay: Learning rate % decay from top-to-bottom encoder layers.
-    :param encoder_model: Encoder model to be used.
-    :param pretrained_model: Pretrained model from Hugging Face.
-    :param pool: Pooling strategy to derive a sentence embedding ['cls', 'max', 'avg'].
-    :param layer: Encoder layer to be used ('mix' for pooling info from all layers.)
-    :param dropout: Dropout used in the top-layers.
-    :param batch_size: Batch size used during training.
-    :param train_data: Path to a csv file containing the training data.
-    :param validation_data: Path to a csv file containing the validation data.
-    :param class_identifier: subclass identifier.
+    Args:
+        nr_frozen_epochs (Union[float, int]): Number of epochs (% of epoch) that the
+            encoder is frozen. Defaults to 0.3.
+        keep_embeddings_frozen (bool): Keeps the encoder frozen during training. Defaults
+            to True.
+        optimizer (str): Optimizer used during training. Defaults to 'AdamW'.
+        encoder_learning_rate (float): Learning rate used to fine-tune the encoder model.
+            Defaults to 1.0e-06.
+        learning_rate (float): Learning rate used to fine-tune the top layers. Defaults
+            to 1.5e-05.
+        layerwise_decay (float): Learning rate % decay from top-to-bottom encoder layers.
+            Defaults to 0.95.
+        encoder_model (str): Encoder model to be used. Defaults to 'XLM-RoBERTa'.
+        pretrained_model (str): Pretrained model from Hugging Face. Defaults to
+            'xlm-roberta-large'.
+        pool (str): Type of sentence level pooling (options: 'max', 'cls', 'avg').
+            Defaults to 'avg'
+        layer (Union[str, int]): Encoder layer to be used for regression ('mix'
+            for pooling info from all layers). Defaults to 'mix'.
+        layer_transformation (str): Transformation applied when pooling info from all
+            layers (options: 'softmax', 'sparsemax'). Defaults to 'softmax'.
+        layer_norm (bool): Apply layer normalization. Defaults to 'True'.
+        loss (str): Loss function to be used. Defaults to 'mse'.
+        dropout (float): Dropout used in the top-layers. Defaults to 0.1.
+        batch_size (int): Batch size used during training. Defaults to 4.
+        train_data (Optional[List[str]]): List of paths to training data. Each file is
+            loaded consecutively for each epoch. Defaults to None.
+        validation_data (Optional[List[str]]): List of paths to validation data.
+            Validation results are averaged across validation set. Defaults to None.
     """
 
     def __init__(
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
-        keep_embeddings_frozen: bool = False,
+        keep_embeddings_frozen: bool = True,
         optimizer: str = "AdamW",
-        encoder_learning_rate: float = 1e-05,
-        learning_rate: float = 3e-05,
+        encoder_learning_rate: float = 1.0e-06,
+        learning_rate: float = 1.5e-05,
         layerwise_decay: float = 0.95,
         encoder_model: str = "XLM-RoBERTa",
         pretrained_model: str = "xlm-roberta-large",
         pool: str = "avg",
         layer: Union[str, int] = "mix",
-        layer_transformation: str = "sparsemax",
+        layer_transformation: str = "softmax",
         layer_norm: bool = True,
         loss: str = "mse",
         dropout: float = 0.1,
@@ -120,55 +134,91 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         # If not defined here, metrics will not live in the same device as our model.
         self.init_metrics()
 
-    def set_mc_dropout(self, value: bool):
+    def set_mc_dropout(self, value: int):
+        """Sets Monte Carlo Dropout runs per sample.
+
+        Args:
+            value (int): number of runs per sample.
+        """
         self.mc_dropout = value
 
     @abc.abstractmethod
-    def read_training_data(self):
+    def read_training_data(self) -> List[dict]:
+        """Abstract method that reads the training data.
+
+        Returns:
+            List[dict]: List with input samples in the form of a dict
+        """
         pass
 
     @abc.abstractmethod
     def read_validation_data(self):
+        """Abstract method that reads the validation data. If validation data
+        has a columns 'system' we will output system-level accuracies for each
+        validation dataset.
+
+        Returns:
+            List[dict]: List with input samples in the form of a dict
+        """
         pass
 
     @abc.abstractmethod
     def prepare_sample(
         self,
-        sample: List[Dict[str, Union[str, float]]],
+        sample: List[dict],
         stage: str = "fit",
         *args,
         **kwargs,
     ):
+        """This method will be called by dataloaders to prepared data to input to the
+        model.
+
+        Args:
+            sample (List[dict]): Batch of train/val/test samples.
+            stage (str): model stage (options: 'fit', 'validate', 'test', or
+                'predict'). Defaults to 'fit'.
+
+        Returns:
+            Model inputs and (optionally) training labels/targets.
+        """
         pass
 
     @abc.abstractmethod
     def configure_optimizers(self):
+        """Pytorch Lightning method to configure optimizers and schedulers."""
         pass
 
     @abc.abstractmethod
     def init_metrics(self) -> None:
+        """Initializes train/validation metrics."""
         pass
 
     @abc.abstractmethod
-    def forward(self, *args, **kwargs) -> Dict[str, torch.Tensor]:
+    def forward(self, *args, **kwargs) -> Prediction:
+        """Pytorch model forward method."""
         pass
 
     @abc.abstractmethod
-    def is_referenceless(self) -> bool:
+    def requires_references(self) -> bool:
+        """Whether or not this models work with references."""
         pass
 
     def freeze_encoder(self) -> None:
+        """Deactivates training for encoder model parameters (keeping them frozen)"""
         logger.info("Encoder model frozen.")
         self.encoder.freeze()
 
     @property
     def loss(self):
+        """Loss function"""
         return torch.nn.MSELoss()
 
     def compute_loss(self, prediction: Prediction, target: Target) -> torch.Tensor:
+        """Computes Loss value between a batch Prediction and respective Target."""
         return self.loss(prediction.score, target.score)
 
     def unfreeze_encoder(self) -> None:
+        """Activates fine-tuning of encoder parameters."""
         if self._frozen:
             if self.trainer.is_global_zero:
                 logger.info("Encoder model fine-tuning")
@@ -196,12 +246,16 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         token_type_ids: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """Function that extracts sentence embeddings for
-            a single sentence.
+        a single sentence and allows for caching embeddings.
 
-        :param tokens: sequences [batch_size x seq_len]
-        :param lengths: lengths [batch_size]
+        Args:
+            tokens (torch.Tensor): sequences [batch_size x seq_len].
+            attention_mask (torch.Tensor): attention_mask [batch_size x seq_len].
+            token_type_ids (torch.Tensor): Model token_type_ids [batch_size x seq_len].
+                Optional
 
-        :return: torch.Tensor [batch_size x hidden_size]
+        Returns:
+            torch.Tensor [batch_size x hidden_size] with sentence embeddings.
         """
         if self.caching:
             return self.retrieve_sentence_embedding(
@@ -236,6 +290,18 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         attention_mask: torch.Tensor,
         token_type_ids: Optional[torch.Tensor] = None,
     ) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
+        """Function that extracts sentence embeddings for
+        a single sentence.
+
+        Args:
+            tokens (torch.Tensor): sequences [batch_size x seq_len].
+            attention_mask (torch.Tensor): attention_mask [batch_size x seq_len].
+            token_type_ids (torch.Tensor): Model token_type_ids [batch_size x seq_len].
+                Optional
+
+        Returns:
+            torch.Tensor [batch_size x hidden_size] with sentence embeddings.
+        """
         encoder_out = self.encoder(
             input_ids, attention_mask, token_type_ids=token_type_ids
         )
@@ -276,16 +342,17 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
     def training_step(
         self,
-        batch: Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]],
-        batch_nb: int,
+        batch: Tuple[dict, Target],
+        batch_idx: int,
     ) -> torch.Tensor:
-        """
-        Runs one training step and logs the training loss.
+        """Pytorch Lightning training step.
 
-        :param batch: The output of your prepare_sample function.
-        :param batch_nb: Integer displaying which batch this is.
+        Args:
+            batch (Tuple[dict, Target]): The output of your `prepare_sample` method.
+            batch_idx (int): Integer displaying which batch this is.
 
-        :returns: Loss value
+        Returns:
+            [torch.Tensor] Loss value
         """
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
@@ -294,7 +361,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         if (
             self.nr_frozen_epochs < 1.0
             and self.nr_frozen_epochs > 0.0
-            and batch_nb > self.first_epoch_total_steps * self.nr_frozen_epochs
+            and batch_idx > self.first_epoch_total_steps * self.nr_frozen_epochs
         ):
             self.unfreeze_encoder()
             self._frozen = False
@@ -308,12 +375,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         batch_nb: int,
         dataloader_idx: int,
     ) -> None:
-        """
-        Runs one validation step and logs metrics.
+        """Pytorch Lightning validation step. Runs model and logs metircs.
 
-        :param batch: The output of your prepare_sample function.
-        :param batch_nb: Integer displaying which batch this is.
-        :param dataloader_idx: Integer displaying which dataloader this is.
+        Args:
+            batch (Tuple[dict, Target]): The output of your `prepare_sample` method.
+            batch_idx (int): Integer displaying which batch this is.
         """
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
@@ -328,7 +394,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             )
 
     def on_predict_start(self) -> None:
-        """Called when predict begins."""
+        """Called when predict begins to setup mc_dropout."""
         if self.mc_dropout:
             self.train()
         else:
@@ -340,20 +406,23 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         batch_idx: Optional[int] = None,
         dataloader_idx: Optional[int] = None,
     ) -> torch.Tensor:
-        """
-        Runs one prediction step and returns the predicted values.
+        """Pytorch Lightning predict step.
 
-        :param batch: The output of your prepare_sample function.
-        :param batch_nb: Integer displaying which batch this is.
-        :param dataloader_idx: Integer displaying which dataloader this is.
+        Args:
+            batch (Tuple[dict, Target]): The output of your `prepare_sample` method.
+            batch_idx (int): Integer displaying which batch this is.
+            dataloader_idx (int): Integer displaying which dataloader this sample is
+                coming from.
+
+        Return:
+            Predicion object
         """
         if self.mc_dropout:
             mcd_outputs = torch.stack([self(**batch) for _ in range(self.mc_dropout)])
             mcd_mean = mcd_outputs.mean(dim=0)
             mcd_std = mcd_outputs.std(dim=0)
             return mcd_mean, mcd_std
-
-        return self(**batch)
+        return Prediction(scores=self(**batch).score)
 
     def validation_epoch_end(self, *args, **kwargs) -> None:
         """Computes and logs metrics."""
@@ -377,10 +446,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             {k: sum(v) / len(v) for k, v in average_results.items()}, prog_bar=True
         )
 
-    def setup(self, stage) -> None:
+    def setup(self, stage: str) -> None:
         """Data preparation function called before training by Lightning.
 
-        :param stage: either 'fit', 'validate', 'test', or 'predict'
+        stage (str): either 'fit', 'validate', 'test', or 'predict'
         """
         if stage in (None, "fit"):
             train_dataset = self.read_training_data(self.hparams.train_data[0])
@@ -399,7 +468,10 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.train_subset = Subset(train_dataset, train_subset)
 
     def train_dataloader(self) -> DataLoader:
-        """Function that loads the train set."""
+        """Method that loads the train dataloader. Can be called every epoch to load a
+        different trainset if `reload_dataloaders_every_n_epochs=1` in Lightning
+        Trainer.
+        """
         data_path = self.hparams.train_data[
             self.current_epoch % len(self.hparams.train_data)
         ]
@@ -415,7 +487,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         )
 
     def val_dataloader(self) -> DataLoader:
-        """Function that loads the validation set."""
+        """Function that loads the validation sets."""
         val_data = [
             DataLoader(
                 dataset=self.train_subset,
@@ -436,37 +508,42 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         return val_data
 
     def prepare_for_inference(self, sample):
-        """Ideally this should be a lamba function but for some reason python does not copy local lambda functions.
-        This functions replaces `collate_fn=lambda x: self.prepare_sample(x, inference=True)` from line 434.
+        """This is to avoid having a lamba function inside the predict dataloader
+        `collate_fn=lambda x: self.prepare_sample(x, inference=True)`
         """
         return self.prepare_sample(sample, stage="predict")
 
     def predict(
         self,
         samples: List[Dict[str, str]],
-        batch_size: int = 8,
+        batch_size: int = 16,
         gpus: int = 1,
         mc_dropout: int = 0,
         progress_bar: bool = True,
         accelerator: str = "auto",
         num_workers: int = None,
         length_batching: bool = True,
-    ) -> Union[Tuple[List[float], float], Tuple[List[float], List[float], float]]:
-        """Function that receives a list of samples (dictionaries with translations, sources and/or references)
-        and returns segment level scores and a system level score. If `mc_dropout` is set, it also returns for each
-        segment score, a confidence value.
+    ) -> Prediction:
+        """Method that receives a list of samples (dictionaries with translations,
+        sources and/or references) and returns segment-level scores, system level score
+        and any other metadata outputed by COMET models. If `mc_dropout` is set, it
+        also returns for each segment score, a confidence value.
 
-        :param samples: List with dictionaries with source, translations and/or references.
-        :param batch_size: Batch size used during inference.
-        :param gpus: Number of GPUs to be used.
-        :param mc_dropout: Number of inference steps to run using MCD. Its disabled by default!
-        :param progress_bar: Flag that turns on and off the predict progress bar.
-        :param accelarator: Pytorch Lightning accelerator (e.g: dp, ddp).
-        :param num_workers: Number of workers to use when loading data from dataloaders.
-        :param length_batching: If set to true, reduces padding by sorting samples by MT length.
+        Args:
+            samples (List[Dict[str, str]]): List with dictionaries with source,
+                translations and/or references.
+            batch_size (int): Batch size used during inference. Defaults to 16
+            gpus (int): Number of GPUs to be used. Defaults to 1.
+            mc_dropout (int): Number of inference steps to run using MCD. Defaults to 0
+            progress_bar (bool): Flag that turns on and off the predict progress bar.
+            accelarator (str): Pytorch Lightning accelerator (e.g: 'auto', 'gpu', 'cpu').
+            num_workers (int): Number of workers to use when loading and preparing data
+            length_batching (bool): If set to true, reduces padding by sorting samples
+                by sequence length.
 
-        :return: List with segment-level scores and a system-score or segment-level scores, segment-level
-            confidence and a system-score.
+        Return:
+            Prediction object with `scores`, `system_score` and any metadata returned
+                by the model.
         """
 
         def restore_list_order(sorted_list, sort_ids):
@@ -537,7 +614,6 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         if progress_bar:
             trainer = ptl.Trainer(
                 devices=gpus if accelerator != "cpu" else "auto",
-                deterministic=True,
                 logger=False,
                 callbacks=[PredictProgressBar()],
                 accelerator=accelerator,
@@ -546,7 +622,6 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         else:
             trainer = ptl.Trainer(
                 devices=gpus if accelerator != "cpu" else "auto",
-                deterministic=True,
                 logger=False,
                 progress_bar_refresh_rate=0,
                 accelerator=accelerator,
@@ -567,7 +642,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         predictions = trainer.predict(
             self, dataloaders=dataloader, return_predictions=True
         )
-        scores = torch.cat([pred.score for pred in predictions], dim=0).tolist()
+        scores = torch.cat([pred.scores for pred in predictions], dim=0).tolist()
         if "metadata" in predictions[0]:
             metadata = flatten_metadata([pred.metadata for pred in predictions])
         else:

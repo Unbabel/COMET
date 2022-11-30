@@ -31,6 +31,7 @@ str2model = {
 }
 
 available_metrics = {
+    # ------------------------------------  LEGACY MODELS ------------------------------#
     # WMT20 Models
     "emnlp20-comet-rank": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/emnlp20-comet-rank.tar.gz",
     "wmt20-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-da.tar.gz",
@@ -46,17 +47,22 @@ available_metrics = {
     # EAMT22 Models
     "eamt22-cometinho-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-cometinho-da.tar.gz",
     "eamt22-prune-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-prune-comet-da.tar.gz",
+    # ------------------------------------  NEW MODELS ------------------------------#
     # WMT22 Models
     "wmt22-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt22/wmt22-comet-da.tar.gz",
     "wmt22-cometkiwi-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt22/wmt22-cometkiwi-da.tar.gz",
+    "wmt22-seqtag-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt22/wmt22-seqtag-mqm.tar.gz",
 }
 
 
 def load_from_checkpoint(checkpoint_path: str) -> CometModel:
     """Loads models from a checkpoint path.
-    :param checkpoint_path: Path to a model checkpoint.
 
-    :return: Returns a COMET model.
+    Args:
+        checkpoint_path (str): Path to a model checkpoint.
+
+    Return:
+        COMET model.
     """
     if not os.path.exists(checkpoint_path):
         raise Exception(f"Invalid checkpoint path: {checkpoint_path}")

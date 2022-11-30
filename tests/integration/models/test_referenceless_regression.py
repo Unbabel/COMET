@@ -29,7 +29,6 @@ class TestReferencelessRegression(unittest.TestCase):
             devices="auto",
             accelerator="auto",
             max_epochs=10,
-            deterministic=True,
             enable_checkpointing=True,
             default_root_dir=DATA_PATH,
             logger=False,
@@ -85,5 +84,5 @@ class TestReferencelessRegression(unittest.TestCase):
         predictions = trainer.predict(
             ckpt_path="best", dataloaders=dataloader, return_predictions=True
         )
-        y_hat = torch.cat([p.score for p in predictions], dim=0).tolist()
+        y_hat = torch.cat([p.scores for p in predictions], dim=0).tolist()
         assert pearsonr(y_hat, y)[0] > 0.85

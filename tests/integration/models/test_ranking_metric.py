@@ -27,7 +27,6 @@ class TestRankingMetric(unittest.TestCase):
             devices="auto",
             accelerator="auto",
             max_epochs=22,
-            deterministic=True,
             enable_checkpointing=True,
             default_root_dir=DATA_PATH,
             logger=False,
@@ -82,7 +81,7 @@ class TestRankingMetric(unittest.TestCase):
         predictions = trainer.predict(
             ckpt_path="best", dataloaders=dataloader, return_predictions=True
         )
-        y_pos = torch.cat([p.score for p in predictions], dim=0)
+        y_pos = torch.cat([p.scores for p in predictions], dim=0)
 
         # Scores for "worse" translations
         neg_translations = [
@@ -97,7 +96,7 @@ class TestRankingMetric(unittest.TestCase):
         predictions = trainer.predict(
             ckpt_path="best", dataloaders=dataloader, return_predictions=True
         )
-        y_neg = torch.cat([p.score for p in predictions], dim=0)
+        y_neg = torch.cat([p.scores for p in predictions], dim=0)
         ## This shouldn't break!
         pearsonr(y_pos, y_neg)[0]
 

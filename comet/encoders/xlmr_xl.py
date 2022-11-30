@@ -40,8 +40,11 @@ class XLMRXLEncoder(XLMREncoder):
     @classmethod
     def from_pretrained(cls, pretrained_model: str) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.
-        :param pretrained_model: Name of the pretrain model to be loaded.
 
-        :return: Encoder model
+        Args:
+            pretrained_model (str):Name of the pretrain model to be loaded.
+
+        Returns:
+            Encoder: XLMRXLEncoder object.
         """
         return XLMRXLEncoder(pretrained_model)

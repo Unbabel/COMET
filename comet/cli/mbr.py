@@ -177,7 +177,7 @@ def mbr_command() -> None:
 
     if not isinstance(model, RegressionMetric) or model.is_referenceless():
         raise Exception(
-            "Incorrect model ({}). MBR command only works with Reference-based Regression models!".format(
+            "Invalid model ({}). MBR command only works with Reference-based Regression models!".format(
                 model.__class__.__name__
             )
         )

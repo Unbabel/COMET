@@ -16,7 +16,7 @@
 r"""
 Metrics
 =======
-    Regression and Ranking metrics to be used during training to measure 
+    Regression and Ranking metrics to be used during training to measure
     correlations with human judgements
 """
 from itertools import combinations
@@ -25,7 +25,6 @@ from typing import Any, Callable, List, Optional
 import pandas as pd
 import scipy.stats as stats
 import torch
-from torch import Tensor
 from torchmetrics import MatthewsCorrCoef, Metric
 
 
@@ -33,11 +32,13 @@ def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> fl
     """Implementation of system-level accuracy proposed in
         [To Ship not to Ship](https://aclanthology.org/2021.wmt-1.57/)
 
-    :param y_hat: List of metric scores
-    :param y: List of ground truth scores
-    :param system: List of systems that produced a given translation.
+    Args:
+        y_hat (List[int]): List of metric scores
+        y (List[int]): List of ground truth scores
+        system (List[str]): List with the systems that produced a given translation.
 
-    :returns: Float with metric accuracy for that data.
+    Return:
+        Float: System-level accuracy.
     """
     data = pd.DataFrame({"y_hat": y_hat, "y": y, "system": system})
     data = data.groupby("system").mean()
@@ -59,7 +60,7 @@ class MCCMetric(MatthewsCorrCoef):
         super().__init__(**kwargs)
         self.prefix = prefix
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """Computes matthews correlation coefficient."""
         mcc = super(MCCMetric, self).compute()
         return {self.prefix + "_mcc": mcc}
@@ -68,8 +69,8 @@ class MCCMetric(MatthewsCorrCoef):
 class RegressionMetrics(Metric):
     is_differentiable = False
     higher_is_better = True
-    preds: List[Tensor]
-    target: List[Tensor]
+    preds: List[torch.Tensor]
+    target: List[torch.Tensor]
 
     def __init__(
         self,
@@ -90,14 +91,15 @@ class RegressionMetrics(Metric):
 
     def update(
         self,
-        preds: Tensor,
-        target: Tensor,
+        preds: torch.Tensor,
+        target: torch.Tensor,
         systems: Optional[List[str]] = None,
     ) -> None:  # type: ignore
         """Update state with predictions and targets.
+
         Args:
-            preds: Predictions from model
-            target: Ground truth values
+            preds (torch.Tensor): Predictions from model
+            target (torch.Tensor): Ground truth values
         """
         self.preds.append(preds)
         self.target.append(target)
@@ -105,7 +107,7 @@ class RegressionMetrics(Metric):
         if systems:
             self.systems += systems
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """Computes spearmans correlation coefficient."""
         preds = torch.cat(self.preds, dim=0)
         target = torch.cat(self.target, dim=0)
