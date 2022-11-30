@@ -128,7 +128,8 @@ data = [
         "ref": "Schools and kindergartens opened"
     }
 ]
-seg_scores, sys_score = model.predict(data, batch_size=8, gpus=1)
+model_output = model.predict(data, batch_size=8, gpus=1)
+seg_scores, system_score = model_output.scores, model_output.system_score
 ```
 
 ### Languages Covered:
@@ -145,11 +146,11 @@ We recommend the two following models to evaluate your translations:
 
 - `wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT20.
 - `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 + MLQE-PE Data.
-- `eamt22-cometinho-da`: **Lightweight** Reference-based Regression model that was distilled from an ensemble of COMET models similar to `wmt20-comet-da`.
+- `wmt22-seqtag-mqm`: Model that was trained with MQM data to perform sentence-level regression and sequence tagging using MQM supervision. This model is 3x slower than default model but it showed better correlations with MQM data. Also, this model provides a quality score for each subword (using python: model_output.metadata.subword_score). 
 
-**The default models are new! Older versions (`<1.1.3`) used another default model and scores are not comparable!**
+**These models are new and different from the default models from previous versions (`<1.1.3`).**
 
-The new models are better in terms of correlations with human judgments and output scores between 0 and 1 for better interpretability.
+Also, the scores from the new models are mostly between 0 and 1 which helps interpretability.
 
 ## Train your own Metric: 
 
