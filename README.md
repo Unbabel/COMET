@@ -23,7 +23,9 @@ pip install unbabel-comet
 ```
 or
 ```bash
-pip install unbabel-comet==1.2 --use-feature=2020-resolver
+pip install torch          # 
+pip install entmax         # related to https://github.com/deep-spin/entmax/issues/26
+pip install unbabel-comet==1.2
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) (`pip install poetry`) and run the following commands:
