@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "unbabel-comet"
-version = "1.1.4"
+version = "1.2.0"
 description = "High-quality Machine Translation Evaluation"
 authors = ["Ricardo Rei, Craig Stewart, Catarina Farinha, Alon Lavie"]
 license = "Apache-2.0"

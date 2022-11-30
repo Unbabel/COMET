@@ -23,7 +23,7 @@ pip install unbabel-comet
 ```
 or
 ```bash
-pip install unbabel-comet==1.1.4 --use-feature=2020-resolver
+pip install unbabel-comet==1.2 --use-feature=2020-resolver
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) (`pip install poetry`) and run the following commands:
