@@ -8,8 +8,6 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-**New release! Please read the release notes [here](https://github.com/Unbabel/COMET/releases/tag/v1.2.0).**
-
 ## Quick Installation
 
 COMET requires python 3.8 or above! 
