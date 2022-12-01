@@ -8,7 +8,7 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-**Pre-release version!**
+**Pre-release version! The current stable version is 1.1.3**
 
 ## Quick Installation
 
