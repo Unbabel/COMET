@@ -8,6 +8,8 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
+** Pre-release! **
+
 ## Quick Installation
 
 COMET requires python 3.8 or above! 
@@ -22,7 +24,7 @@ or
 ```bash
 pip install torch          # 
 pip install entmax         # related to https://github.com/deep-spin/entmax/issues/26
-pip install unbabel-comet==1.2
+pip install unbabel-comet
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) (`pip install poetry`) and run the following commands:
