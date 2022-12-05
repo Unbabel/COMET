@@ -8,8 +8,7 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
->  Whats new?
-> 1) 3 new models from WMT22 QE/Metrics shared tasks: `wmt22-comet-da`, `wmt22-cometkiwi-da`, `wmt22-seqtag-mqm`
+**Pre-release version! The current stable version is 1.1.3**
 
 ## Quick Installation
 
@@ -23,7 +22,7 @@ pip install unbabel-comet
 ```
 or
 ```bash
-pip install unbabel-comet==1.2
+pip install unbabel-comet
 ```
 
 To develop locally install [Poetry](https://python-poetry.org/docs/#installation) (`pip install poetry`) and run the following commands:
@@ -32,6 +31,8 @@ git clone https://github.com/Unbabel/COMET
 cd COMET
 poetry install
 ```
+
+if poetry fails because of entmax try to install entmax first and then run poetry install.
 
 For development, you can run the CLI tools directly, e.g.,
 
