@@ -8,7 +8,12 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-**Pre-release version! The current stable version is 1.1.3**
+<hr />
+
+> Currently the master is a pre-release of our work for the WMT 2022 shared tasks [Metrics](https://www.statmt.org/wmt22/pdf/2022.wmt-1.52.pdf) and [QE](https://www.statmt.org/wmt22/pdf/2022.wmt-1.60.pdf)! **Use version 1.1.3 if you are looking for a stable version!** 
+
+> We are planning a new release with better models and new-features for January.
+<hr />
 
 ## Quick Installation
 
@@ -20,19 +25,14 @@ Simple installation from PyPI
 pip install --upgrade pip  # ensures that pip is current 
 pip install unbabel-comet
 ```
-or
-```bash
-pip install unbabel-comet
-```
 
-To develop locally install [Poetry](https://python-poetry.org/docs/#installation) (`pip install poetry`) and run the following commands:
+To develop locally install run the following commands:
 ```bash
 git clone https://github.com/Unbabel/COMET
 cd COMET
+pip install poetry
 poetry install
 ```
-
-if poetry fails because of entmax try to install entmax first and then run poetry install.
 
 For development, you can run the CLI tools directly, e.g.,
 
@@ -140,16 +140,11 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 **Thus, results for language pairs containing uncovered languages are unreliable!**
 
 ## COMET Models:
-
 We recommend the two following models to evaluate your translations:
 
-- `wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT20.
-- `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 + MLQE-PE Data.
-- `wmt22-seqtag-mqm`: Model that was trained with MQM data to perform sentence-level regression and sequence tagging using MQM supervision. This model is 3x slower than default model but it showed better correlations with MQM data. Also, this model provides a quality score for each subword (using python: model_output.metadata.subword_score). 
-
-**These models are new and different from the default models from previous versions (`<1.1.3`).**
-
-Also, the scores from the new models are mostly between 0 and 1 which helps interpretability.
+- `wmt20-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-da-estimator-1719` from previous versions.
+- `wmt21-comet-qe-mqm`: **Reference-FREE** Regression model build on top of XLM-R (large), trained on Direct Assessments and fine-tuned on MQM.
+- `eamt22-cometinho-da`: **Lightweight** Reference-based Regression model that was distilled from an ensemble of COMET models similar to `wmt20-comet-da`.
 
 ## Train your own Metric: 
 
