@@ -138,17 +138,6 @@ class UnifiedMetric(CometModel):
             dropout=self.hparams.dropout,
             final_activation=self.hparams.final_activation,
         )
-
-        if self.hparams.sent_layer == "mix":
-            self.layerwise_attention = LayerwiseAttention(
-                layer_transformation=layer_transformation,
-                num_layers=self.encoder.num_layers,
-                dropout=self.hparams.dropout,
-                layer_norm=self.hparams.layer_norm,
-            )
-        else:
-            self.layerwise_attention = None
-
         self.input_segments = input_segments
         self.word_level = word_level_training
         if word_level_training:
