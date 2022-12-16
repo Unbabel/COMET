@@ -34,7 +34,7 @@ optional arguments:
   --accelerator {dp,ddp}
                         Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
   --to_json TO_JSON     Exports results to a json file. (type: Union[bool, str], default: False)
-  --model MODEL         COMET model to be used. (type: str, default: wmt22-comet-da)
+  --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
                         Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
   --mc_dropout MC_DROPOUT
@@ -92,7 +92,7 @@ def score_command() -> None:
         "--model",
         type=str,
         required=False,
-        default="wmt22-comet-da",
+        default="wmt20-comet-da",
         help="COMET model to be used.",
     )
     parser.add_argument(
