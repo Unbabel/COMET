@@ -30,38 +30,36 @@ optional arguments:
   --batch_size BATCH_SIZE
                         (type: int, default: 16)
   --gpus GPUS           (type: int, default: 1)
-  --quiet               Prints only the final system score. (default: False)
-  --accelerator {dp,ddp}
-                        Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
+  --quiet               Sets all loggers to ERROR level. (default: False)
+  --only_system         Prints only the final system score. (default: False)
   --to_json TO_JSON     Exports results to a json file. (type: str, default: "")
   --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
-                        Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
-  --mc_dropout MC_DROPOUT
-                        Number of inference runs for each sample in MC Dropout. (type: Union[bool, int], default: False)
-  --seed_everything SEED_EVERYTHING
-                        Prediction seed. (type: int, default: 12)
+                        Path to the directory where models will be stored. By default
+                        its saved in ~/.cache/torch/unbabel_comet/ (default: null)
   --num_workers NUM_WORKERS
-                        Number of workers to use when loading data. (type: int, default: 2)
-  --disable_bar         Disables progress bar. (default: False)
-  --disable_cache       Disables sentence embeddings caching. This makes inference slower but saves memory. (default: False)
+                        Number of workers to use when loading data. (type: int, 
+                        default: null)
+  --disable_cache       Disables sentence embeddings caching. This makes inference
+                        slower but saves memory. (default: False)
   --disable_length_batching
-                        Disables length batching. This makes inference slower. (default: False)
+                        Disables length batching. This makes inference slower. 
+                        (default: False)
   --print_cache_info    Print information about COMET cache. (default: False)
 """
 import itertools
 import json
+import logging
 import os
-from typing import Union
 
 import numpy as np
-import torch
-from comet.download_utils import download_model
-from comet.models import available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 from sacrebleu.utils import get_reference_files, get_source_file
+
+from comet.download_utils import download_model
+from comet.models import available_metrics, load_from_checkpoint
 
 
 def score_command() -> None:
@@ -73,14 +71,10 @@ def score_command() -> None:
     parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
-        "--quiet", action="store_true", help="Prints only the final system score."
+        "--quiet", action="store_true", help="Sets all loggers to ERROR level."
     )
     parser.add_argument(
-        "--accelerator",
-        type=str,
-        default="ddp",
-        choices=["dp", "ddp"],
-        help="Pytorch Lightnining accelerator for multi-GPU.",
+        "--only_system", action="store_true", help="Prints only the final system score."
     )
     parser.add_argument(
         "--to_json",
@@ -104,25 +98,10 @@ def score_command() -> None:
         default=None,
     )
     parser.add_argument(
-        "--mc_dropout",
-        type=Union[bool, int],
-        default=False,
-        help="Number of inference runs for each sample in MC Dropout.",
-    )
-    parser.add_argument(
-        "--seed_everything",
-        help="Prediction seed.",
-        type=int,
-        default=12,
-    )
-    parser.add_argument(
         "--num_workers",
         help="Number of workers to use when loading data.",
         type=int,
-        default=2,
-    )
-    parser.add_argument(
-        "--disable_bar", action="store_true", help="Disables progress bar."
+        default=None,
     )
     parser.add_argument(
         "--disable_cache",
@@ -140,7 +119,13 @@ def score_command() -> None:
         help="Print information about COMET cache.",
     )
     cfg = parser.parse_args()
-    seed_everything(cfg.seed_everything)
+
+    if cfg.quiet:
+        loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+        for logger in loggers:
+            logger.setLevel(logging.ERROR)
+
+    seed_everything(1)
     if cfg.sources is None and cfg.sacrebleu_dataset is None:
         parser.error(f"You must specify a source (-s) or a sacrebleu dataset (-d)")
 
@@ -204,52 +189,29 @@ def score_command() -> None:
     else:
         data = {"src": [sources for _ in translations], "mt": translations}
 
-    if cfg.gpus > 1 and cfg.accelerator == "ddp":
+    if cfg.gpus > 1:
         # Flatten all data to score across multiple GPUs
         for k, v in data.items():
             data[k] = list(itertools.chain(*v))
-        data = [dict(zip(data, t)) for t in zip(*data.values())]
 
-        gather_mean = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
-        gather_std = [None for _ in range(cfg.gpus)]  # Only necessary for multigpu DDP
+        data = [dict(zip(data, t)) for t in zip(*data.values())]
         outputs = model.predict(
             samples=data,
             batch_size=cfg.batch_size,
             gpus=cfg.gpus,
-            mc_dropout=cfg.mc_dropout,
-            progress_bar=(not cfg.disable_bar),
-            accelerator=cfg.accelerator,
+            progress_bar=(not cfg.quiet),
+            accelerator="auto",
             num_workers=cfg.num_workers,
             length_batching=(not cfg.disable_length_batching),
         )
-        seg_scores = outputs[0]
-        std_scores = None if len(outputs) == 2 else outputs[1]
-        torch.distributed.all_gather_object(gather_mean, outputs[0])
-        if len(outputs) == 3:
-            torch.distributed.all_gather_object(gather_std, outputs[1])
-
-        torch.distributed.barrier()  # Waits for all processes
-        if torch.distributed.get_rank() == 0:
-            seg_scores = list(itertools.chain(*gather_mean))
-            if len(outputs) == 3:
-                std_scores = list(itertools.chain(*gather_std))
-            else:
-                std_scores = None
-        else:
-            return
-
+        seg_scores = outputs.scores
         if len(cfg.translations) > 1:
             seg_scores = np.array_split(seg_scores, len(cfg.translations))
             sys_scores = [sum(split) / len(split) for split in seg_scores]
-            std_scores = (
-                np.array_split(std_scores, len(cfg.translations))
-                if std_scores
-                else [None] * len(seg_scores)
-            )
             data = np.array_split(data, len(cfg.translations))
         else:
             sys_scores = [
-                sum(seg_scores) / len(seg_scores),
+                outputs.system_score,
             ]
             seg_scores = [
                 seg_scores,
@@ -257,13 +219,10 @@ def score_command() -> None:
             data = [
                 np.array(data),
             ]
-            std_scores = [
-                std_scores,
-            ]
     else:
         # If not using Multiple GPUs we will score each system independently
         # to maximize cache hits!
-        seg_scores, std_scores, sys_scores = [], [], []
+        seg_scores, sys_scores = [], []
         new_data = []
         for i in range(len(cfg.translations)):
             sys_data = {k: v[i] for k, v in data.items()}
@@ -273,43 +232,26 @@ def score_command() -> None:
                 samples=sys_data,
                 batch_size=cfg.batch_size,
                 gpus=cfg.gpus,
-                mc_dropout=cfg.mc_dropout,
-                progress_bar=(not cfg.disable_bar),
-                accelerator=cfg.accelerator,
+                progress_bar=(not cfg.quiet),
+                accelerator="cpu" if cfg.gpus == 0 else "auto",
                 num_workers=cfg.num_workers,
                 length_batching=(not cfg.disable_length_batching),
             )
-            if len(outputs) == 3:
-                seg_scores.append(outputs[0])
-                std_scores.append(outputs[1])
-            else:
-                seg_scores.append(outputs[0])
-                std_scores.append(None)
-
-            sys_scores.append(sum(outputs[0]) / len(outputs[0]))
+            seg_scores.append(outputs.scores)
+            sys_scores.append(outputs.system_score)
         data = new_data
 
     files = [path_fr.rel_path for path_fr in cfg.translations]
     data = {file: system_data.tolist() for file, system_data in zip(files, data)}
-
     for i in range(len(data[files[0]])):  # loop over (src, ref)
         for j in range(len(files)):  # loop of system
             data[files[j]][i]["COMET"] = seg_scores[j][i]
-            if cfg.mc_dropout:
-                data[files[j]][i]["variance"] = std_scores[j][i]
-                if not cfg.quiet:
-                    print(
-                        "{}\tSegment {}\tscore: {:.4f}\tvariance: {:.4f}".format(
-                            files[j], i, seg_scores[j][i], std_scores[j][i]
-                        )
+            if not cfg.only_system:
+                print(
+                    "{}\tSegment {}\tscore: {:.4f}".format(
+                        files[j], i, seg_scores[j][i]
                     )
-            else:
-                if not cfg.quiet:
-                    print(
-                        "{}\tSegment {}\tscore: {:.4f}".format(
-                            files[j], i, seg_scores[j][i]
-                        )
-                    )
+                )
 
     for j in range(len(files)):
         print("{}\tscore: {:.4f}".format(files[j], sys_scores[j]))
