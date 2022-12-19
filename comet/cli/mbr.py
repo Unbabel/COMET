@@ -185,10 +185,10 @@ def mbr_command() -> None:
     model.eval()
     model.cuda()
 
-    with open(cfg.sources()) as fp:
+    with open(cfg.sources(), encoding="utf-8") as fp:
         sources = [line.strip() for line in fp.readlines()]
 
-    with open(cfg.translations()) as fp:
+    with open(cfg.translations(), encoding="utf-8") as fp:
         translations = [line.strip() for line in fp.readlines()]
 
     src_embeddings, mt_embeddings = build_embeddings(
@@ -207,7 +207,7 @@ def mbr_command() -> None:
         best_cand_idx = torch.argmax(mbr_matrix[i, :])
         best_candidates.append(samples[best_cand_idx])
 
-    with open(cfg.output, "w") as fp:
+    with open(cfg.output, "w", encoding="utf-8") as fp:
         for sample in best_candidates:
             fp.write(sample + "\n")
 

@@ -431,19 +431,19 @@ def compare_command() -> None:
 
     assert len(cfg.translations) > 1, "You must provide at least 2 translation files"
 
-    with open(cfg.sources()) as fp:
+    with open(cfg.sources(), encoding="utf-8") as fp:
         sources = [line.strip() for line in fp.readlines()]
 
     translations = []
     for system in cfg.translations:
-        with open(system, mode="r", encoding="UTF-8") as fp:
+        with open(system, mode="r", encoding="utf-8") as fp:
             translations.append([line.strip() for line in fp.readlines()])
 
     references = None
     if model.is_referenceless():
         systems = [{"src": sources, "mt": system} for system in translations]
     else:
-        with open(cfg.references()) as fp:
+        with open(cfg.references(), encoding="utf-8") as fp:
             references = [line.strip() for line in fp.readlines()]
         systems = [
             {"src": sources, "mt": system, "ref": references} for system in translations
@@ -494,7 +494,7 @@ def compare_command() -> None:
     t_tests_summary(results, tuple(cfg.translations))
 
     if cfg.to_json != "":
-        with open(cfg.to_json, "w") as outfile:
+        with open(cfg.to_json, "w", encoding="utf-8") as outfile:
             json.dump(info, outfile, ensure_ascii=False, indent=4)
         print("Predictions saved in: {}.".format(cfg.to_json))
 
