@@ -14,6 +14,7 @@
 # limitations under the License.
 from typing import List
 
+import torch
 from torch.utils.data import Sampler
 from transformers.utils import ModelOutput
 
@@ -41,3 +42,26 @@ class OrderedSampler(Sampler[int]):
 
     def __len__(self):
         return len(self.indices)
+
+
+def flatten_metadata(metadata):
+    """Metadata from the model output can be in various forms and this function
+    will gather all metadata and flatten everything.
+    """
+    metadata = Prediction(**{k: [dic[k] for dic in metadata] for k in metadata[0]})
+    for k, v in metadata.items():
+        if torch.is_tensor(v[0]):
+            # If we have tensors we can use cat to flatten them.
+            metadata[k] = torch.cat(v, dim=0).tolist()
+        else:
+            # for other predictions such as word tags we have to flatten the list.
+            metadata[k] = [item for sublist in v for item in sublist]
+    return metadata
+
+
+def restore_list_order(sorted_list, sort_ids):
+    """Restores the original ids of a given list."""
+    unsorted_list = [None for _ in range(len(sorted_list))]
+    for i, s in zip(sort_ids, sorted_list):
+        unsorted_list[i] = s
+    return unsorted_list
