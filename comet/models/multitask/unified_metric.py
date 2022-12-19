@@ -576,6 +576,14 @@ class UnifiedMetric(CometModel):
             {k: sum(v) / len(v) for k, v in average_results.items()}, prog_bar=True
         )
 
+    def set_mc_dropout(self, value: int):
+        """Sets Monte Carlo Dropout runs per sample.
+
+        Args:
+            value (int): number of runs per sample.
+        """
+        raise NotImplementedError("MCD not implemented for this model!")
+
     def predict_step(
         self,
         batch: Dict[str, torch.Tensor],
@@ -608,9 +616,6 @@ class UnifiedMetric(CometModel):
                     [(token, prob.item()) for token, prob in zip(tokens, token_probs)]
                 )
             return decoded_output
-
-        if self.mc_dropout:
-            raise NotImplementedError("MCD not implemented for this model!")
 
         if len(batch) == 3:
             predictions = [self.forward(**input_seq) for input_seq in batch]
