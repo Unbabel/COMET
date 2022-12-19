@@ -37,7 +37,7 @@ optional arguments:
                         Percentage of the testset to use in each split. (type: float, default: 0.4)
   --accelerator {dp,ddp}
                         Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
-  --to_json TO_JSON     Exports results to a json file. (type: Union[bool, str], default: False)
+  --to_json TO_JSON     Exports results to a json file. (type: str, default: "")
   --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
                         Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
@@ -315,8 +315,8 @@ def get_cfg() -> Namespace:
     )
     parser.add_argument(
         "--to_json",
-        type=Union[bool, str],
-        default=False,
+        type=str,
+        default="",
         help="Exports results to a json file.",
     )
     parser.add_argument(
@@ -493,7 +493,7 @@ def compare_command() -> None:
     print()
     t_tests_summary(results, tuple(cfg.translations))
 
-    if isinstance(cfg.to_json, str):
+    if cfg.to_json != "":
         with open(cfg.to_json, "w") as outfile:
             json.dump(info, outfile, ensure_ascii=False, indent=4)
         print("Predictions saved in: {}.".format(cfg.to_json))

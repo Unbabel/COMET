@@ -33,7 +33,7 @@ optional arguments:
   --quiet               Prints only the final system score. (default: False)
   --accelerator {dp,ddp}
                         Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
-  --to_json TO_JSON     Exports results to a json file. (type: Union[bool, str], default: False)
+  --to_json TO_JSON     Exports results to a json file. (type: str, default: "")
   --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
                         Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
@@ -84,8 +84,8 @@ def score_command() -> None:
     )
     parser.add_argument(
         "--to_json",
-        type=Union[bool, str],
-        default=False,
+        type=str,
+        default="",
         help="Exports results to a json file.",
     )
     parser.add_argument(
@@ -314,7 +314,7 @@ def score_command() -> None:
     for j in range(len(files)):
         print("{}\tscore: {:.4f}".format(files[j], sys_scores[j]))
 
-    if isinstance(cfg.to_json, str):
+    if cfg.to_json != "":
         with open(cfg.to_json, "w", encoding="utf-8") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)
         print("Predictions saved in: {}.".format(cfg.to_json))
