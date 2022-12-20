@@ -17,34 +17,43 @@ Command for Minimum Bayes Risk Decoding.
 ========================================
 
 This script is inspired in Chantal Amrhein script used in:
-    Title: Identifying Weaknesses in Machine Translation Metrics Through Minimum Bayes Risk Decoding: A Case Study for COMET
-    URL: https://arxiv.org/abs/2202.05148
+    Title: Identifying Weaknesses in Machine Translation Metrics Through Minimum Bayes
+    Risk Decoding: A Case Study for COMET
+    URL: https://aclanthology.org/2022.aacl-main.83/
 
 optional arguments:
   -h, --help            Show this help message and exit.
   -s SOURCES, --sources SOURCES
-                        (type: Path_fr, default: null)
+                        (required, type: Path_fr)
   -t TRANSLATIONS, --translations TRANSLATIONS
-                        (type: Path_fr, default: null)
-  --batch_size BATCH_SIZE
-                        (type: int, default: 8)
+                        (required, type: Path_fr)
   --num_samples NUM_SAMPLES
                         (required, type: int)
-  --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
+  --batch_size BATCH_SIZE
+                        (type: int, default: 16)
+  --rerank_top_k RERANK_TOP_K
+                       Chooses the topK candidates according to --qe_model before
+                       applying MBR. Disabled by default. (type: int, default: 0)
+  --qe_model QE_MODEL   Reference Free model used for reranking before MBR. (type: str,
+                        default: wmt22-cometkiwi-da)
+  --model MODEL         COMET model to be used. (type: str, default: wmt22-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
-                        Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
+                        Path to the directory where models will be stored. By default
+                        its saved in ~/.cache/torch/unbabel_comet/ (default: null)
   -o OUTPUT, --output OUTPUT
-                        Best candidates after running MBR decoding. (type: str, default: mbr_result.txt)
+                        Best candidates after running MBR decoding. (required, type: str)
 """
 import os
 from typing import List, Tuple
 
+import numpy as np
 import torch
-from comet.download_utils import download_model
-from comet.models import RegressionMetric, available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from tqdm import tqdm
+
+from comet.download_utils import download_model
+from comet.models import RegressionMetric, available_metrics, load_from_checkpoint
 
 
 def build_embeddings(
@@ -102,13 +111,14 @@ def mbr_decoding(
 ) -> torch.Tensor:
     """Performs MBR Decoding for each translation for a given source.
 
-    :param src_embeddings: Embeddings of source sentences.
-    :param mt_embeddings: Embeddings of MT sentences.
-    :param model: RegressionMetric Model.
+    Args:
+        src_embeddings (torch.Tensor): Embeddings of source sentences. [n_sent x hidden_size]
+        mt_embeddings (torch.Tensor): Embeddings of MT sentences. [n_sent x num_samples x hidden_size]
+        model (RegressionMetric): RegressionMetric Model.
 
-    :return:
-        Returns a [n_sent x num_samples] matrix M where each line represents a source sentence
-        and each column a given sample.
+    Return:
+        torch.Tensor: matrice [n_sent x num_samples] where each line represents a
+        source sentence and each column a given sample.
         M[i][j] is the MBR score of sample j for source i.
     """
     n_sent, num_samples, _ = mt_embeddings.shape
@@ -124,21 +134,76 @@ def mbr_decoding(
                 translation = mt_embeddings[i, j, :].repeat(num_samples, 1)
                 # Score current hypothesis against all others
                 pseudo_refs = mt_embeddings[i, :]
-                scores = model.estimate(source, translation, pseudo_refs)[
-                    "score"
-                ].squeeze(1)
+                scores = model.estimate(source, translation, pseudo_refs)["score"]
                 scores = torch.cat([scores[0:j], scores[j + 1 :]])
                 mbr_matrix[i, j] = scores.mean()
 
     return mbr_matrix
 
+def rerank_top_k(
+    sources: List[str],
+    translations: List[str],
+    qe_model: str,
+    batch_size: int,
+    gpus: int,
+    num_samples: int,
+    topk: int,
+) -> Tuple[List[str], List[str]]:
+    """Performs QE reranking.
+
+    Args:
+        sources (List[str]): Embeddings of source sentences.
+        translations (List[str]: Embeddings of MT sentences.
+        qe_model (str): Reference-free model used for reranking.
+        batch_size (int): Batch size used during inference.
+        num_samples (int): Number of candidates per source.
+        topk (int): Number of top k samples.
+
+    Return:
+        List[str]: Top k candidate translations for each source
+    """
+    translations = [
+        translations[i : i + num_samples]
+        for i in range(0, len(translations), num_samples)
+    ]
+    assert len(translations) == len(sources)
+    data = []
+    for i in range(len(sources)):
+        for j in range(num_samples):
+            data.append({"src": sources[i], "mt": translations[i][j]})
+
+    model_output = qe_model.predict(data, batch_size=batch_size, gpus=gpus)
+    seg_scores = np.array(model_output.scores).reshape(len(sources), num_samples)
+    topk_indices = np.argsort(seg_scores, axis=1)
+    topk_translations = []
+    for i in range(len(sources)):
+        topk_translations += [translations[i][idx] for idx in topk_indices[i][::-1][:topk]]
+
+    return topk_translations
 
 def mbr_command() -> None:
     parser = ArgumentParser(description="Command for Minimum Bayes Risk Decoding.")
     parser.add_argument("-s", "--sources", type=Path_fr, required=True)
     parser.add_argument("-t", "--translations", type=Path_fr, required=True)
-    parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--num_samples", type=int, required=True)
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--gpus", type=int, default=1)
+    parser.add_argument(
+        "--rerank_top_k",
+        type=int,
+        default=0,
+        help=(
+            "Chooses the topK candidates according to --qe_model before applying MBR."
+            + " Disabled by default."
+        ),
+    )
+    parser.add_argument(
+        "--qe_model",
+        type=str,
+        required=False,
+        default="wmt22-cometkiwi-da",
+        help="Reference Free model used for reranking before MBR.",
+    )
     parser.add_argument(
         "--model",
         type=str,
@@ -163,42 +228,66 @@ def mbr_command() -> None:
     )
     cfg = parser.parse_args()
 
-    if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
-        model_path = cfg.model
-    elif cfg.model in available_metrics:
-        model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
-    else:
-        parser.error(
-            "{} is not a valid checkpoint path or model choice. Choose from {}".format(
-                cfg.model, available_metrics.keys()
-            )
-        )
-    model = load_from_checkpoint(model_path)
-
-    if not isinstance(model, RegressionMetric) or model.is_referenceless():
-        raise Exception(
-            "Invalid model ({}). MBR command only works with Reference-based Regression models!".format(
-                model.__class__.__name__
-            )
-        )
-
-    model.eval()
-    model.cuda()
-
     with open(cfg.sources(), encoding="utf-8") as fp:
         sources = [line.strip() for line in fp.readlines()]
 
     with open(cfg.translations(), encoding="utf-8") as fp:
         translations = [line.strip() for line in fp.readlines()]
 
+    num_samples = cfg.num_samples
+    # Running QE reranking before MBR!
+    if cfg.rerank_top_k > 0:
+        if (
+            cfg.qe_model.endswith(".ckpt")
+            and os.path.exists(cfg.qe_model)
+        ):
+            qe_model_path = cfg.qe_model
+        elif cfg.qe_model in available_metrics:
+            qe_model_path = download_model(
+                cfg.qe_model, saving_directory=cfg.model_storage_path
+            )
+        else:
+            parser.error(
+                "{} is not a valid QE checkpoint path or model.".format(cfg.qe_model)
+            )
+
+        assert (
+            cfg.rerank_top_k < cfg.num_samples
+        ), "--rerank_top_k needs to be smaller than number of candidates provided!"
+        model = load_from_checkpoint(qe_model_path)
+        translations = rerank_top_k(
+            sources, translations, model, cfg.batch_size, cfg.gpus, cfg.num_samples, cfg.rerank_top_k
+        )
+        assert (
+            not model.requires_references()
+        ), "--qe_model expects a Reference Free model!"
+        num_samples = cfg.rerank_top_k
+
+    if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
+        model_path = cfg.model
+    elif cfg.model in available_metrics:
+        model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
+    else:
+        parser.error("{} is not a valid metric checkpoint or model.".format(cfg.model))
+
+    model = load_from_checkpoint(model_path)
+    model.eval()
+    model.cuda()
+    if not isinstance(model, RegressionMetric):
+        raise Exception(
+            "Invalid model ({}). MBR command only works with Reference-based Regression models!".format(
+                model.__class__.__name__
+            )
+        )
+        
     src_embeddings, mt_embeddings = build_embeddings(
         sources, translations, model, cfg.batch_size
     )
-    mt_embeddings = mt_embeddings.reshape(len(sources), cfg.num_samples, -1)
+    mt_embeddings = mt_embeddings.reshape(len(sources), num_samples, -1)
     mbr_matrix = mbr_decoding(src_embeddings, mt_embeddings, model)
     translations = [
-        translations[i : i + cfg.num_samples]
-        for i in range(0, len(translations), cfg.num_samples)
+        translations[i : i + num_samples]
+        for i in range(0, len(translations), num_samples)
     ]
     assert len(sources) == len(translations)
 
