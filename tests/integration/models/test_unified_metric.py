@@ -28,7 +28,7 @@ class TestUnifiedMetric(unittest.TestCase):
     def test_regression_with_references(self):
         seed_everything(12)
         trainer = Trainer(
-            devices="auto",
+            devices=1 if torch.cuda.device_count() > 0 else 0,
             accelerator="auto",
             max_epochs=8,
             enable_checkpointing=True,
@@ -93,7 +93,7 @@ class TestUnifiedMetric(unittest.TestCase):
     def test_regression_without_references(self):
         seed_everything(12)
         trainer = Trainer(
-            devices="auto",
+            devices=1 if torch.cuda.device_count() > 0 else 0,
             accelerator="auto",
             max_epochs=10,
             enable_checkpointing=True,
@@ -159,7 +159,7 @@ class TestUnifiedMetric(unittest.TestCase):
     def test_multitask_with_references(self):
         seed_everything(12)
         trainer = Trainer(
-            devices="auto",
+            devices=1 if torch.cuda.device_count() > 0 else 0,
             accelerator="auto",
             max_epochs=15,  # This model takes a while to overfit.
             enable_checkpointing=True,
@@ -212,7 +212,7 @@ class TestUnifiedMetric(unittest.TestCase):
         )
         y_reg = [s["score"] for s in dataset]
         predictions = saved_model.predict(
-            dataset, gpus=0, batch_size=8, length_batching=True, accelerator="ddp"
+            dataset, gpus=0, batch_size=8, length_batching=True
         )
         assert pearsonr(predictions.scores, y_reg)[0] > 0.8
         assert pearsonr(predictions.metadata.src_scores, y_reg)[0] > 0.75

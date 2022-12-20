@@ -26,7 +26,7 @@ class TestReferencelessRegression(unittest.TestCase):
     def test_training(self):
         seed_everything(12)
         trainer = Trainer(
-            devices="auto",
+            devices=1 if torch.cuda.device_count() > 0 else 0,
             accelerator="auto",
             max_epochs=10,
             enable_checkpointing=True,
