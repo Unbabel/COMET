@@ -326,31 +326,32 @@ class UnifiedMetric(CometModel):
             Union[Tuple[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]: Model input
                 and targets.
         """
-        sample = {
+        inputs = {
             k: [str(dic[k]) for dic in sample] 
             for k in sample[0] if k != "score"
         }
+        inputs["score"] = [float(s["score"]) for s in sample]
         input_sequences = [
-            self.encoder.prepare_sample(sample["mt"], self.word_level),
+            self.encoder.prepare_sample(inputs["mt"], self.word_level),
         ]
 
-        if ("src" in sample) and ("src" in self.hparams.input_segments):
+        if ("src" in inputs) and ("src" in self.hparams.input_segments):
             input_sequences.append(
-                self.encoder.prepare_sample(sample["src"], self.word_level)
+                self.encoder.prepare_sample(inputs["src"], self.word_level)
             )
 
-        if ("ref" in sample) and ("ref" in self.hparams.input_segments):
+        if ("ref" in inputs) and ("ref" in self.hparams.input_segments):
             input_sequences.append(
-                self.encoder.prepare_sample(sample["ref"], self.word_level)
+                self.encoder.prepare_sample(inputs["ref"], self.word_level)
             )
 
         model_inputs = self.concat_inputs(input_sequences)
         if stage == "predict":
             return model_inputs["inputs"]
 
-        targets = Target(score=torch.tensor(sample["score"], dtype=torch.float))
-        if "system" in sample:
-            targets["system"] = sample["system"]
+        targets = Target(score=torch.tensor(inputs["score"], dtype=torch.float))
+        if "system" in inputs:
+            targets["system"] = inputs["system"]
 
         if self.word_level:
             # Labels will be the same accross all inputs because we are only

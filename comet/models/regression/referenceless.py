@@ -138,25 +138,26 @@ class ReferencelessRegression(RegressionMetric):
         Returns:
             Model inputs and depending on the 'stage' training labels/targets.
         """
-        sample = {
+        inputs = {
             k: [str(dic[k]) for dic in sample] 
             for k in sample[0] if k != "score"
         }
-        src_inputs = self.encoder.prepare_sample(sample["src"])
-        mt_inputs = self.encoder.prepare_sample(sample["mt"])
+        inputs["score"] = [float(s["score"]) for s in sample]
+        src_inputs = self.encoder.prepare_sample(inputs["src"])
+        mt_inputs = self.encoder.prepare_sample(inputs["mt"])
 
         src_inputs = {"src_" + k: v for k, v in src_inputs.items()}
         mt_inputs = {"mt_" + k: v for k, v in mt_inputs.items()}
-        inputs = {**src_inputs, **mt_inputs}
+        model_inputs = {**src_inputs, **mt_inputs}
 
         if stage == "predict":
-            return inputs
+            return model_inputs
 
-        targets = Target(score=torch.tensor(sample["score"], dtype=torch.float))
-        if "system" in sample:
-            targets["system"] = sample["system"]
+        targets = Target(score=torch.tensor(inputs["score"], dtype=torch.float))
+        if "system" in inputs:
+            targets["system"] = inputs["system"]
 
-        return inputs, targets
+        return model_inputs, targets
 
     def forward(
         self,
