@@ -326,7 +326,10 @@ class UnifiedMetric(CometModel):
             Union[Tuple[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]: Model input
                 and targets.
         """
-        sample = {k: [str(dic[k]) for dic in sample] for k in sample[0]}
+        sample = {
+            k: [str(dic[k]) for dic in sample] 
+            for k in sample[0] if k != "score"
+        }
         input_sequences = [
             self.encoder.prepare_sample(sample["mt"], self.word_level),
         ]
