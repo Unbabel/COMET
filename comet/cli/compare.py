@@ -23,32 +23,38 @@ optional arguments:
                         (type: Path_fr, default: null)
   -r REFERENCES, --references REFERENCES
                         (type: Path_fr, default: null)
-  -t [TRANSLATIONS [TRANSLATIONS ...]], --translations [TRANSLATIONS [TRANSLATIONS ...]]
+  -t [TRANSLATIONS [TRANSLATIONS ...]], --translations [TRANSLATIONS [TRANSLATIONS ..]]
                         (type: Path_fr, default: null)
   -d SACREBLEU_DATASET, --sacrebleu_dataset SACREBLEU_DATASET
                         (type: str, default: null)
   --batch_size BATCH_SIZE
                         (type: int, default: 8)
   --gpus GPUS           (type: int, default: 1)
-  --quiet               Prints only the final system score. (default: False)
+  --quiet               Sets all loggers to ERROR level. (default: False)
+  --only_system         Prints only the final system score. (default: False)
   --num_splits NUM_SPLITS
-                        Number of random partitions used in Bootstrap resampling. (type: int, default: 300)
+                        Number of random partitions used in Bootstrap resampling.
+                        (type: int, default: 300)
   --sample_ratio SAMPLE_RATIO
-                        Percentage of the testset to use in each split. (type: float, default: 0.4)
-  --accelerator {dp,ddp}
-                        Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
+                        Percentage of the testset to use in each split. (type: float,
+                        default: 0.4)
+  --t_test_alternative T_TEST_ALTERNATIVE
+                        Alternative hypothesis from scipy.stats.ttest_rel. The
+                        following options are available: 'two-sided', 'less', 
+                        'greater'. Defaults to 'less' (type: str, default: less)
   --to_json TO_JSON     Exports results to a json file. (type: str, default: "")
   --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
-                        Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
-  --seed_everything SEED_EVERYTHING
-                        Prediction seed. (type: int, default: 12)
+                        Path to the directory where models will be stored. By default
+                        its saved in ~/.cache/torch/unbabel_comet/ (default: null)
   --num_workers NUM_WORKERS
-                        Number of workers to use when loading data. (type: int, default: 16)
-  --disable_bar         Disables progress bar. (default: False)
-  --disable_cache       Disables sentence embeddings caching. This makes inference slower but saves memory. (default: False)
+                        Number of workers to use when loading data. (type: int,
+                        default: null)
+  --disable_cache       Disables sentence embeddings caching. This makes inference
+                        slower but saves memory. (default: False)
   --disable_length_batching
-                        Disables length batching. This makes inference slower. (default: False)
+                        Disables length batching. This makes inference slower.
+                        (default: False)
   --print_cache_info    Print information about COMET cache. (default: False)
 """
 import json
@@ -57,15 +63,15 @@ from itertools import combinations
 from typing import Dict, Generator, List, Tuple, Union
 
 import numpy as np
-import torch
-from comet.download_utils import download_model
-from comet.models import available_metrics, load_from_checkpoint
 from jsonargparse import ArgumentParser, Namespace
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 from sacrebleu.utils import get_reference_files, get_source_file
 from scipy import stats
 from tabulate import tabulate
+
+from comet.download_utils import download_model
+from comet.models import available_metrics, load_from_checkpoint
 
 Statistical_test_info = Dict[str, Union[Path_fr, Dict[str, float]]]
 
@@ -75,8 +81,10 @@ EPS = 0.001
 
 
 def display_statistical_results(data: Statistical_test_info) -> None:
-    """
-    Print out the T-test results for a system pair.
+    """Print out the T-test results for a system pair.
+
+    Args:
+        data (Statistical_test_info): Stats to be printed out.
     """
     print("==========================")
     print("x_name:", data["x_name"].rel_path)
@@ -115,8 +123,12 @@ def t_tests_summary(
     translations: Tuple[Path_fr],
     threshold_p_value: float = 0.05,
 ) -> None:
-    """
-    T-tests Summary
+    """Prints T-tests Summary
+
+    Args:
+        t_test_results (List[Statistical_test_info]): List of stats between systems.
+        translations (Tuple[Path_fr]): Path to each system.
+        threshold_p_value (float): Threshold for p_value. Defaults to 0.05.
     """
     n = len(translations)
     name2id = {name: i for i, name in enumerate(translations)}
@@ -150,13 +162,16 @@ def t_tests_summary(
 def calculate_bootstrap(
     x_sys_scores: np.ndarray, y_sys_scores: np.ndarray, x_name: Path_fr, y_name: Path_fr
 ) -> Statistical_test_info:
-    """
-    Calculate bootstrap score, wins and ties for a system pair.
-    x_sys_scores: array of num_splits comet scores for system x
-    y_sys_scores: array of num_splits comet scores for system y
-    x_name: system x's name
-    y_name: system y's name
-    num_split: number of splits
+    """Calculate bootstrap score, wins and ties for a system pair.
+
+    Args:
+        x_sys_scores (np.ndarray): array of num_splits comet scores for system x
+        y_sys_scores (np.ndarray): array of num_splits comet scores for system y
+        x_name (str): system x's name
+        y_name (str): system y's name
+
+    Return:
+        Statistical_test_info: Stats from bootstrap resampling.
     """
     num_splits = x_sys_scores.shape[0]
     delta = x_sys_scores - y_sys_scores
@@ -180,9 +195,14 @@ def calculate_bootstrap(
 def pairwise_bootstrap(
     sys_scores: np.ndarray, systems: List[Path_fr]
 ) -> Generator[Statistical_test_info, None, None]:
-    """
-    Calculates the bootstrap resampling between all systems' permutations.
-    sys_scores: comet scores [num_systems x num_splits]
+    """Calculates the bootstrap resampling between all systems' permutations.
+
+    Args:
+        sys_scores (np.ndarray): comet scores [num_systems x num_splits]
+        systems (List[Path_fr]): List with paths to each system.
+
+    Return:
+        Generator(Statistical_test_info): bootstrap resampling stats between systems.
     """
     assert sys_scores.shape[0] == len(systems), "Each system should have its sys_score."
 
@@ -191,12 +211,18 @@ def pairwise_bootstrap(
         yield calculate_bootstrap(x_sys_scores, y_sys_scores, x_name, y_name)
 
 
-def bootstrap_resampling(seg_scores: np.ndarray, sample_size: int, num_splits: int):
-    """
-    seg_scores: comet scores for each systems' translation, aka a comet score matrix [num_systems X num_sentences]
-    sample_size:
-    num_splits:
-    Returns a comet score matrix [num_systems X num_splits]
+def bootstrap_resampling(
+    seg_scores: np.ndarray, sample_size: int, num_splits: int
+) -> np.array:
+    """Computes Bootstrap Resampling.
+
+    seg_scores (np.ndarray): scores for each systems' translation, aka a score matrix
+        [num_systems X num_sentences]
+    sample_size (int): Number of examples for each partition.
+    num_splits (int): Number of partitions.
+
+    Return:
+        np.array: scores matrice [num_systems X num_splits]
     """
     population_size = seg_scores.shape[1]
     # Subsample the gold and system outputs (with replacement)
@@ -211,9 +237,14 @@ def bootstrap_resampling(seg_scores: np.ndarray, sample_size: int, num_splits: i
 
 
 def score(cfg: Namespace, systems: List[Dict[str, List[str]]]) -> np.ndarray:
-    """
-    Scores each systems with a given model.
-    Returns a comet score matrix [num_systems X num_sentences]
+    """Scores each systems with a given model.
+
+    Args:
+        cfg (Namespace): comet-compare configs.
+        systems (List[Dict[str, List[str]]]): List with translations for each system.
+
+    Return:
+        np.ndarray: segment-level scores flatten.
     """
     model = load_from_checkpoint(cfg.model_path)
     model.eval()
@@ -224,52 +255,39 @@ def score(cfg: Namespace, systems: List[Dict[str, List[str]]]) -> np.ndarray:
     if cfg.print_cache_info:
         print(model.retrieve_sentence_embedding.cache_info())
 
-    if cfg.gpus > 1 and cfg.accelerator == "ddp":
-        # Create a single list that contains all systems' source, reference & translation.
+    if cfg.gpus > 1:
+        # Create a single list that contains all systems' src, ref & translation.
         samples = [
             dict(zip(system.keys(), values))
             for system in systems
             for values in zip(*system.values())
         ]
-        # raise NotImplementedError()
-        gather_outputs = [
-            None for _ in range(cfg.gpus)
-        ]  # Only necessary for multigpu DDP
+
         outputs = model.predict(
             samples=samples,
             batch_size=cfg.batch_size,
             gpus=cfg.gpus,
-            progress_bar=(not cfg.disable_bar),
-            accelerator=cfg.accelerator,
+            progress_bar=(not cfg.quiet),
+            accelerator="auto",
             num_workers=cfg.num_workers,
             length_batching=(not cfg.disable_length_batching),
         )
-        seg_scores = outputs[0]
-        torch.distributed.all_gather_object(gather_outputs, seg_scores)
-        torch.distributed.barrier()  # Waits for all processes
-        if torch.distributed.get_rank() == 0:
-            seg_scores = [
-                o[i] for i in range(len(gather_outputs[0])) for o in gather_outputs
-            ]
-        else:
-            # TODO: what should be return here?
-            return 0
-
+        seg_scores = outputs.scores
     else:
         # This maximizes cache hits because batches will be equal!
         seg_scores = []
         for system in systems:
             samples = [dict(zip(system, t)) for t in zip(*system.values())]
-            system_scores, _ = model.predict(
+            outputs = model.predict(
                 samples=samples,
                 batch_size=cfg.batch_size,
                 gpus=cfg.gpus,
-                progress_bar=(not cfg.disable_bar),
-                accelerator=cfg.accelerator,
+                progress_bar=(not cfg.quiet),
+                accelerator="cpu" if cfg.gpus == 0 else "auto",
                 num_workers=cfg.num_workers,
                 length_batching=(not cfg.disable_length_batching),
             )
-            seg_scores += system_scores
+            seg_scores += outputs.scores
 
     n = len(systems[0]["src"])
     # [grouper](https://docs.python.org/3/library/itertools.html#itertools-recipes)
@@ -279,8 +297,10 @@ def score(cfg: Namespace, systems: List[Dict[str, List[str]]]) -> np.ndarray:
 
 
 def get_cfg() -> Namespace:
-    """
-    Parse the CLI options and arguments.
+    """Parse the CLI options and arguments.
+
+    Return:
+        Namespace: comet-compare configs.
     """
     parser = ArgumentParser(
         description="Command for comparing multiple MT systems' translations."
@@ -292,7 +312,10 @@ def get_cfg() -> Namespace:
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
-        "--quiet", action="store_true", help="Prints only the final system score."
+        "--quiet", action="store_true", help="Sets all loggers to ERROR level."
+    )
+    parser.add_argument(
+        "--only_system", action="store_true", help="Prints only the final system score."
     )
     parser.add_argument(
         "--num_splits",
@@ -307,11 +330,13 @@ def get_cfg() -> Namespace:
         help="Percentage of the testset to use in each split.",
     )
     parser.add_argument(
-        "--accelerator",
+        "--t_test_alternative",
         type=str,
-        default="ddp",
-        choices=["dp", "ddp"],
-        help="Pytorch Lightnining accelerator for multi-GPU.",
+        default="less",
+        help=(
+            "Alternative hypothesis from scipy.stats.ttest_rel. The following options"
+            + " are available: 'two-sided', 'less', 'greater'. Defaults to 'less'"
+        ),
     )
     parser.add_argument(
         "--to_json",
@@ -335,24 +360,18 @@ def get_cfg() -> Namespace:
         default=None,
     )
     parser.add_argument(
-        "--seed_everything",
-        help="Prediction seed.",
-        type=int,
-        default=12,
-    )
-    parser.add_argument(
         "--num_workers",
         help="Number of workers to use when loading data.",
         type=int,
-        default=2,
-    )
-    parser.add_argument(
-        "--disable_bar", action="store_true", help="Disables progress bar."
+        default=None,
     )
     parser.add_argument(
         "--disable_cache",
         action="store_true",
-        help="Disables sentence embeddings caching. This makes inference slower but saves memory.",
+        help=(
+            "Disables sentence embeddings caching."
+            + " This makes inference slower but saves memory."
+        ),
     )
     parser.add_argument(
         "--disable_length_batching",
@@ -409,16 +428,14 @@ def get_cfg() -> Namespace:
 
 
 def compare_command() -> None:
-    """
-    CLI that uses comet to compare multiple systems in a pairwise manner.
-    """
+    """CLI that uses comet to compare multiple systems in a pairwise manner."""
     cfg, parser = get_cfg()
-    seed_everything(cfg.seed_everything)
+    seed_everything(1)
 
     model = load_from_checkpoint(cfg.model_path)
     model.eval()
 
-    if (cfg.references is None) and (not model.is_referenceless()):
+    if model.requires_references() and (cfg.references is None):
         parser.error(
             "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
         )
@@ -439,18 +456,16 @@ def compare_command() -> None:
         with open(system, mode="r", encoding="utf-8") as fp:
             translations.append([line.strip() for line in fp.readlines()])
 
-    references = None
-    if model.is_referenceless():
-        systems = [{"src": sources, "mt": system} for system in translations]
-    else:
+    if cfg.references is not None:
         with open(cfg.references(), encoding="utf-8") as fp:
             references = [line.strip() for line in fp.readlines()]
         systems = [
             {"src": sources, "mt": system, "ref": references} for system in translations
         ]
+    else:
+        systems = [{"src": sources, "mt": system} for system in translations]
 
     seg_scores = score(cfg, systems)
-
     population_size = seg_scores.shape[1]
     sys_scores = bootstrap_resampling(
         seg_scores,
