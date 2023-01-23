@@ -25,7 +25,6 @@ Unified Metric
 from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple, Union
 
-import numpy as np
 import pandas as pd
 import torch
 from torch import nn
@@ -34,7 +33,7 @@ from transformers.optimization import Adafactor
 from comet.models.base import CometModel
 from comet.models.metrics import MCCMetric, RegressionMetrics
 from comet.models.utils import Prediction, Target
-from comet.modules import FeedForward, LayerwiseAttention
+from comet.modules import FeedForward
 
 
 class UnifiedMetric(CometModel):
@@ -327,7 +326,7 @@ class UnifiedMetric(CometModel):
             Union[Tuple[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]: Model input
                 and targets.
         """
-        sample = {k: [dic[k] for dic in sample] for k in sample[0]}
+        sample = {k: [str(dic[k]) for dic in sample] for k in sample[0]}
         input_sequences = [
             self.encoder.prepare_sample(sample["mt"], self.word_level),
         ]

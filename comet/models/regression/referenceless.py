@@ -138,7 +138,7 @@ class ReferencelessRegression(RegressionMetric):
         Returns:
             Model inputs and depending on the 'stage' training labels/targets.
         """
-        sample = {k: [dic[k] for dic in sample] for k in sample[0]}
+        sample = {k: [str(dic[k]) for dic in sample] for k in sample[0]}
         src_inputs = self.encoder.prepare_sample(sample["src"])
         mt_inputs = self.encoder.prepare_sample(sample["mt"])
 

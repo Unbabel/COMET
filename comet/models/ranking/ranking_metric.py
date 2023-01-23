@@ -170,7 +170,7 @@ class RankingMetric(CometModel):
                 input ids. Otherwise, during training/validation we will return the
                 the input ids for src, pos, neg, and ref.
         """
-        sample = {k: [dic[k] for dic in sample] for k in sample[0]}
+        sample = {k: [str(dic[k]) for dic in sample] for k in sample[0]}
 
         if stage == "predict":
             src_inputs = self.encoder.prepare_sample(sample["src"])

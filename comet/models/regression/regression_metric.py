@@ -180,7 +180,7 @@ class RegressionMetric(CometModel):
         Returns:
             Model inputs and depending on the 'stage' training labels/targets.
         """
-        sample = {k: [dic[k] for dic in sample] for k in sample[0]}
+        sample = {k: [str(dic[k]) for dic in sample] for k in sample[0]}
         src_inputs = self.encoder.prepare_sample(sample["src"])
         mt_inputs = self.encoder.prepare_sample(sample["mt"])
         ref_inputs = self.encoder.prepare_sample(sample["ref"])
@@ -252,8 +252,8 @@ class RegressionMetric(CometModel):
             Prediction object with translation scores.
         """
         src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
-        mt_sentemb = self.get_sentence_embedding(mt_input_ids, mt_attention_mask)
         ref_sentemb = self.get_sentence_embedding(ref_input_ids, ref_attention_mask)
+        mt_sentemb = self.get_sentence_embedding(mt_input_ids, mt_attention_mask)
         return self.estimate(src_sentemb, mt_sentemb, ref_sentemb)
 
     def read_training_data(self, path: str) -> List[dict]:
