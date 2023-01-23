@@ -494,7 +494,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             sampler=RandomSampler(train_dataset),
             batch_size=self.hparams.batch_size,
             collate_fn=lambda s: self.prepare_sample(s, stage="fit"),
-            #num_workers=2 * self.trainer.num_devices,
+            num_workers=2 * self.trainer.num_devices,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -504,7 +504,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
                 collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
-                #num_workers=2 * self.trainer.num_devices,
+                num_workers=2 * self.trainer.num_devices,
             )
         ]
         for validation_set in self.validation_sets:
@@ -513,7 +513,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                     dataset=validation_set,
                     batch_size=self.hparams.batch_size,
                     collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
-                    #num_workers=2 * self.trainer.num_devices,
+                    num_workers=2 * self.trainer.num_devices,
                 )
             )
         return val_data
