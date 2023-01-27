@@ -62,6 +62,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         keep_embeddings_frozen (bool): Keeps the encoder frozen during training. Defaults
             to True.
         optimizer (str): Optimizer used during training. Defaults to 'AdamW'.
+        warmup_steps (int): Warmup steps for LR scheduler.
         encoder_learning_rate (float): Learning rate used to fine-tune the encoder model.
             Defaults to 1.0e-06.
         learning_rate (float): Learning rate used to fine-tune the top layers. Defaults
@@ -92,6 +93,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         nr_frozen_epochs: Union[float, int] = 0.3,
         keep_embeddings_frozen: bool = True,
         optimizer: str = "AdamW",
+        warmup_steps: int = 0,
         encoder_learning_rate: float = 1.0e-06,
         learning_rate: float = 1.5e-05,
         layerwise_decay: float = 0.95,
@@ -602,7 +604,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             message=".*Consider increasing the value of the `num_workers` argument` .*",
         )
         trainer = ptl.Trainer(
-            devices=gpus,
+            devices=gpus if gpus > 0 else None,
             logger=False,
             callbacks=callbacks,
             accelerator=accelerator if gpus > 0 else "cpu",

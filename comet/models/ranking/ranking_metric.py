@@ -28,7 +28,7 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from torch import nn
-from transformers.optimization import Adafactor
+from transformers.optimization import Adafactor, get_constant_schedule_with_warmup
 
 from comet.models.base import CometModel
 from comet.models.metrics import WMTKendall
@@ -44,6 +44,7 @@ class RankingMetric(CometModel):
         keep_embeddings_frozen (bool): Keeps the encoder frozen during training. Defaults
             to False.
         optimizer (str): Optimizer used during training. Defaults to 'AdamW'.
+        warmup_steps (int): Warmup steps for LR scheduler.
         encoder_learning_rate (float): Learning rate used to fine-tune the encoder model.
             Defaults to 1e-05.
         learning_rate (float): Learning rate used to fine-tune the top layers. Defaults
@@ -74,6 +75,7 @@ class RankingMetric(CometModel):
         nr_frozen_epochs: Union[float, int] = 0.1,
         keep_embeddings_frozen: bool = False,
         optimizer: str = "AdamW",
+        warmup_steps: int = 0,
         encoder_learning_rate: float = 1e-05,
         learning_rate: float = 3e-05,
         layerwise_decay: float = 0.95,
@@ -93,6 +95,7 @@ class RankingMetric(CometModel):
             nr_frozen_epochs=nr_frozen_epochs,
             keep_embeddings_frozen=keep_embeddings_frozen,
             optimizer=optimizer,
+            warmup_steps=warmup_steps,
             encoder_learning_rate=encoder_learning_rate,
             learning_rate=learning_rate,
             layerwise_decay=layerwise_decay,
@@ -119,7 +122,7 @@ class RankingMetric(CometModel):
 
     def requires_references(self) -> bool:
         return True
-        
+
     @property
     def loss(self):
         return torch.nn.TripletMarginLoss(margin=1.0, p=2)
@@ -152,7 +155,15 @@ class RankingMetric(CometModel):
         else:
             optimizer = torch.optim.AdamW(params, lr=self.hparams.learning_rate)
 
-        return [optimizer], []
+        # If warmup setps are not defined we don't need a scheduler.
+        if self.hparams.warmup_steps < 2:
+            return [optimizer], []
+
+        scheduler = get_constant_schedule_with_warmup(
+            optimizer=optimizer,
+            num_warmup_steps=self.hparams.warmup_steps,
+        )
+        return [optimizer], [scheduler]
 
     def prepare_sample(
         self, sample: List[Dict[str, Union[str, float]]], stage: str = "fit"

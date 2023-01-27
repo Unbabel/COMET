@@ -38,6 +38,7 @@ class ReferencelessRegression(RegressionMetric):
         keep_embeddings_frozen (bool): Keeps the encoder frozen during training. Defaults
             to True.
         optimizer (str): Optimizer used during training. Defaults to 'AdamW'.
+        warmup_steps (int): Warmup steps for LR scheduler.
         encoder_learning_rate (float): Learning rate used to fine-tune the encoder model.
             Defaults to 3.0e-06.
         learning_rate (float): Learning rate used to fine-tune the top layers. Defaults
@@ -71,6 +72,7 @@ class ReferencelessRegression(RegressionMetric):
         nr_frozen_epochs: Union[float, int] = 0.3,
         keep_embeddings_frozen: bool = True,
         optimizer: str = "AdamW",
+        warmup_steps: int = 0,
         encoder_learning_rate: float = 1e-06,
         learning_rate: float = 1.5e-05,
         layerwise_decay: float = 0.95,
@@ -93,6 +95,7 @@ class ReferencelessRegression(RegressionMetric):
             nr_frozen_epochs=nr_frozen_epochs,
             keep_embeddings_frozen=keep_embeddings_frozen,
             optimizer=optimizer,
+            warmup_steps=warmup_steps,
             encoder_learning_rate=encoder_learning_rate,
             learning_rate=learning_rate,
             layerwise_decay=layerwise_decay,
@@ -138,10 +141,7 @@ class ReferencelessRegression(RegressionMetric):
         Returns:
             Model inputs and depending on the 'stage' training labels/targets.
         """
-        inputs = {
-            k: [str(dic[k]) for dic in sample] 
-            for k in sample[0] if k != "score"
-        }
+        inputs = {k: [str(dic[k]) for dic in sample] for k in sample[0] if k != "score"}
         inputs["score"] = [float(s["score"]) for s in sample]
         src_inputs = self.encoder.prepare_sample(inputs["src"])
         mt_inputs = self.encoder.prepare_sample(inputs["mt"])

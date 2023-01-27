@@ -60,7 +60,7 @@ class CustomWriter(BasePredictionWriter):
         torch.distributed.broadcast_object_list(output_dir)
 
         # Make sure every process received the output_dir from RANK=0
-        torch.distributed.barrier()  
+        torch.distributed.barrier()
         # Now that we have a single output_dir shared across processes we can save
         # prediction along with their indices.
         self.output_dir = output_dir[0]

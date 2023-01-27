@@ -28,7 +28,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import pandas as pd
 import torch
 from torch import nn
-from transformers.optimization import Adafactor
+from transformers.optimization import Adafactor, get_constant_schedule_with_warmup
 
 from comet.models.base import CometModel
 from comet.models.metrics import MCCMetric, RegressionMetrics
@@ -47,6 +47,7 @@ class UnifiedMetric(CometModel):
         keep_embeddings_frozen (bool): Keeps the encoder frozen during training. Defaults
             to True.
         optimizer (str): Optimizer used during training. Defaults to 'AdamW'.
+        warmup_steps (int): Warmup steps for LR scheduler.
         encoder_learning_rate (float): Learning rate used to fine-tune the encoder model.
             Defaults to 3.0e-06.
         learning_rate (float): Learning rate used to fine-tune the top layers. Defaults
@@ -90,6 +91,7 @@ class UnifiedMetric(CometModel):
         nr_frozen_epochs: Union[float, int] = 0.9,
         keep_embeddings_frozen: bool = True,
         optimizer: str = "AdamW",
+        warmup_steps: int = 0,
         encoder_learning_rate: float = 3.0e-06,
         learning_rate: float = 3.0e-05,
         layerwise_decay: float = 0.95,
@@ -116,6 +118,7 @@ class UnifiedMetric(CometModel):
             nr_frozen_epochs=nr_frozen_epochs,
             keep_embeddings_frozen=keep_embeddings_frozen,
             optimizer=optimizer,
+            warmup_steps=warmup_steps,
             encoder_learning_rate=encoder_learning_rate,
             learning_rate=learning_rate,
             layerwise_decay=layerwise_decay,
@@ -172,12 +175,12 @@ class UnifiedMetric(CometModel):
             )
 
     def requires_references(self) -> bool:
-        """ Unified models can be developed to exclusively use [mt, ref] or to use both
+        """Unified models can be developed to exclusively use [mt, ref] or to use both
         [mt, src, ref]. Models developed to use the source will work in a quality
         estimation scenario but models trained with [mt, ref] won't!
-        
+
         Return:
-            [bool]: True if the model was trained to work exclusively with references. 
+            [bool]: True if the model was trained to work exclusively with references.
         """
         if self.input_segments == ["mt", "ref"]:
             return True
@@ -225,7 +228,15 @@ class UnifiedMetric(CometModel):
         else:
             optimizer = torch.optim.AdamW(params, lr=self.hparams.learning_rate)
 
-        return [optimizer], []
+        # If warmup setps are not defined we don't need a scheduler.
+        if self.hparams.warmup_steps < 2:
+            return [optimizer], []
+
+        scheduler = get_constant_schedule_with_warmup(
+            optimizer=optimizer,
+            num_warmup_steps=self.hparams.warmup_steps,
+        )
+        return [optimizer], [scheduler]
 
     def read_training_data(self, path: str) -> List[dict]:
         """Reads a csv file with training data.
@@ -326,10 +337,7 @@ class UnifiedMetric(CometModel):
             Union[Tuple[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]: Model input
                 and targets.
         """
-        inputs = {
-            k: [str(dic[k]) for dic in sample] 
-            for k in sample[0] if k != "score"
-        }
+        inputs = {k: [str(dic[k]) for dic in sample] for k in sample[0] if k != "score"}
         inputs["score"] = [float(s["score"]) for s in sample]
         input_sequences = [
             self.encoder.prepare_sample(inputs["mt"], self.word_level),
