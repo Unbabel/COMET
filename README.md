@@ -60,7 +60,7 @@ comet-score -s src.de -t hyp1.en hyp2.en -r ref.en
 WMT test sets via [SacreBLEU](https://github.com/mjpost/sacrebleu):
 
 ```bash
-comet-score -d wmt20:en-de -t PATH/TO/TRANSLATIONS
+comet-score -d wmt22:en-de -t PATH/TO/TRANSLATIONS
 ```
 
 If you are only interested in a system-level score use the following command:
@@ -99,6 +99,23 @@ Example for a candidate list of 1000 samples:
 comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 1000 --rerank_top_k 100 --gpus 4
 ```
 
+# COMET Models:
+
+We recommend the two following models to evaluate your translations:
+
+- `wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
+- `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
+
+Please check the respective [model Licenses here](https://github.com/Unbabel/COMET/blob/master/LICENSE.models.md). 
+
+## Languages Covered:
+
+All the above mentioned models are build on top of XLM-R which cover the following languages:
+
+Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, Belarusian, Bengali, Bengali Romanized, Bosnian, Breton, Bulgarian, Burmese, Burmese, Catalan, Chinese (Simplified), Chinese (Traditional), Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Georgian, German, Greek, Gujarati, Hausa, Hebrew, Hindi, Hindi Romanized, Hungarian, Icelandic, Indonesian, Irish, Italian, Japanese, Javanese, Kannada, Kazakh, Khmer, Korean, Kurdish (Kurmanji), Kyrgyz, Lao, Latin, Latvian, Lithuanian, Macedonian, Malagasy, Malay, Malayalam, Marathi, Mongolian, Nepali, Norwegian, Oriya, Oromo, Pashto, Persian, Polish, Portuguese, Punjabi, Romanian, Russian, Sanskri, Scottish, Gaelic, Serbian, Sindhi, Sinhala, Slovak, Slovenian, Somali, Spanish, Sundanese, Swahili, Swedish, Tamil, Tamil Romanized, Telugu, Telugu Romanized, Thai, Turkish, Ukrainian, Urdu, Urdu Romanized, Uyghur, Uzbek, Vietnamese, Welsh, Western, Frisian, Xhosa, Yiddish.
+
+**Thus, results for language pairs containing uncovered languages are unreliable!**
+
 ## Scoring within Python:
 
 ```python
@@ -121,23 +138,6 @@ data = [
 model_output = model.predict(data, batch_size=8, gpus=1)
 seg_scores, system_score = model_output.scores, model_output.system_score
 ```
-
-# COMET Models:
-
-We recommend the two following models to evaluate your translations:
-
-- `wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
-- `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
-
-Please check the respective [model Licenses here](https://github.com/Unbabel/COMET/blob/master/LICENSE.models.md). 
-
-## Languages Covered:
-
-All the above mentioned models are build on top of XLM-R which cover the following languages:
-
-Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, Belarusian, Bengali, Bengali Romanized, Bosnian, Breton, Bulgarian, Burmese, Burmese, Catalan, Chinese (Simplified), Chinese (Traditional), Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Georgian, German, Greek, Gujarati, Hausa, Hebrew, Hindi, Hindi Romanized, Hungarian, Icelandic, Indonesian, Irish, Italian, Japanese, Javanese, Kannada, Kazakh, Khmer, Korean, Kurdish (Kurmanji), Kyrgyz, Lao, Latin, Latvian, Lithuanian, Macedonian, Malagasy, Malay, Malayalam, Marathi, Mongolian, Nepali, Norwegian, Oriya, Oromo, Pashto, Persian, Polish, Portuguese, Punjabi, Romanian, Russian, Sanskri, Scottish, Gaelic, Serbian, Sindhi, Sinhala, Slovak, Slovenian, Somali, Spanish, Sundanese, Swahili, Swedish, Tamil, Tamil Romanized, Telugu, Telugu Romanized, Thai, Turkish, Ukrainian, Urdu, Urdu Romanized, Uyghur, Uzbek, Vietnamese, Welsh, Western, Frisian, Xhosa, Yiddish.
-
-**Thus, results for language pairs containing uncovered languages are unreliable!**
 
 # Train your own Metric: 
 
