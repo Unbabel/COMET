@@ -122,6 +122,13 @@ model_output = model.predict(data, batch_size=8, gpus=1)
 seg_scores, system_score = model_output.scores, model_output.system_score
 ```
 
+# COMET Models:
+
+We recommend the two following models to evaluate your translations:
+
+- `wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
+- `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
+
 ## Languages Covered:
 
 All the above mentioned models are build on top of XLM-R which cover the following languages:
@@ -129,12 +136,6 @@ All the above mentioned models are build on top of XLM-R which cover the followi
 Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, Belarusian, Bengali, Bengali Romanized, Bosnian, Breton, Bulgarian, Burmese, Burmese, Catalan, Chinese (Simplified), Chinese (Traditional), Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Georgian, German, Greek, Gujarati, Hausa, Hebrew, Hindi, Hindi Romanized, Hungarian, Icelandic, Indonesian, Irish, Italian, Japanese, Javanese, Kannada, Kazakh, Khmer, Korean, Kurdish (Kurmanji), Kyrgyz, Lao, Latin, Latvian, Lithuanian, Macedonian, Malagasy, Malay, Malayalam, Marathi, Mongolian, Nepali, Norwegian, Oriya, Oromo, Pashto, Persian, Polish, Portuguese, Punjabi, Romanian, Russian, Sanskri, Scottish, Gaelic, Serbian, Sindhi, Sinhala, Slovak, Slovenian, Somali, Spanish, Sundanese, Swahili, Swedish, Tamil, Tamil Romanized, Telugu, Telugu Romanized, Thai, Turkish, Ukrainian, Urdu, Urdu Romanized, Uyghur, Uzbek, Vietnamese, Welsh, Western, Frisian, Xhosa, Yiddish.
 
 **Thus, results for language pairs containing uncovered languages are unreliable!**
-
-# COMET Models:
-We recommend the two following models to evaluate your translations:
-
-- `wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
-- `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
 
 # Train your own Metric: 
 
@@ -156,7 +157,7 @@ In order to run the toolkit tests you must run the following command:
 
 ```bash
 coverage run --source=comet -m unittest discover
-coverage report -m # Expected coverage 79%
+coverage report -m # Expected coverage 78%
 ```
 
 **Note:** Testing on CPU takes a long time
@@ -164,13 +165,13 @@ coverage report -m # Expected coverage 79%
 # Publications
 If you use COMET please cite our work **and don't forget to say which model you used!**
 
-- Winning submission: [CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task](https://www.statmt.org/wmt22/pdf/2022.wmt-1.60.pdf)
+- [CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task](https://aclanthology.org/2022.wmt-1.60/)
 
-- [COMET-22: Unbabel-IST 2022 Submission for the Metrics Shared Task](https://www.statmt.org/wmt22/pdf/2022.wmt-1.52.pdf)
+- [COMET-22: Unbabel-IST 2022 Submission for the Metrics Shared Task](https://aclanthology.org/2022.wmt-1.52/)
 
-- EAMT22 Best paper award: [Searching for Cometinho: The Little Metric That Could](https://aclanthology.org/2022.eamt-1.9/)
+- [Searching for Cometinho: The Little Metric That Could](https://aclanthology.org/2022.eamt-1.9/)
 
-- [Are References Really Needed? Unbabel-IST 2021 Submission for the Metrics Shared Task](http://statmt.org/wmt21/pdf/2021.wmt-1.111.pdf)
+- [Are References Really Needed? Unbabel-IST 2021 Submission for the Metrics Shared Task](https://aclanthology.org/2021.wmt-1.111/)
 
 - [Uncertainty-Aware Machine Translation Evaluation](https://aclanthology.org/2021.findings-emnlp.330/) 
 
