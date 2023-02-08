@@ -129,6 +129,8 @@ We recommend the two following models to evaluate your translations:
 - `wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
 - `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
 
+Please check the respective [model Licenses here](https://github.com/Unbabel/COMET/blob/master/LICENSE.models.md). 
+
 ## Languages Covered:
 
 All the above mentioned models are build on top of XLM-R which cover the following languages:
