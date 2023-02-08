@@ -193,7 +193,6 @@ class RegressionMetric(CometModel):
             Model inputs and depending on the 'stage' training labels/targets.
         """
         inputs = {k: [str(dic[k]) for dic in sample] for k in sample[0] if k != "score"}
-        inputs["score"] = [float(s["score"]) for s in sample]
         src_inputs = self.encoder.prepare_sample(inputs["src"])
         mt_inputs = self.encoder.prepare_sample(inputs["mt"])
         ref_inputs = self.encoder.prepare_sample(inputs["ref"])
@@ -206,7 +205,9 @@ class RegressionMetric(CometModel):
         if stage == "predict":
             return model_inputs
 
-        targets = Target(score=torch.tensor(inputs["score"], dtype=torch.float))
+        scores = [float(s["score"]) for s in sample]
+        targets = Target(score=torch.tensor(scores, dtype=torch.float))
+
         if "system" in inputs:
             targets["system"] = inputs["system"]
 

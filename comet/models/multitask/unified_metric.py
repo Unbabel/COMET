@@ -338,7 +338,6 @@ class UnifiedMetric(CometModel):
                 and targets.
         """
         inputs = {k: [str(dic[k]) for dic in sample] for k in sample[0] if k != "score"}
-        inputs["score"] = [float(s["score"]) for s in sample]
         input_sequences = [
             self.encoder.prepare_sample(inputs["mt"], self.word_level),
         ]
@@ -357,7 +356,9 @@ class UnifiedMetric(CometModel):
         if stage == "predict":
             return model_inputs["inputs"]
 
-        targets = Target(score=torch.tensor(inputs["score"], dtype=torch.float))
+        scores = [float(s["score"]) for s in sample]
+        targets = Target(score=torch.tensor(scores, dtype=torch.float))
+        
         if "system" in inputs:
             targets["system"] = inputs["system"]
 
