@@ -154,7 +154,8 @@ You can then use your own metric to score:
 comet-score -s src.de -t hyp1.en -r ref.en --model PATH/TO/CHECKPOINT
 ```
 
-**Note:** Please contact ricardo.rei@unbabel.com if you wish to host your own metric within COMET available metrics!
+You can also upload your model to [Hugging Face Hub](https://huggingface.co/docs/hub/index). Use [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) as example. Then you can use your model directly from the hub.
+
 
 # unittest:
 In order to run the toolkit tests you must run the following command:
