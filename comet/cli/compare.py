@@ -70,8 +70,7 @@ from sacrebleu.utils import get_reference_files, get_source_file
 from scipy import stats
 from tabulate import tabulate
 
-from comet.download_utils import download_model
-from comet.models import available_metrics, load_from_checkpoint
+from comet import download_model, load_from_checkpoint
 
 Statistical_test_info = Dict[str, Union[Path_fr, Dict[str, float]]]
 
@@ -348,7 +347,7 @@ def get_cfg() -> Namespace:
         "--model",
         type=str,
         required=False,
-        default="wmt22-comet-da",
+        default="Unbabel/wmt22-comet-da",
         help="COMET model to be used.",
     )
     parser.add_argument(
@@ -412,16 +411,9 @@ def get_cfg() -> Namespace:
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         cfg.model_path = cfg.model
 
-    elif cfg.model in available_metrics:
+    else:
         cfg.model_path = download_model(
             cfg.model, saving_directory=cfg.model_storage_path
-        )
-
-    else:
-        parser.error(
-            "{} is not a valid checkpoint path or model choice. Choose from {}".format(
-                cfg.model, list(available_metrics.keys())
-            )
         )
 
     return cfg, parser

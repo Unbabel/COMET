@@ -58,8 +58,7 @@ from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 from sacrebleu.utils import get_reference_files, get_source_file
 
-from comet.download_utils import download_model
-from comet.models import available_metrics, load_from_checkpoint
+from comet import download_model, load_from_checkpoint
 
 
 def score_command() -> None:
@@ -86,7 +85,7 @@ def score_command() -> None:
         "--model",
         type=str,
         required=False,
-        default="wmt22-comet-da",
+        default="Unbabel/wmt22-comet-da",
         help="COMET model to be used.",
     )
     parser.add_argument(
@@ -151,14 +150,9 @@ def score_command() -> None:
 
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         model_path = cfg.model
-    elif cfg.model in available_metrics:
-        model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
     else:
-        parser.error(
-            "{} is not a valid checkpoint path or model choice. Choose from {}".format(
-                cfg.model, available_metrics.keys()
-            )
-        )
+        model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
+
     model = load_from_checkpoint(model_path)
     model.eval()
 

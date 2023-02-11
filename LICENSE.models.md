@@ -6,9 +6,8 @@ Starting at version 2.0 models will have specific licenses.
 
 | Model | License |
 |:----: | :-----: |
-| `wmt22-comet-da` | [Apache-2.0](https://github.com/Unbabel/COMET/blob/master/LICENSE) | 
-| `wmt22-cometkiwi-da` | [CC-BY-NC-SA](#CC-BY-NC-SA) |
-
+| `Unbabel/wmt22-comet-da` | [Apache-2.0](https://huggingface.co/Unbabel/wmt22-comet-da/blob/main/LICENSE) | 
+| `Unbabel/wmt22-cometkiwi-da` | [CC-BY-NC-SA](https://huggingface.co/Unbabel/wmt22-cometkiwi-da/blob/main/LICENSE) |
 
 # CC-BY-NC-SA
 

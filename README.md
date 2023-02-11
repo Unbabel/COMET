@@ -72,7 +72,7 @@ comet-score -s src.de -t hyp1.en -r ref.en --quiet --only_system
 ### Reference-free evaluation:
 
 ```bash
-comet-score -s src.de -t hyp1.en --model wmt22-cometkiwi-da
+comet-score -s src.de -t hyp1.en --model Unbabel/wmt22-cometkiwi-da
 ```
 
 ### Comparing multiple systems:
@@ -103,10 +103,12 @@ comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 
 
 We recommend the two following models to evaluate your translations:
 
-- `wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
-- `wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
+- [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da): **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
+- [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da): **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
 
 Please check the respective [model Licenses here](https://github.com/Unbabel/COMET/blob/master/LICENSE.models.md). 
+
+For backwards compatibility you can also use `Unbabel/wmt20-comet-da` which is the primary metric for versions < 2.0. Check our [METRICS](METRICS.md) page to access all other models developed in previous versions.
 
 ## Languages Covered:
 
@@ -121,7 +123,7 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 ```python
 from comet import download_model, load_from_checkpoint
 
-model_path = download_model("wmt22-comet-da")
+model_path = download_model("Unbabel/wmt22-comet-da")
 model = load_from_checkpoint(model_path)
 data = [
     {
@@ -136,7 +138,7 @@ data = [
     }
 ]
 model_output = model.predict(data, batch_size=8, gpus=1)
-seg_scores, system_score = model_output.scores, model_output.system_score
+print(model_output)
 ```
 
 # Train your own Metric: 

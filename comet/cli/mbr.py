@@ -35,8 +35,9 @@ optional arguments:
                        Chooses the topK candidates according to --qe_model before
                        applying MBR. Disabled by default. (type: int, default: 0)
   --qe_model QE_MODEL   Reference Free model used for reranking before MBR. (type: str,
-                        default: wmt22-cometkiwi-da)
-  --model MODEL         COMET model to be used. (type: str, default: wmt22-comet-da)
+                        default: Unbabel/wmt22-cometkiwi-da)
+  --model MODEL         COMET model to be used. 
+                        (type: str, default: Unbabel/wmt22-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
                         Path to the directory where models will be stored. By default
                         its saved in ~/.cache/torch/unbabel_comet/ (default: null)
@@ -52,8 +53,7 @@ from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from tqdm import tqdm
 
-from comet.download_utils import download_model
-from comet.models import RegressionMetric, available_metrics, load_from_checkpoint
+from comet.models import RegressionMetric, download_model, load_from_checkpoint
 
 
 def build_embeddings(
@@ -201,14 +201,14 @@ def mbr_command() -> None:
         "--qe_model",
         type=str,
         required=False,
-        default="wmt22-cometkiwi-da",
+        default="Unbabel/wmt22-cometkiwi-da",
         help="Reference Free model used for reranking before MBR.",
     )
     parser.add_argument(
         "--model",
         type=str,
         required=False,
-        default="wmt22-comet-da",
+        default="Unbabel/wmt22-comet-da",
         help="COMET model to be used.",
     )
     parser.add_argument(
@@ -242,34 +242,28 @@ def mbr_command() -> None:
             and os.path.exists(cfg.qe_model)
         ):
             qe_model_path = cfg.qe_model
-        elif cfg.qe_model in available_metrics:
+        else:
             qe_model_path = download_model(
                 cfg.qe_model, saving_directory=cfg.model_storage_path
             )
-        else:
-            parser.error(
-                "{} is not a valid QE checkpoint path or model.".format(cfg.qe_model)
-            )
-
         assert (
             cfg.rerank_top_k < cfg.num_samples
         ), "--rerank_top_k needs to be smaller than number of candidates provided!"
         model = load_from_checkpoint(qe_model_path)
-        translations = rerank_top_k(
-            sources, translations, model, cfg.batch_size, cfg.gpus, cfg.num_samples, cfg.rerank_top_k
-        )
         assert (
             not model.requires_references()
         ), "--qe_model expects a Reference Free model!"
+
+        translations = rerank_top_k(
+            sources, translations, model, cfg.batch_size, cfg.gpus, cfg.num_samples, cfg.rerank_top_k
+        )
         num_samples = cfg.rerank_top_k
 
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         model_path = cfg.model
-    elif cfg.model in available_metrics:
-        model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
     else:
-        parser.error("{} is not a valid metric checkpoint or model.".format(cfg.model))
-
+        model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
+    
     model = load_from_checkpoint(model_path)
     model.eval()
     model.cuda()
