@@ -108,7 +108,7 @@ We recommend the two following models to evaluate your translations:
 
 Please check the respective [model Licenses here](https://github.com/Unbabel/COMET/blob/master/LICENSE.models.md). 
 
-For backwards compatibility you can also use `Unbabel/wmt20-comet-da` which is the primary metric for versions < 2.0. Check our [METRICS](METRICS.md) page to access all other models developed in previous versions.
+For backwards compatibility you can also use `Unbabel/wmt20-comet-da` which is the primary metric for versions < 2.0. Check our [MODELS](MODELS.md) page to access all other models developed in previous versions.
 
 ## Languages Covered:
 

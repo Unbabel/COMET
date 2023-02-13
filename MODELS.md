@@ -1,21 +1,20 @@
 # Available Evaluation Models
 
-The two main COMET models are: 
+The two main COMET models are:
 
-- `Unbabel/wmt22-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
-- `Unbabel/wmt22-cometkiwi-da`: **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
+- [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da): **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
+- [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da): **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
 
-This two models were part of the final ensemble used in our WMT22 [Metrics](https://aclanthology.org/2022.wmt-1.52/) and [QE](https://aclanthology.org/2022.wmt-1.60/) shared tasks. 
+These two models were part of the final ensemble used in our WMT22 [Metrics](https://aclanthology.org/2022.wmt-1.52/) and [QE](https://aclanthology.org/2022.wmt-1.60/) shared tasks. 
 
-For backwards compatibility you can also use `Unbabel/wmt20-comet-da` which is the primary metric for versions < 2.0.
+For backwards compatibility you can also use [`Unbabel/wmt20-comet-da`](https://huggingface.co/Unbabel/wmt20-comet-da) which was the primary metric for versions < 2.0 and [`Unbabel/wmt20-comet-qe-da`](https://huggingface.co/Unbabel/wmt20-comet-qe-da) the respective reference-free version.
 
 All other models developed through the years can be accessed through the following links:
 
 | Model | Download Link | Paper | 
 | :---: | :-----------: | :---: |
 | `emnlp20-comet-rank` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/emnlp20-comet-rank.tar.gz) | [🔗](https://aclanthology.org/2020.emnlp-main.213/) |
-| `wmt20-comet-qe-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da.tar.gz) | [🔗](https://aclanthology.org/2020.wmt-1.101/) |
-| `wmt20-comet-qe-da-v2` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da-v2.tar.gz) | [🔗](https://aclanthology.org/2020.wmt-1.101/) | 
+| `wmt20-comet-qe-da` - replaced by `Unbabel/wmt20-comet-qe-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da.tar.gz) | [🔗](https://aclanthology.org/2020.wmt-1.101/) |
 | `wmt21-comet-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-da.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) |
 | `wmt21-comet-mqm` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-mqm.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) |
 | `wmt21-comet-qe-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-da.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) |
