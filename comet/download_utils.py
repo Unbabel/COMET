@@ -35,7 +35,7 @@ def get_cache_folder() -> str:
     Returns:
         str: cache folder path.
     """
-    cache_directory = Path.home() / ".cache" / "torch" / "unbabel_comet"
+    cache_directory = os.path.join(Path.home(), ".cache", "torch", "unbabel_comet")
     if not cache_directory.exists():
         cache_directory.mkdir(exist_ok=True, parents=True)
 
@@ -208,16 +208,16 @@ def download_model(model: str, saving_directory: str = None) -> str:
     if saving_directory is None:
         saving_directory = get_cache_folder()
 
-    if not saving_directory.endswith("/"):
-        saving_directory += "/"
+    if not saving_directory.endswith(os.path.sep):
+        saving_directory += os.path.sep
 
     if not os.path.exists(saving_directory):
         os.makedirs(saving_directory)
 
     if os.path.isdir(saving_directory + model):
         logger.info(f"{model} is already in cache.")
-        if not model.endswith("/"):
-            model += "/"
+        if not model.endswith(os.path.sep):
+            model += os.path.sep
 
     elif model not in available_metrics.keys():
         raise Exception(
@@ -240,10 +240,10 @@ def download_model(model: str, saving_directory: str = None) -> str:
     if os.path.exists(saving_directory + model + ".tar"):
         os.remove(saving_directory + model + ".tar")
 
-    checkpoints_folder = saving_directory + model + "/checkpoints"
+    checkpoints_folder = saving_directory + model + os.path.sep + "checkpoints"
     checkpoints = [
         file for file in os.listdir(checkpoints_folder) if file.endswith(".ckpt")
     ]
     checkpoint = checkpoints[-1]
-    checkpoint_path = checkpoints_folder + "/" + checkpoint
+    checkpoint_path = os.path.join(checkpoints_folder, checkpoint)
     return checkpoint_path
