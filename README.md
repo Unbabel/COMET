@@ -75,6 +75,8 @@ comet-score -s src.de -t hyp1.en -r ref.en --quiet --only_system
 comet-score -s src.de -t hyp1.en --model Unbabel/wmt22-cometkiwi-da
 ```
 
+**Note:** To use our state-of-the-art QE model, you must first [log in to the HuggingFace Hub and acknowledge its license.](https://huggingface.co/Unbabel/wmt22-cometkiwi-da)
+
 ### Comparing multiple systems:
 
 When comparing multiple MT systems we encourage you to run the `comet-compare` command to get **statistical significance** with Paired T-Test and bootstrap resampling [(Koehn, et al 2004)](https://aclanthology.org/W04-3250/).
