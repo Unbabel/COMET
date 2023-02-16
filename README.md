@@ -103,14 +103,16 @@ comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 
 
 # COMET Models:
 
-We recommend the two following models to evaluate your translations:
+We recommend using one of the following two models to evaluate your translations:
 
-- [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da): **DEFAULT** Reference-based Regression model build on top of XLM-R and trained of Direct Assessments from WMT17 to WMT20.
-- [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da): **Reference-FREE** Regression model build on top of InfoXLM, trained on Direct Assessments from WMT17 to WMT20 and Direct Assessments from the MLQE-PE corpus.
+- [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da): This is the **default model** that uses a **reference-based** regression approach and is built on top of XLM-R. It has been trained on direct assessments from WMT17 to WMT20.
+- [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da): This is a **reference-free** model that uses a regression approach and is built on top of InfoXLM. It has been trained on direct assessments from WMT17 to WMT20 as well as direct assessments from the MLQE-PE corpus.
 
-Please check the respective [model Licenses here](https://github.com/Unbabel/COMET/blob/master/LICENSE.models.md). 
+Unlike previous models, the output scores of these two models range from 0 to 1, where 1 represents a perfect translation.
 
-For backwards compatibility you can also use `Unbabel/wmt20-comet-da` which is the primary metric for versions < 2.0. Check our [MODELS](MODELS.md) page to access all other models developed in previous versions.
+Please refer to the model licenses for more information.
+
+For backward compatibility, you can use Unbabel/wmt20-comet-da, which is the primary metric for versions prior to 2.0. Visit our MODELS page to access all other models developed in previous versions.
 
 ## Languages Covered:
 
