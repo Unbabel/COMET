@@ -41,7 +41,7 @@ optional arguments:
   --t_test_alternative T_TEST_ALTERNATIVE
                         Alternative hypothesis from scipy.stats.ttest_rel. The
                         following options are available: 'two-sided', 'less', 
-                        'greater'. Defaults to 'less' (type: str, default: less)
+                        'greater'. Defaults to 'less' (type: str, default: two-sided)
   --to_json TO_JSON     Exports results to a json file. (type: str, default: "")
   --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
@@ -331,10 +331,10 @@ def get_cfg() -> Namespace:
     parser.add_argument(
         "--t_test_alternative",
         type=str,
-        default="less",
+        default="two-sided",
         help=(
             "Alternative hypothesis from scipy.stats.ttest_rel. The following options"
-            + " are available: 'two-sided', 'less', 'greater'. Defaults to 'less'"
+            + " are available: 'two-sided', 'less', 'greater'. Defaults to 'two-sided'"
         ),
     )
     parser.add_argument(
