@@ -8,6 +8,8 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
+> currently master is a a pre-release of v2.0 and not available via pypi
+
 # Quick Installation
 
 COMET requires python 3.8 or above! 
