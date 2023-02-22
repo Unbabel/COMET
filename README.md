@@ -75,7 +75,7 @@ comet-score -s src.de -t hyp1.en -r ref.en --quiet --only_system
 comet-score -s src.de -t hyp1.en --model Unbabel/wmt20-comet-qe-da
 ```
 
-**Note:** We are currently working on Licensing and releasing `wmt22-cometkiwi-da` but meanwhile that models is not available.
+**Note:** We are currently working on Licensing and releasing `Unbabel/wmt22-cometkiwi-da` but meanwhile that models is not available.
 
 ### Comparing multiple systems:
 
