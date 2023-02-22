@@ -24,8 +24,6 @@ All other models developed through the years can be accessed through the followi
 | `wmt21-cometinho-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-da.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) | 
 | `eamt22-cometinho-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-cometinho-da.tar.gz) | [🔗](https://aclanthology.org/2022.eamt-1.9/) |
 | `eamt22-prune-comet-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-prune-comet-da.tar.gz) | [🔗](https://aclanthology.org/2022.eamt-1.9/) |
-| `wmt22-seqtag-mqm` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt22/wmt22-seqtag-mqm.tar.gz) | [🔗](https://aclanthology.org/2022.wmt-1.52/) |
-
 
 Example :
 

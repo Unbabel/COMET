@@ -72,10 +72,10 @@ comet-score -s src.de -t hyp1.en -r ref.en --quiet --only_system
 ### Reference-free evaluation:
 
 ```bash
-comet-score -s src.de -t hyp1.en --model Unbabel/wmt22-cometkiwi-da
+comet-score -s src.de -t hyp1.en --model Unbabel/wmt20-comet-qe-da
 ```
 
-**Note:** To use our state-of-the-art QE model, you must first [log in to the HuggingFace Hub and acknowledge its license.](https://huggingface.co/Unbabel/wmt22-cometkiwi-da)
+**Note:** We are currently working on Licensing and releasing `wmt22-cometkiwi-da` but meanwhile that models is not available.
 
 ### Comparing multiple systems:
 
@@ -98,21 +98,17 @@ If working with a very large candidate list you can use `--rerank_top_k` flag to
 Example for a candidate list of 1000 samples:
 
 ```bash
-comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 1000 --rerank_top_k 100 --gpus 4
+comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 1000 --rerank_top_k 100 --gpus 4 --qe_model Unbabel/wmt20-comet-qe-da
 ```
 
 # COMET Models:
 
-We recommend using one of the following two models to evaluate your translations:
+To evaluate your translations, we suggest using one of two models:
 
-- [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da): This is the **default model** that uses a **reference-based** regression approach and is built on top of XLM-R. It has been trained on direct assessments from WMT17 to WMT20.
-- [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da): This is a **reference-free** model that uses a regression approach and is built on top of InfoXLM. It has been trained on direct assessments from WMT17 to WMT20 as well as direct assessments from the MLQE-PE corpus.
+- **Default model:** [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) - This model uses a reference-based regression approach and is built on top of XLM-R. It has been trained on direct assessments from WMT17 to WMT20 and provides scores ranging from 0 to 1, where 1 represents a perfect translation.
+- **Upcoming model:** [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da) - This reference-free model uses a regression approach and is built on top of InfoXLM. It has been trained on direct assessments from WMT17 to WMT20, as well as direct assessments from the MLQE-PE corpus. Like the default model, it also provides scores ranging from 0 to 1.
 
-Unlike previous models, the output scores of these two models range from 0 to 1, where 1 represents a perfect translation.
-
-Please refer to the model licenses for more information.
-
-For backward compatibility, you can use Unbabel/wmt20-comet-da, which is the primary metric for versions prior to 2.0. Visit our MODELS page to access all other models developed in previous versions.
+For versions prior to 2.0, you can still use [`Unbabel/wmt20-comet-da`](https://huggingface.co/Unbabel/wmt20-comet-da), which is the primary metric, and Unbabel/[`Unbabel/wmt20-comet-qe-da`](https://huggingface.co/Unbabel/wmt20-comet-qe-da) for the respective reference-free version. You can find a list of all other models developed in previous versions on our [MODELS](MODELS.md) page. For more information, please refer to the [model licenses](LICENSE.models.md).
 
 ## Languages Covered:
 
@@ -160,7 +156,6 @@ comet-score -s src.de -t hyp1.en -r ref.en --model PATH/TO/CHECKPOINT
 
 You can also upload your model to [Hugging Face Hub](https://huggingface.co/docs/hub/index). Use [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) as example. Then you can use your model directly from the hub.
 
-
 # unittest:
 In order to run the toolkit tests you must run the following command:
 
@@ -172,6 +167,7 @@ coverage report -m # Expected coverage 78%
 **Note:** Testing on CPU takes a long time
 
 # Publications
+
 If you use COMET please cite our work **and don't forget to say which model you used!**
 
 - [CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task](https://aclanthology.org/2022.wmt-1.60/)

@@ -6,7 +6,7 @@ COMET is an Open Source toolkit aimed to develop state of the art models that ca
 
 ## Basic guidelines
 
-* The project must fully support Python 3.6 or further.
+* The project must fully support Python 3.8 or further.
 * Code formatting must stick to the Facebook style, 80 columns and single quotes. Please make sure you have [black](https://github.com/ambv/black) installed and to run it before submitting changes.
 * Imports are sorted with [isort](https://github.com/timothycrosley/isort).
 * Filenames must be in lowercase.
