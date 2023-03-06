@@ -93,6 +93,7 @@ class RegressionMetric(CometModel):
         hidden_sizes: List[int] = [3072, 1024],
         activations: str = "Tanh",
         final_activation: Optional[str] = None,
+        load_pretrained_weights: bool = True
     ) -> None:
         super().__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -114,6 +115,7 @@ class RegressionMetric(CometModel):
             train_data=train_data,
             validation_data=validation_data,
             class_identifier="regression_metric",
+            load_pretrained_weights=load_pretrained_weights
         )
         self.save_hyperparameters()
         self.estimator = FeedForward(

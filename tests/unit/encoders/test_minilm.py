@@ -47,6 +47,7 @@ class TestMiniLMEncoder(unittest.TestCase):
                 8530,
                 232,
                 940,
+                6,
                 179951,
                 618,
                 2,
@@ -58,13 +59,13 @@ class TestMiniLMEncoder(unittest.TestCase):
                 38,
                 2,
             ],
-            [0, 40088, 393, 286, 15946, 38, 2, 2, 3293, 83, 142, 27781, 38, 2, 1],
+            [0, 40088, 393, 286, 15946, 38, 2, 2, 3293, 83, 142, 27781, 38, 2, 1, 1],
         ]
         expected_in_span_mask = [
-            [0, 0, 0, 0, 0, 1, 1, 0, -1, -1, -1, -1, -1, -1, -1],
-            [0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1],
+            [0, 0, 0, 0, 0, 0, 1, 1, 0, -1, -1, -1, -1, -1, -1, -1],
+            [0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1],
         ]
-        seq_size = [15, 14]
+        seq_size = [16, 14]
         continuous_input = self.minilm.concat_sequences(
             [source_input, translations_input], return_in_span_mask=True
         )

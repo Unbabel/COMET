@@ -18,7 +18,7 @@ MiniLM Encoder
     Pretrained MiniLM encoder from Microsoft. This encoder uses a BERT 
     architecture with an XLMR tokenizer.
 """
-from transformers import BertModel, XLMRobertaTokenizer
+from transformers import BertConfig, BertModel, XLMRobertaTokenizerFast
 
 from comet.encoders.xlmr import Encoder, XLMREncoder
 
@@ -26,25 +26,38 @@ from comet.encoders.xlmr import Encoder, XLMREncoder
 class MiniLMEncoder(XLMREncoder):
     """MiniLMEncoder encoder.
 
-    :param pretrained_model: Pretrained model from hugging face.
+    Args:
+        pretrained_model (str): Pretrained model from hugging face.
+        load_pretrained_weights (bool): If set to True loads the pretrained weights
+            from Hugging Face
     """
 
-    def __init__(self, pretrained_model: str) -> None:
+    def __init__(
+        self, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = XLMRobertaTokenizer.from_pretrained(
+        self.tokenizer = XLMRobertaTokenizerFast.from_pretrained(
             pretrained_model, use_fast=True
         )
-        self.model = BertModel.from_pretrained(pretrained_model)
+        if load_pretrained_weights:
+            self.model = BertModel.from_pretrained(pretrained_model)
+        else:
+            self.model = BertModel(BertConfig.from_pretrained(pretrained_model))
+
         self.model.encoder.output_hidden_states = True
 
     @classmethod
-    def from_pretrained(cls, pretrained_model: str) -> Encoder:
+    def from_pretrained(
+        cls, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.
 
         Args:
             pretrained_model (str):Name of the pretrain model to be loaded.
+            load_pretrained_weights (bool): If set to True loads the pretrained weights
+                from Hugging Face
 
         Returns:
-            Encoder: MiniLMEncoder object.
+            Encoder: XLMREncoder object.
         """
-        return MiniLMEncoder(pretrained_model)
+        return MiniLMEncoder(pretrained_model, load_pretrained_weights)

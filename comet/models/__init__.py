@@ -69,7 +69,9 @@ def load_from_checkpoint(checkpoint_path: str) -> CometModel:
         with open(hparams_file) as yaml_file:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)
         model_class = str2model[hparams["class_identifier"]]
-        model = model_class.load_from_checkpoint(checkpoint_path)
+        model = model_class.load_from_checkpoint(
+            checkpoint_path, load_pretrained_weights=False
+        )
         return model
     else:
         raise Exception(f"hparams.yaml file is missing from {parent_folder}!")

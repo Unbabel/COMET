@@ -109,11 +109,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         train_data: Optional[List[str]] = None,
         validation_data: Optional[List[str]] = None,
         class_identifier: Optional[str] = None,
+        load_pretrained_weights: bool = True
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
         self.encoder = str2encoder[self.hparams.encoder_model].from_pretrained(
-            self.hparams.pretrained_model
+            self.hparams.pretrained_model, load_pretrained_weights
         )
 
         self.epoch_nr = 0

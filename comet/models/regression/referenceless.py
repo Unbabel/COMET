@@ -90,6 +90,7 @@ class ReferencelessRegression(RegressionMetric):
         hidden_sizes: List[int] = [2048, 1024],
         activations: str = "Tanh",
         final_activation: Optional[str] = None,
+        load_pretrained_weights: bool = True
     ) -> None:
         super(RegressionMetric, self).__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -111,6 +112,7 @@ class ReferencelessRegression(RegressionMetric):
             train_data=train_data,
             validation_data=validation_data,
             class_identifier="referenceless_regression_metric",
+            load_pretrained_weights=load_pretrained_weights
         )
         self.save_hyperparameters()
         self.estimator = FeedForward(

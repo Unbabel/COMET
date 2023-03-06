@@ -113,6 +113,7 @@ class UnifiedMetric(CometModel):
         word_level_training: bool = False,
         word_weights: List[float] = [0.15, 0.85],
         loss_lambda: float = 0.65,
+        load_pretrained_weights: bool = True
     ) -> None:
         super().__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -131,6 +132,7 @@ class UnifiedMetric(CometModel):
             train_data=train_data,
             validation_data=validation_data,
             class_identifier="unified_metric",
+            load_pretrained_weights=load_pretrained_weights
         )
         self.save_hyperparameters()
         self.estimator = FeedForward(

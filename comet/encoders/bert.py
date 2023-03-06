@@ -20,7 +20,7 @@ BERT Encoder
 from typing import Dict, Optional
 
 import torch
-from transformers import AutoModel, AutoTokenizer
+from transformers import BertConfig, BertModel, BertTokenizerFast
 
 from comet.encoders.base import Encoder
 
@@ -30,12 +30,25 @@ class BERTEncoder(Encoder):
 
     Args:
         pretrained_model (str): Pretrained model from hugging face.
+        load_pretrained_weights (bool): If set to True loads the pretrained weights
+            from Hugging Face
     """
 
-    def __init__(self, pretrained_model: str) -> None:
+    def __init__(
+        self, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> None:
         super().__init__()
-        self.tokenizer = AutoTokenizer.from_pretrained(pretrained_model, use_fast=True)
-        self.model = AutoModel.from_pretrained(pretrained_model)
+        self.tokenizer = BertTokenizerFast.from_pretrained(
+            pretrained_model, use_fast=True
+        )
+        if load_pretrained_weights:
+            self.model = BertModel.from_pretrained(
+                pretrained_model, add_pooling_layer=False
+            )
+        else:
+            self.model = BertModel(
+                BertConfig.from_pretrained(pretrained_model), add_pooling_layer=False
+            )
         self.model.encoder.output_hidden_states = True
 
     @property
@@ -73,13 +86,20 @@ class BERTEncoder(Encoder):
         return True
 
     @classmethod
-    def from_pretrained(cls, pretrained_model: str):
-        """Function that loads a pretrained encoder and the respective tokenizer.
+    def from_pretrained(
+        cls, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> Encoder:
+        """Function that loads a pretrained encoder from Hugging Face.
+
+        Args:
+            pretrained_model (str):Name of the pretrain model to be loaded.
+            load_pretrained_weights (bool): If set to True loads the pretrained weights
+                from Hugging Face
 
         Returns:
-            Encoder: Pretrained model from Hugging Face.
+            Encoder: XLMREncoder object.
         """
-        return BERTEncoder(pretrained_model)
+        return BERTEncoder(pretrained_model, load_pretrained_weights)
 
     def freeze_embeddings(self) -> None:
         """Frezees the embedding layer."""

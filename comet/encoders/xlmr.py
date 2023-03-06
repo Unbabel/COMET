@@ -20,7 +20,8 @@ XLM-RoBERTa Encoder
 from typing import Dict
 
 import torch
-from transformers import XLMRobertaModel, XLMRobertaTokenizer
+from transformers import (XLMRobertaConfig, XLMRobertaModel,
+                          XLMRobertaTokenizerFast)
 
 from comet.encoders.base import Encoder
 from comet.encoders.bert import BERTEncoder
@@ -29,15 +30,26 @@ from comet.encoders.bert import BERTEncoder
 class XLMREncoder(BERTEncoder):
     """XLM-RoBERTA Encoder encoder.
 
-    :param pretrained_model: Pretrained model from hugging face.
+    Args:
+        pretrained_model (str): Pretrained model from hugging face.
+        load_pretrained_weights (bool): If set to True loads the pretrained weights
+            from Hugging Face
     """
 
-    def __init__(self, pretrained_model: str) -> None:
+    def __init__(
+        self, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = XLMRobertaTokenizer.from_pretrained(pretrained_model)
-        self.model = XLMRobertaModel.from_pretrained(
-            pretrained_model, add_pooling_layer=False
-        )
+        self.tokenizer = XLMRobertaTokenizerFast.from_pretrained(pretrained_model)
+        if load_pretrained_weights:
+            self.model = XLMRobertaModel.from_pretrained(
+                pretrained_model, add_pooling_layer=False
+            )
+        else:
+            self.model = XLMRobertaModel(
+                XLMRobertaConfig.from_pretrained(pretrained_model),
+                add_pooling_layer=False,
+            )
         self.model.encoder.output_hidden_states = True
 
     @property
@@ -51,16 +63,20 @@ class XLMREncoder(BERTEncoder):
         return False
 
     @classmethod
-    def from_pretrained(cls, pretrained_model: str) -> Encoder:
+    def from_pretrained(
+        cls, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.
 
         Args:
             pretrained_model (str):Name of the pretrain model to be loaded.
+            load_pretrained_weights (bool): If set to True loads the pretrained weights
+                from Hugging Face
 
         Returns:
             Encoder: XLMREncoder object.
         """
-        return XLMREncoder(pretrained_model)
+        return XLMREncoder(pretrained_model, load_pretrained_weights)
 
     def forward(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor, **kwargs

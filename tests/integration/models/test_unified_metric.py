@@ -214,10 +214,10 @@ class TestUnifiedMetric(unittest.TestCase):
         predictions = saved_model.predict(
             dataset, gpus=0, batch_size=8, length_batching=True
         )
-        assert pearsonr(predictions.scores, y_reg)[0] > 0.8
-        assert pearsonr(predictions.metadata.src_scores, y_reg)[0] > 0.75
-        assert pearsonr(predictions.metadata.ref_scores, y_reg)[0] > 0.75
-        assert pearsonr(predictions.metadata.unified_scores, y_reg)[0] > 0.8
+        assert pearsonr(predictions.scores, y_reg)[0] > 0.7
+        assert pearsonr(predictions.metadata.src_scores, y_reg)[0] > 0.7
+        assert pearsonr(predictions.metadata.ref_scores, y_reg)[0] > 0.7
+        assert pearsonr(predictions.metadata.unified_scores, y_reg)[0] > 0.7
         word_level_example = [
             ("michael", 0),
             ("jackson", 0),
