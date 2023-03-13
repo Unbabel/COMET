@@ -21,17 +21,33 @@ optional arguments:
   -h, --help            Show this help message and exit.
   -s SOURCES, --sources SOURCES
                         (type: Path_fr, default: null)
-  -t TRANSLATIONS, --translations TRANSLATIONS
+  -t TRANSLATIONS [TRANSLATIONS ...], --translations TRANSLATIONS [TRANSLATIONS ...]
                         (type: Path_fr, default: null)
+  -r REFERENCES, --references REFERENCES
+                        (type: Path_fr, default: null)
+  -d SACREBLEU_DATASET, --sacrebleu_dataset SACREBLEU_DATASET
+                        (type: str, default: null)
   --batch_size BATCH_SIZE
-                        (type: int, default: 8)
-  --num_samples NUM_SAMPLES
-                        (required, type: int)
+                        (type: int, default: 16)
+  --gpus GPUS           (type: int, default: 1)
+  --quiet               Prints only the final system score. (default: False)
+  --accelerator {dp,ddp}
+                        Pytorch Lightnining accelerator for multi-GPU. (type: str, default: ddp)
+  --to_json TO_JSON     Exports results to a json file. (type: str, default: "")
   --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
                         Path to the directory where models will be stored. By default its saved in ~/.cache/torch/unbabel_comet/ (default: null)
-  -o OUTPUT, --output OUTPUT
-                        Best candidates after running MBR decoding. (type: str, default: mbr_result.txt)
+  --mc_dropout MC_DROPOUT
+                        Number of inference runs for each sample in MC Dropout. (type: Union[bool, int], default: False)
+  --seed_everything SEED_EVERYTHING
+                        Prediction seed. (type: int, default: 12)
+  --num_workers NUM_WORKERS
+                        Number of workers to use when loading data. (type: int, default: 2)
+  --disable_bar         Disables progress bar. (default: False)
+  --disable_cache       Disables sentence embeddings caching. This makes inference slower but saves memory. (default: False)
+  --disable_length_batching
+                        Disables length batching. This makes inference slower. (default: False)
+  --print_cache_info    Print information about COMET cache. (default: False)
 """
 import itertools
 import json
@@ -47,8 +63,6 @@ from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
 from sacrebleu.utils import get_reference_files, get_source_file
 
-_REFLESS_MODELS = ["comet-qe"]
-
 
 def score_command() -> None:
     parser = ArgumentParser(description="Command for scoring MT systems.")
@@ -56,7 +70,7 @@ def score_command() -> None:
     parser.add_argument("-t", "--translations", type=Path_fr, nargs="+")
     parser.add_argument("-r", "--references", type=Path_fr)
     parser.add_argument("-d", "--sacrebleu_dataset", type=str)
-    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--batch_size", type=int, default=16)
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
         "--quiet", action="store_true", help="Prints only the final system score."
@@ -70,8 +84,8 @@ def score_command() -> None:
     )
     parser.add_argument(
         "--to_json",
-        type=Union[bool, str],
-        default=False,
+        type=str,
+        default="",
         help="Exports results to a json file.",
     )
     parser.add_argument(
@@ -150,13 +164,6 @@ def score_command() -> None:
             print("SacreBLEU error:", e, file=sys.stderr)
             sys.exit(1)
 
-    if (cfg.references is None) and (
-        not any([i in cfg.model for i in _REFLESS_MODELS])
-    ):
-        parser.error(
-            "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
-        )
-
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         model_path = cfg.model
     elif cfg.model in available_metrics:
@@ -170,27 +177,32 @@ def score_command() -> None:
     model = load_from_checkpoint(model_path)
     model.eval()
 
+    if model.requires_references() and (cfg.references is None):
+        parser.error(
+            "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
+        )
+
     if not cfg.disable_cache:
         model.set_embedding_cache()
 
-    with open(cfg.sources()) as fp:
+    with open(cfg.sources(), encoding="utf-8") as fp:
         sources = [line.strip() for line in fp.readlines()]
 
     translations = []
     for path_fr in cfg.translations:
-        with open(path_fr()) as fp:
+        with open(path_fr(), encoding="utf-8") as fp:
             translations.append([line.strip() for line in fp.readlines()])
 
-    if "comet-qe" in cfg.model:
-        data = {"src": [sources for _ in translations], "mt": translations}
-    else:
-        with open(cfg.references()) as fp:
+    if cfg.references is not None:
+        with open(cfg.references(), encoding="utf-8") as fp:
             references = [line.strip() for line in fp.readlines()]
         data = {
             "src": [sources for _ in translations],
             "mt": translations,
             "ref": [references for _ in translations],
         }
+    else:
+        data = {"src": [sources for _ in translations], "mt": translations}
 
     if cfg.gpus > 1 and cfg.accelerator == "ddp":
         # Flatten all data to score across multiple GPUs
@@ -302,8 +314,8 @@ def score_command() -> None:
     for j in range(len(files)):
         print("{}\tscore: {:.4f}".format(files[j], sys_scores[j]))
 
-    if isinstance(cfg.to_json, str):
-        with open(cfg.to_json, "w") as outfile:
+    if cfg.to_json != "":
+        with open(cfg.to_json, "w", encoding="utf-8") as outfile:
             json.dump(data, outfile, ensure_ascii=False, indent=4)
         print("Predictions saved in: {}.".format(cfg.to_json))
 

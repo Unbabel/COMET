@@ -17,9 +17,10 @@ XLM-RoBERTa-XL Encoder
 ==============
     Pretrained XLM-RoBERTa-XL  encoder from Hugging Face.
 """
+from transformers import XLMRobertaTokenizer, XLMRobertaXLModel
+
 from comet.encoders.base import Encoder
 from comet.encoders.xlmr import XLMREncoder
-from transformers import XLMRobertaTokenizer, XLMRobertaXLModel
 
 
 class XLMRXLEncoder(XLMREncoder):
@@ -30,26 +31,20 @@ class XLMRXLEncoder(XLMREncoder):
 
     def __init__(self, pretrained_model: str) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = XLMRobertaTokenizer.from_pretrained("xlm-roberta-large")
+        self.tokenizer = XLMRobertaTokenizer.from_pretrained(pretrained_model)
         self.model = XLMRobertaXLModel.from_pretrained(
             pretrained_model, add_pooling_layer=False
         )
         self.model.encoder.output_hidden_states = True
 
-    def freeze_embeddings(self) -> None:
-        """Frezees the embedding layer."""
-        for param in self.model.embeddings.parameters():
-            param.requires_grad = False
-
-        for layer in self.model.encoder.layer[:8]:
-            for param in layer.parameters():
-                param.requires_grad = False
-
     @classmethod
     def from_pretrained(cls, pretrained_model: str) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.
-        :param pretrained_model: Name of the pretrain model to be loaded.
 
-        :return: Encoder model
+        Args:
+            pretrained_model (str):Name of the pretrain model to be loaded.
+
+        Returns:
+            Encoder: XLMRXLEncoder object.
         """
         return XLMRXLEncoder(pretrained_model)

@@ -12,24 +12,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
+from typing import List
 
-import pytorch_lightning as ptl
-from tqdm import tqdm
+from torch.utils.data import Sampler
+from transformers.utils import ModelOutput
 
 
-class PredictProgressBar(ptl.callbacks.progress.tqdm_progress.TQDMProgressBar):
-    """Default Lightning Progress bar writes to stdout, we replace stdout with stderr"""
+class Prediction(ModelOutput):
+    """Renamed ModelOutput"""
 
-    def init_predict_tqdm(self) -> tqdm:
-        bar = tqdm(
-            desc="Predicting",
-            initial=self.train_batch_idx,
-            position=(2 * self.process_position),
-            disable=self.is_disabled,
-            leave=True,
-            dynamic_ncols=True,
-            file=sys.stderr,
-            smoothing=0,
-        )
-        return bar
+    pass
+
+
+class Target(ModelOutput):
+    """Renamed ModelOutput into Targets to keep same behaviour"""
+
+    pass
+
+
+class OrderedSampler(Sampler[int]):
+    """Sampler that returns the indices in a deterministic order."""
+
+    def __init__(self, indices: List[int]):
+        self.indices = indices
+
+    def __iter__(self):
+        return iter(self.indices)
+
+    def __len__(self):
+        return len(self.indices)

@@ -24,23 +24,31 @@ class TestRankingMetric(unittest.TestCase):
     def test_training(self):
         seed_everything(12)
         trainer = Trainer(
-            gpus=0,
-            max_epochs=4,
-            deterministic=True,
+            devices="auto",
+            accelerator="auto",
+            max_epochs=22,
             enable_checkpointing=True,
             default_root_dir=DATA_PATH,
             logger=False,
-            enable_progress_bar=False,
+            enable_progress_bar=True,
         )
         model = RankingMetric(
+            nr_frozen_epochs=1,
+            keep_embeddings_frozen=False,
+            optimizer="AdamW",
+            encoder_learning_rate=1e-04,
+            learning_rate=1e-04,
+            layerwise_decay=0.95,
             encoder_model="BERT",
             pretrained_model="google/bert_uncased_L-2_H-128_A-2",
-            train_data=os.path.join(DATA_PATH, "test_ranking_data.csv"),
-            validation_data=os.path.join(DATA_PATH, "test_ranking_data.csv"),
-            layerwise_decay=0.95,
+            pool="cls",
+            layer="mix",
+            layer_transformation="softmax",
+            layer_norm=True,
+            dropout=0.1,
             batch_size=32,
-            learning_rate=1e-04,
-            encoder_learning_rate=1e-04,
+            train_data=[os.path.join(DATA_PATH, "ranking_data.csv")],
+            validation_data=[os.path.join(DATA_PATH, "ranking_data.csv")],
         )
         warnings.filterwarnings(
             "ignore",
@@ -50,31 +58,49 @@ class TestRankingMetric(unittest.TestCase):
         trainer.fit(model)
         self.assertTrue(
             os.path.exists(
-                os.path.join(DATA_PATH, "checkpoints", "epoch=3-step=15.ckpt")
+                os.path.join(DATA_PATH, "checkpoints", "epoch=21-step=154.ckpt")
             )
         )
         saved_model = RankingMetric.load_from_checkpoint(
-            os.path.join(DATA_PATH, "checkpoints", "epoch=3-step=15.ckpt")
+            os.path.join(DATA_PATH, "checkpoints", "epoch=21-step=154.ckpt")
         )
-        dataset = saved_model.read_csv(
-            os.path.join(DATA_PATH, "test_regression_data.csv"), regression=True
+        dataset = saved_model.read_validation_data(
+            os.path.join(DATA_PATH, "ranking_data.csv")
         )
-        y = [s["score"] for s in dataset]
+
+        # Scores for "superior" translations
+        pos_translations = [
+            {"src": s["src"], "mt": s["pos"], "ref": s["ref"]} for s in dataset
+        ]
         dataloader = DataLoader(
-            dataset=dataset,
+            dataset=pos_translations,
             batch_size=256,
-            collate_fn=lambda x: saved_model.prepare_sample(x, inference=True),
+            collate_fn=lambda x: saved_model.prepare_sample(x, stage="predict"),
             num_workers=2,
         )
-        y_hat = (
-            torch.cat(
-                trainer.predict(
-                    ckpt_path="best", dataloaders=dataloader, return_predictions=True
-                ),
-                dim=0,
-            )
-            .cpu()
-            .tolist()
+        predictions = trainer.predict(
+            ckpt_path="best", dataloaders=dataloader, return_predictions=True
         )
-        # This shouldn't break!
-        pearsonr(y_hat, y)[0]
+        y_pos = torch.cat([p.scores for p in predictions], dim=0)
+
+        # Scores for "worse" translations
+        neg_translations = [
+            {"src": s["src"], "mt": s["neg"], "ref": s["ref"]} for s in dataset
+        ]
+        dataloader = DataLoader(
+            dataset=neg_translations,
+            batch_size=256,
+            collate_fn=lambda x: saved_model.prepare_sample(x, stage="predict"),
+            num_workers=2,
+        )
+        predictions = trainer.predict(
+            ckpt_path="best", dataloaders=dataloader, return_predictions=True
+        )
+        y_neg = torch.cat([p.scores for p in predictions], dim=0)
+        ## This shouldn't break!
+        pearsonr(y_pos, y_neg)[0]
+
+        concordance = torch.sum((y_pos > y_neg))
+        discordance = torch.sum((y_pos <= y_neg))
+        kendall = (concordance - discordance) / (concordance + discordance)
+        assert kendall > 0.7

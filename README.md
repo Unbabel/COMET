@@ -8,7 +8,16 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
+<hr />
+
+> Currently the master is a pre-release of our work for the WMT 2022 shared tasks [Metrics](https://www.statmt.org/wmt22/pdf/2022.wmt-1.52.pdf) and [QE](https://www.statmt.org/wmt22/pdf/2022.wmt-1.60.pdf)! **Use version 1.1.3 if you are looking for a stable version!** 
+
+> We are planning a new release with better models and new-features for January.
+<hr />
+
 ## Quick Installation
+
+COMET requires python 3.8 or above! 
 
 Simple installation from PyPI
 
@@ -16,19 +25,16 @@ Simple installation from PyPI
 pip install --upgrade pip  # ensures that pip is current 
 pip install unbabel-comet
 ```
-or
-```bash
-pip install unbabel-comet==1.1.0 --use-feature=2020-resolver
-```
 
-To develop locally install [Poetry](https://python-poetry.org/docs/#installation) and run the following commands:
+To develop locally install run the following commands:
 ```bash
 git clone https://github.com/Unbabel/COMET
 cd COMET
+pip install poetry
 poetry install
 ```
 
-Alternately, for development, you can run the CLI tools directly, e.g.,
+For development, you can run the CLI tools directly, e.g.,
 
 ```bash
 PYTHONPATH=. ./comet/cli/score.py
@@ -64,38 +70,31 @@ WMT test sets via [SacreBLEU](https://github.com/mjpost/sacrebleu):
 comet-score -d wmt20:en-de -t PATH/TO/TRANSLATIONS
 ```
 
-The default setting of `comet-score` prints the score for each segment individually. If you are only interested in the score for the whole dataset (computed as the average of the segment scores), you can use the `--quiet` flag.
+The default setting of `comet-score` prints the score for each segment individually. If you are only interested in a system-level score, you can use the `--quiet` flag.
 
 ```bash
 comet-score -s src.de -t hyp1.en -r ref.en --quiet
 ```
 
-You can select another model/metric with the --model flag and for reference-free (QE-as-a-metric) models you don't need to pass a reference.
-
 ```bash
-comet-score -s src.de -t hyp1.en --model wmt20-comet-qe-da
+comet-score -s src.de -t hyp1.en --model wmt22-cometkiwi-da
 ```
 
-Following the work on [Uncertainty-Aware MT Evaluation](https://aclanthology.org/2021.findings-emnlp.330/) you can use the --mc_dropout flag to get a variance/uncertainty value for each segment score. If this value is high, it means that the metric is less confident in that prediction.
+When comparing multiple MT systems we encourage you to run the `comet-compare` command to get **statistical significance** with Paired T-Test and bootstrap resampling [(Koehn, et al 2004)](https://aclanthology.org/W04-3250/).
 
 ```bash
-comet-score -s src.de -t hyp1.en -r ref.en --mc_dropout 30
+comet-compare -s src.de -t hyp1.en hyp2.en hyp3.en -r ref.en
 ```
 
-When comparing two MT systems we encourage you to run the `comet-compare` command to get **statistical significance** with Paired T-Test and bootstrap resampling [(Koehn, et al 2004)](https://aclanthology.org/W04-3250/).
+## Minimum Bayes Risk Decoding:
 
-```bash
-comet-compare -s src.de -x hyp1.en -y hyp2.en -r ref.en
-```
+The MBR command allows you to rank MT hypotheses and select the best one according to COMET. For more details you can read our paper on [Quality-Aware Decoding for Neural Machine Translation](https://aclanthology.org/2022.naacl-main.100.pdf).
 
-**New: Minimum Bayes Risk Decoding:**
-
-Inspired by the work by [Amrhein et al, 2022](https://arxiv.org/abs/2202.05148) we have developed a command to perform Minimum Bayes Risk decoding. This command receives a text file with source sentences and a text file containing all the MT samples and writes to an output file the best sample according to COMET.
+Our implementation is inspired by [Amrhein et al, 2022](https://aclanthology.org/2022.aacl-main.83.pdf) where sentences are cached during inference to avoid quadratic computations while creating the sentence embeddings.
 
 ```bash
 comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt --num_sample [X] -o [OUTPUT_FILE].txt
 ```
-
 
 #### Multi-GPU Inference:
 
@@ -109,21 +108,12 @@ comet-score -s src.de -t hyp1.en -r ref.en --gpus 2 --quiet
 
 **Warning:** Segment-level scores using multigpu will be out of order. This is only useful for system scoring.
 
-#### Changing Embedding Cache Size:
-You can change the cache size of COMET using the following env variable:
-
-```bash
-export COMET_EMBEDDINGS_CACHE="2048"
-```
-by default the COMET cache size is 1024.
-
-
 ### Scoring within Python:
 
 ```python
 from comet import download_model, load_from_checkpoint
 
-model_path = download_model("wmt20-comet-da")
+model_path = download_model("wmt22-comet-da")
 model = load_from_checkpoint(model_path)
 data = [
     {
@@ -137,7 +127,8 @@ data = [
         "ref": "Schools and kindergartens opened"
     }
 ]
-seg_scores, sys_score = model.predict(data, batch_size=8, gpus=1)
+model_output = model.predict(data, batch_size=8, gpus=1)
+seg_scores, system_score = model_output.scores, model_output.system_score
 ```
 
 ### Languages Covered:
@@ -149,15 +140,11 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 **Thus, results for language pairs containing uncovered languages are unreliable!**
 
 ## COMET Models:
-
 We recommend the two following models to evaluate your translations:
 
 - `wmt20-comet-da`: **DEFAULT** Reference-based Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-da-estimator-1719` from previous versions.
-- `wmt20-comet-qe-da`: **Reference-FREE** Regression model build on top of XLM-R (large) and trained of Direct Assessments from WMT17 to WMT19. Same as `wmt-large-qe-estimator-1719` from previous versions.
-
-These two models were developed to participate on the WMT20 Metrics shared task [(Mathur et al. 2020)](https://aclanthology.org/2020.wmt-1.77.pdf) and were among the best metrics that year. Also, in a large-scale study performed by Microsoft Research these two metrics are ranked 1st and 2nd in terms of system-level decision accuracy [(Kocmi et al. 2020)](https://arxiv.org/pdf/2107.10821.pdf). At segment-level, these systems also correlate well with expert evaluations based on MQM data [(Freitag et al. 2020](https://arxiv.org/pdf/2104.14478.pdf)[; Freitag et al. 2021)](https://aclanthology.org/2021.wmt-1.73/).
-
-For more information about the available COMET models read our metrics descriptions [here](METRICS.md)
+- `wmt21-comet-qe-mqm`: **Reference-FREE** Regression model build on top of XLM-R (large), trained on Direct Assessments and fine-tuned on MQM.
+- `eamt22-cometinho-da`: **Lightweight** Reference-based Regression model that was distilled from an ensemble of COMET models similar to `wmt20-comet-da`.
 
 ## Train your own Metric: 
 
@@ -181,9 +168,16 @@ In order to run the toolkit tests you must run the following command:
 coverage run --source=comet -m unittest discover
 coverage report -m
 ```
+**Note:** Testing on CPU takes a long time
 
 ## Publications
-If you use COMET please cite our work! Also, don't forget to say which model you used to evaluate your systems.
+If you use COMET please cite our work and don't forget to say which model you used to evaluate your systems.
+
+- [CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task -- Winning submission](https://arxiv.org/pdf/2209.06243.pdf)
+
+- [COMET-22: Unbabel-IST 2022 Submission for the Metrics Shared Task](https://www.statmt.org/wmt22/pdf/2022.wmt-1.52.pdf)
+
+- [Searching for Cometinho: The Little Metric That Could -- EAMT22 Best paper award](https://aclanthology.org/2022.eamt-1.9/)
 
 - [Are References Really Needed? Unbabel-IST 2021 Submission for the Metrics Shared Task](http://statmt.org/wmt21/pdf/2021.wmt-1.111.pdf)
 
@@ -194,6 +188,3 @@ If you use COMET please cite our work! Also, don't forget to say which model you
 - [Unbabel's Participation in the WMT20 Metrics Shared Task](https://aclanthology.org/2020.wmt-1.101/)
 
 - [COMET: A Neural Framework for MT Evaluation](https://www.aclweb.org/anthology/2020.emnlp-main.213)
-
-
-

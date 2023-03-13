@@ -1,18 +1,18 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from comet.encoders.bert import BERTEncoder
+from comet.encoders.rembert import RemBERTEncoder
 
 
-class TestBERTEncoder(unittest.TestCase):
+class TestRemBERTEncoder(unittest.TestCase):
 
-    bert = BERTEncoder.from_pretrained("google/bert_uncased_L-2_H-128_A-2")
+    bert = RemBERTEncoder.from_pretrained("google/rembert")
 
     def test_num_layers(self):
-        self.assertEqual(self.bert.num_layers, 3)
+        self.assertEqual(self.bert.num_layers, 33)
 
     def test_output_units(self):
-        self.assertEqual(self.bert.output_units, 128)
+        self.assertEqual(self.bert.output_units, 1152)
 
     def test_max_positions(self):
         self.assertEqual(self.bert.max_positions, 510)
@@ -43,53 +43,32 @@ class TestBERTEncoder(unittest.TestCase):
         source_input = self.bert.prepare_sample(source)
         expected_tokens = [
             [
-                101,
-                2022,
-                2213,
-                19354,
-                12269,
-                20118,
-                15699,
-                102,
-                6160,
-                2000,
-                15699,
-                999,
-                102,
-                0,
-                0,
-                0,
-                0,
+                312,
+                58230,
+                16833,
+                759,
+                1425,
+                148577,
+                862,
+                313,
+                26548,
+                596,
+                148577,
+                862,
+                646,
+                313,
             ],
-            [
-                101,
-                21541,
-                2080,
-                1041,
-                8529,
-                4654,
-                6633,
-                24759,
-                2080,
-                999,
-                102,
-                2023,
-                2003,
-                2019,
-                2742,
-                999,
-                102,
-            ],
+            [312, 58378, 921, 835, 17293, 646, 313, 1357, 619, 666, 7469, 646, 313, 0],
         ]
         expected_in_span_mask = [
-            [0, 0, 0, 0, 0, 0, 1, 0, -1, -1, -1, -1, -1, -1, -1, -1, -1],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1],
+            [0, 0, 0, 0, 0, 1, 1, 0, -1, -1, -1, -1, -1, -1],
+            [0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1],
         ]
         expected_token_type_ids = [
-            [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
         ]
-        seq_size = [13, 17]
+        seq_size = [14, 13]
         continuous_input = self.bert.concat_sequences(
             [translations_input, source_input], return_in_span_mask=True
         )

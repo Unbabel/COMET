@@ -18,6 +18,7 @@ import os
 import subprocess
 import urllib.request
 import zipfile
+from pathlib import Path
 from typing import List
 from urllib.parse import urlparse
 
@@ -28,14 +29,17 @@ from comet.models import available_metrics
 logger = logging.getLogger(__name__)
 
 
-def get_cache_folder():
-    if "HOME" in os.environ:
-        cache_directory = os.environ["HOME"] + "/.cache/torch/unbabel_comet/"
-        if not os.path.exists(cache_directory):
-            os.makedirs(cache_directory)
-        return cache_directory
-    else:
-        raise Exception("HOME environment variable is not defined.")
+def get_cache_folder() -> str:
+    """Cache folder path.
+
+    Returns:
+        str: cache folder path.
+    """
+    cache_directory = os.path.join(Path.home(), ".cache", "torch", "unbabel_comet")
+    if not cache_directory.exists():
+        cache_directory.mkdir(exist_ok=True, parents=True)
+
+    return str(cache_directory)
 
 
 def _reporthook(t):
@@ -52,10 +56,10 @@ def _reporthook(t):
 
     def inner(b: int = 1, bsize: int = 1, tsize: int = None):
         """
-        :param b: Number of blocks just transferred [default: 1].
-        :param bsize: Size of each block (in tqdm units) [default: 1].
-        :param tsize: Total size (in tqdm units).
-            If [default: None] remains unchanged.
+        Args:
+            b (int, optional): Number of blocks just transferred. Defaults to 1.
+            bsize (int, optional): Size of each block (in tqdm units). Defaults to 1.
+            tsize (int, optional): Total size (in tqdm units). Defaults to None.
         """
         if tsize is not None:
             t.total = tsize
@@ -130,20 +134,26 @@ def download_file_maybe_extract(
     filename: str = None,
     extension: str = None,
     check_files: List[str] = [],
-):
+) -> str:
     """Download the file at ``url`` to ``directory``.
         Extract to ``directory`` if tar or zip.
 
-    :param url: Url of file (str or Path).
-    :param directory: Directory to download to.
-    :param filename: Name of the file to download; Otherwise, a filename is extracted
-        from the url.
-    :param extension: Extension of the file; Otherwise, attempts to extract extension
-        from the filename.
-    :param check_files: Check if these files exist, ensuring the download
-        succeeded. If these files exist before the download, the download is skipped.
+    Args:
+        url (str): Url of file (str or Path).
+        directory (str): Directory to download to.
+        filename (str, optional): Name of the file to download; Otherwise, a filename
+            is extracted from the url. Defaults to None.
+        extension (str, optional): Extension of the file; Otherwise, attempts to
+            extract extension from the filename. Defaults to None.
+        check_files (List[str], optional): Check if these files exist, ensuring the
+            download succeeded. If these files exist before the download, the download
+            is skipped. Defaults to [].
 
-    :return: Filename of download file.
+    Raises:
+        ValueError: [DOWNLOAD FAILED] `*check_files` not found
+
+    Returns:
+        str: Filename of download file.
     """
     if filename is None:
         filename = _get_filename_from_url(url)
@@ -175,33 +185,43 @@ def download_file_maybe_extract(
 
 
 def download_model(model: str, saving_directory: str = None) -> str:
-    """
-    Function that loads pretrained models from AWS.
+    """Function that loads pretrained models from AWS.
 
-    :param model: Name of the model to be loaded.
-    :param saving_directory: RELATIVE path to the saving folder (must end with /).
+    :param model:
+    :param saving_directory:
 
     Return:
         - Path to model checkpoint.
-    """
 
+    Args:
+        model (str): Name of the model to be loaded.
+        saving_directory (str, optional): RELATIVE path to the saving folder (must end
+            with /). Defaults to None.
+
+    Raises:
+        Exception: if model name is not in the list of available metrics or if it is
+            not a checkpoint path.
+
+    Returns:
+        str: checkpoint path
+    """
     if saving_directory is None:
         saving_directory = get_cache_folder()
 
-    if not saving_directory.endswith("/"):
-        saving_directory += "/"
+    if not saving_directory.endswith(os.path.sep):
+        saving_directory += os.path.sep
 
     if not os.path.exists(saving_directory):
         os.makedirs(saving_directory)
 
     if os.path.isdir(saving_directory + model):
         logger.info(f"{model} is already in cache.")
-        if not model.endswith("/"):
-            model += "/"
+        if not model.endswith(os.path.sep):
+            model += os.path.sep
 
     elif model not in available_metrics.keys():
         raise Exception(
-            f"{model} is not in the `available_metrics` or is a valid checkpoint folder."
+            f"{model} is not in the `available_metrics` or is a valid checkpoint path."
         )
 
     elif available_metrics[model].startswith("https://"):
@@ -220,10 +240,10 @@ def download_model(model: str, saving_directory: str = None) -> str:
     if os.path.exists(saving_directory + model + ".tar"):
         os.remove(saving_directory + model + ".tar")
 
-    checkpoints_folder = saving_directory + model + "/checkpoints"
+    checkpoints_folder = saving_directory + model + os.path.sep + "checkpoints"
     checkpoints = [
         file for file in os.listdir(checkpoints_folder) if file.endswith(".ckpt")
     ]
     checkpoint = checkpoints[-1]
-    checkpoint_path = checkpoints_folder + "/" + checkpoint
+    checkpoint_path = os.path.join(checkpoints_folder, checkpoint)
     return checkpoint_path

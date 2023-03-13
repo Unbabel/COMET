@@ -20,7 +20,7 @@ Command for training new Metrics.
 
 e.g:
 ```
-    comet-train --cfg configs/models/regression_metric.yaml
+    comet-train --cfg configs/models/regression_metric.yaml --seed_everything 12
 ```
 
 For more details run the following command:
@@ -29,22 +29,29 @@ For more details run the following command:
 ```
 """
 import json
+import logging
 import warnings
 
+from jsonargparse import ActionConfigFile, ArgumentParser, namespace_to_dict
+from pytorch_lightning import seed_everything
+from pytorch_lightning.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+)
+from pytorch_lightning.trainer.trainer import Trainer
 
 from comet.models import (
-    CometModel,
     RankingMetric,
     ReferencelessRegression,
     RegressionMetric,
+    UnifiedMetric,
 )
-from jsonargparse import ActionConfigFile, ArgumentParser, namespace_to_dict
-from pytorch_lightning import seed_everything
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
-from pytorch_lightning.trainer.trainer import Trainer
+
+logger = logging.getLogger(__name__)
 
 
-def train_command() -> None:
+def read_arguments() -> ArgumentParser:
     parser = ArgumentParser(description="Command for training COMET models.")
     parser.add_argument(
         "--seed_everything",
@@ -53,60 +60,128 @@ def train_command() -> None:
         help="Training Seed.",
     )
     parser.add_argument("--cfg", action=ActionConfigFile)
-    parser.add_class_arguments(CometModel, "model")
     parser.add_subclass_arguments(RegressionMetric, "regression_metric")
     parser.add_subclass_arguments(
         ReferencelessRegression, "referenceless_regression_metric"
     )
     parser.add_subclass_arguments(RankingMetric, "ranking_metric")
+    parser.add_subclass_arguments(UnifiedMetric, "unified_metric")
     parser.add_subclass_arguments(EarlyStopping, "early_stopping")
     parser.add_subclass_arguments(ModelCheckpoint, "model_checkpoint")
     parser.add_subclass_arguments(Trainer, "trainer")
-    cfg = parser.parse_args()
-    seed_everything(cfg.seed_everything)
+    parser.add_argument(
+        "--load_from_checkpoint",
+        help="Loads a model checkpoint for fine-tuning",
+        default=None,
+    )
+    parser.add_argument(
+        "--strict_load",
+        action="store_true",
+        help="Strictly enforce that the keys in checkpoint_path match the keys returned by this module's state dict.",
+    )
+    return parser
 
+
+def initialize_trainer(configs) -> Trainer:
     checkpoint_callback = ModelCheckpoint(
-        **namespace_to_dict(cfg.model_checkpoint.init_args)
+        **namespace_to_dict(configs.model_checkpoint.init_args)
     )
     early_stop_callback = EarlyStopping(
-        **namespace_to_dict(cfg.early_stopping.init_args)
+        **namespace_to_dict(configs.early_stopping.init_args)
     )
-    trainer_args = namespace_to_dict(cfg.trainer.init_args)
-    trainer_args["callbacks"] = [early_stop_callback, checkpoint_callback]
+    trainer_args = namespace_to_dict(configs.trainer.init_args)
+    lr_monitor = LearningRateMonitor(logging_interval="step")
+    trainer_args["callbacks"] = [early_stop_callback, checkpoint_callback, lr_monitor]
     print("TRAINER ARGUMENTS: ")
     print(json.dumps(trainer_args, indent=4, default=lambda x: x.__dict__))
     trainer = Trainer(**trainer_args)
+    return trainer
 
+
+def initialize_model(configs):
     print("MODEL ARGUMENTS: ")
-    if cfg.regression_metric is not None:
+    if configs.regression_metric is not None:
         print(
             json.dumps(
-                cfg.regression_metric.init_args, indent=4, default=lambda x: x.__dict__
-            )
-        )
-        model = RegressionMetric(**namespace_to_dict(cfg.regression_metric.init_args))
-    elif cfg.referenceless_regression_metric is not None:
-        print(
-            json.dumps(
-                cfg.referenceless_regression_metric.init_args,
+                configs.regression_metric.init_args,
                 indent=4,
                 default=lambda x: x.__dict__,
             )
         )
-        model = ReferencelessRegression(
-            **namespace_to_dict(cfg.referenceless_regression_metric.init_args)
-        )
-    elif cfg.ranking_metric is not None:
+        if configs.load_from_checkpoint is not None:
+            logger.info(f"Loading weights from {configs.load_from_checkpoint}.")
+            model = RegressionMetric.load_from_checkpoint(
+                checkpoint_path=configs.load_from_checkpoint,
+                strict=configs.strict_load,
+                **namespace_to_dict(configs.regression_metric.init_args),
+            )
+        else:
+            model = RegressionMetric(
+                **namespace_to_dict(configs.regression_metric.init_args)
+            )
+    elif configs.referenceless_regression_metric is not None:
         print(
             json.dumps(
-                cfg.ranking_metric.init_args, indent=4, default=lambda x: x.__dict__
+                configs.referenceless_regression_metric.init_args,
+                indent=4,
+                default=lambda x: x.__dict__,
             )
         )
-        model = RankingMetric(**namespace_to_dict(cfg.ranking_metric.init_args))
+        if configs.load_from_checkpoint is not None:
+            logger.info(f"Loading weights from {configs.load_from_checkpoint}.")
+            model = ReferencelessRegression.load_from_checkpoint(
+                checkpoint_path=configs.load_from_checkpoint,
+                strict=configs.strict_load,
+                **namespace_to_dict(configs.referenceless_regression_metric.init_args),
+            )
+        else:
+            model = ReferencelessRegression(
+                **namespace_to_dict(configs.referenceless_regression_metric.init_args)
+            )
+    elif configs.ranking_metric is not None:
+        print(
+            json.dumps(
+                configs.ranking_metric.init_args, indent=4, default=lambda x: x.__dict__
+            )
+        )
+        if configs.load_from_checkpoint is not None:
+            logger.info(f"Loading weights from {configs.load_from_checkpoint}.")
+            model = ReferencelessRegression.load_from_checkpoint(
+                checkpoint_path=configs.load_from_checkpoint,
+                strict=configs.strict_load,
+                **namespace_to_dict(configs.ranking_metric.init_args),
+            )
+        else:
+            model = RankingMetric(**namespace_to_dict(configs.ranking_metric.init_args))
+    elif configs.unified_metric is not None:
+        print(
+            json.dumps(
+                configs.unified_metric.init_args, indent=4, default=lambda x: x.__dict__
+            )
+        )
+        if configs.load_from_checkpoint is not None:
+            logger.info(f"Loading weights from {configs.load_from_checkpoint}.")
+            model = UnifiedMetric.load_from_checkpoint(
+                checkpoint_path=configs.load_from_checkpoint,
+                strict=configs.strict_load,
+                **namespace_to_dict(configs.unified_metric.init_args),
+            )
+        else:
+            model = UnifiedMetric(**namespace_to_dict(configs.unified_metric.init_args))
     else:
         raise Exception("Model configurations missing!")
-    # Related to train/val_dataloaders:
 
+    return model
+
+
+def train_command() -> None:
+    parser = read_arguments()
+    cfg = parser.parse_args()
+    seed_everything(cfg.seed_everything)
+
+    trainer = initialize_trainer(cfg)
+    model = initialize_model(cfg)
+    # Related to train/val_dataloaders:
     # 2 workers per gpu is enough! If set to the number of cpus on this machine
     # it throws another exception saying its too many workers.
     warnings.filterwarnings(

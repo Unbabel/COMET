@@ -14,7 +14,7 @@
 # limitations under the License.
 r"""
 Feed Forward
-==============
+============
     Feed Forward Neural Network module that can be used for classification or regression
 """
 from typing import List, Optional
@@ -24,23 +24,24 @@ from torch import nn
 
 
 class FeedForward(nn.Module):
-    """
-    Feed Forward Neural Network.
+    """Feed Forward Neural Network.
 
-    :param in_dim: Number input features.
-    :param out_dim: Number of output features. Default is just a score.
-    :param hidden_sizes: List with hidden layer sizes.
-    :param activations: Name of the activation function to be used in the hidden layers.
-    :param final_activation: Name of the final activation function if any.
-    :param dropout: dropout to be used in the hidden layers.
+    Args:
+        in_dim (int): Number input features.
+        out_dim (int): Number of output features. Default is just a score.
+        hidden_sizes (List[int]): List with hidden layer sizes. Defaults to [3072,1024]
+        activations (str): Name of the activation function to be used in the hidden
+            layers. Defaults to 'Tanh'.
+        final_activation (Optional[str]): Final activation if any.
+        dropout (float): dropout to be used in the hidden layers.
     """
 
     def __init__(
         self,
         in_dim: int,
         out_dim: int = 1,
-        hidden_sizes: List[int] = [3072, 768],
-        activations: str = "Sigmoid",
+        hidden_sizes: List[int] = [3072, 1024],
+        activations: str = "Tanh",
         final_activation: Optional[str] = None,
         dropout: float = 0.1,
     ) -> None:
@@ -62,8 +63,10 @@ class FeedForward(nn.Module):
         self.ff = nn.Sequential(*modules)
 
     def build_activation(self, activation: str) -> nn.Module:
-        if hasattr(nn, activation):
-            return getattr(nn, activation)()
+        if hasattr(nn, activation.title()):
+            return getattr(nn, activation.title())()
+        else:
+            raise Exception(f"{activation} is not a valid activation function!")
 
     def forward(self, in_features: torch.Tensor) -> torch.Tensor:
         return self.ff(in_features)

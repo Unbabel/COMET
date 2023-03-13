@@ -18,7 +18,7 @@ LRU Cache
 LRU Cache function decorator modified to work with tensor arguments.
 
 Original implementation: https://github.com/python/cpython/blob/3.10/Lib/functools.py
-Our modification simply modifies the _make_key function to use tensor str representation
+Our modification modifies the _make_key function to use tensor str representation
 intead of the object reference. Other than that we use the original implementation
 """
 from _thread import RLock

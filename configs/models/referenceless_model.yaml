@@ -4,20 +4,26 @@ referenceless_regression_metric:
     nr_frozen_epochs: 0.3
     keep_embeddings_frozen: True
     optimizer: AdamW
-    encoder_learning_rate: 1.0e-05
-    learning_rate: 3.1e-05
+    encoder_learning_rate: 5.0e-06
+    learning_rate: 1.5e-05
     layerwise_decay: 0.95
     encoder_model: XLM-RoBERTa
     pretrained_model: xlm-roberta-large
     pool: avg
     layer: mix
-    dropout: 0.15
+    loss: mse
+    dropout: 0.1
     batch_size: 4
-    train_data: data/scores-1520.csv
-    validation_data: data/mqm.test.csv
+    train_data: 
+      - data/2017-da.csv
+    validation_data: 
+      - data/wmt-ende-newstest2021.csv
+      - data/wmt-enru-newstest2021.csv
+      - data/wmt-zhen-newstest2021.csv
     hidden_sizes:
       - 2048
       - 1024
+    activations: Tanh
     
 trainer: ../trainer.yaml
 early_stopping: ../early_stopping.yaml

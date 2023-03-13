@@ -21,11 +21,17 @@ def average_pooling(
     mask: torch.Tensor,
     padding_index: int,
 ) -> torch.Tensor:
-    """Average pooling function.
-    :param tokens: Word ids [batch_size x seq_length]
-    :param embeddings: Word embeddings [batch_size x seq_length x hidden_size]
-    :param mask: Padding mask [batch_size x seq_length]
-    :param padding_index: Padding value.
+    """Average pooling method.
+
+    Args:
+        tokens (torch.Tensor): Word ids [batch_size x seq_length]
+        embeddings (torch.Tensor): Word embeddings [batch_size x seq_length x
+            hidden_size]
+        mask (torch.Tensor): Padding mask [batch_size x seq_length]
+        padding_index (torch.Tensor): Padding value.
+
+    Return:
+        torch.Tensor: Sentence embedding
     """
     wordemb = mask_fill(0.0, tokens, embeddings, padding_index)
     sentemb = torch.sum(wordemb, 1)
@@ -36,10 +42,16 @@ def average_pooling(
 def max_pooling(
     tokens: torch.Tensor, embeddings: torch.Tensor, padding_index: int
 ) -> torch.Tensor:
-    """Max pooling function.
-    :param tokens: Word ids [batch_size x seq_length]
-    :param embeddings: Word embeddings [batch_size x seq_length x hidden_size]
-    :param padding_index: Padding value.
+    """Max pooling method.
+
+    Args:
+        tokens (torch.Tensor): Word ids [batch_size x seq_length]
+        embeddings (torch.Tensor): Word embeddings [batch_size x seq_length x
+            hidden_size]
+        padding_index (int):Padding value.
+
+    Return:
+        torch.Tensor: Sentence embedding
     """
     return mask_fill(float("-inf"), tokens, embeddings, padding_index).max(dim=1)[0]
 
@@ -50,12 +62,17 @@ def mask_fill(
     embeddings: torch.Tensor,
     padding_index: int,
 ) -> torch.Tensor:
-    """
-    Function that masks embeddings representing padded elements.
-    :param fill_value: the value to fill the embeddings belonging to padded tokens.
-    :param tokens: The input sequences [bsz x seq_len].
-    :param embeddings: word embeddings [bsz x seq_len x hiddens].
-    :param padding_index: Index of the padding token.
+    """Method that masks embeddings representing padded elements.
+
+    Args:
+        fill_value (float): the value to fill the embeddings belonging to padded tokens
+        tokens (torch.Tensor): Word ids [batch_size x seq_length]
+        embeddings (torch.Tensor): Word embeddings [batch_size x seq_length x
+            hidden_size]
+        padding_index (int):Padding value.
+
+    Return:
+        torch.Tensor: Word embeddings [batch_size x seq_length x hidden_size]
     """
     padding_mask = tokens.eq(padding_index).unsqueeze(-1)
     return embeddings.float().masked_fill_(padding_mask, fill_value).type_as(embeddings)

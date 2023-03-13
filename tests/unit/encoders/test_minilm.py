@@ -1,32 +1,33 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from comet.encoders.xlmr import XLMREncoder
+from comet.encoders.minilm import MiniLMEncoder
 
 
-class TestXLMREncoder(unittest.TestCase):
+class TestMiniLMEncoder(unittest.TestCase):
+    """MiniLMV2 uses XLM-R tokenizer thus, most tests are copy of minilmEncoder"""
 
-    xlmr = XLMREncoder.from_pretrained("xlm-roberta-base")
+    minilm = MiniLMEncoder.from_pretrained("microsoft/Multilingual-MiniLM-L12-H384")
 
     def test_num_layers(self):
-        self.assertEqual(self.xlmr.num_layers, 13)
+        self.assertEqual(self.minilm.num_layers, 13)
 
     def test_output_units(self):
-        self.assertEqual(self.xlmr.output_units, 768)
+        self.assertEqual(self.minilm.output_units, 384)
 
     def test_max_positions(self):
-        self.assertEqual(self.xlmr.max_positions, 512)
+        self.assertEqual(self.minilm.max_positions, 510)
 
     def test_prepare_sample(self):
         sample = ["hello world, welcome to COMET!", "This is a batch"]
-        model_input = self.xlmr.prepare_sample(sample)
+        model_input = self.minilm.prepare_sample(sample)
         self.assertIn("input_ids", model_input)
         self.assertIn("attention_mask", model_input)
 
     def test_forward(self):
         sample = ["hello world, welcome to COMET!", "This is a batch"]
-        model_input = self.xlmr.prepare_sample(sample)
-        model_output = self.xlmr(**model_input)
+        model_input = self.minilm.prepare_sample(sample)
+        model_output = self.minilm(**model_input)
         self.assertIn("wordemb", model_output)
         self.assertIn("sentemb", model_output)
         self.assertIn("all_layers", model_output)
@@ -36,9 +37,9 @@ class TestXLMREncoder(unittest.TestCase):
         """Basic testcase to check if we can joint two sequences into a contiguous input"""
         source = ["Bem vindos ao <v>COMET</v>", "Isto é um exemplo!"]
         translations = ["Welcome to COMET!", "This is an example!"]
-        self.xlmr.add_span_tokens("<v>", "</v>")
-        source_input = self.xlmr.prepare_sample(source, word_level_training=True)
-        translations_input = self.xlmr.prepare_sample(translations)
+        self.minilm.add_span_tokens("<v>", "</v>")
+        source_input = self.minilm.prepare_sample(source, word_level_training=True)
+        translations_input = self.minilm.prepare_sample(translations)
         expected_tokens = [
             [
                 0,
@@ -64,7 +65,7 @@ class TestXLMREncoder(unittest.TestCase):
             [0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1],
         ]
         seq_size = [15, 14]
-        continuous_input = self.xlmr.concat_sequences(
+        continuous_input = self.minilm.concat_sequences(
             [source_input, translations_input], return_in_span_mask=True
         )
         self.assertListEqual(continuous_input[0]["input_ids"].tolist(), expected_tokens)

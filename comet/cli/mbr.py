@@ -135,15 +135,15 @@ def mbr_decoding(
 
 def mbr_command() -> None:
     parser = ArgumentParser(description="Command for Minimum Bayes Risk Decoding.")
-    parser.add_argument("-s", "--sources", type=Path_fr)
-    parser.add_argument("-t", "--translations", type=Path_fr)
+    parser.add_argument("-s", "--sources", type=Path_fr, required=True)
+    parser.add_argument("-t", "--translations", type=Path_fr, required=True)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--num_samples", type=int, required=True)
     parser.add_argument(
         "--model",
         type=str,
         required=False,
-        default="wmt20-comet-da",
+        default="wmt22-comet-da",
         help="COMET model to be used.",
     )
     parser.add_argument(
@@ -158,13 +158,10 @@ def mbr_command() -> None:
         "-o",
         "--output",
         type=str,
-        default="mbr_result.txt",
+        required=True,
         help="Best candidates after running MBR decoding.",
     )
     cfg = parser.parse_args()
-
-    if cfg.sources is None:
-        parser.error("You must specify a source (-s)")
 
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         model_path = cfg.model
@@ -178,9 +175,9 @@ def mbr_command() -> None:
         )
     model = load_from_checkpoint(model_path)
 
-    if not isinstance(model, RegressionMetric):
+    if not isinstance(model, RegressionMetric) or model.is_referenceless():
         raise Exception(
-            "Incorrect model ({}). MBR command only works with RegressionMetric models.".format(
+            "Invalid model ({}). MBR command only works with Reference-based Regression models!".format(
                 model.__class__.__name__
             )
         )
@@ -188,10 +185,10 @@ def mbr_command() -> None:
     model.eval()
     model.cuda()
 
-    with open(cfg.sources()) as fp:
+    with open(cfg.sources(), encoding="utf-8") as fp:
         sources = [line.strip() for line in fp.readlines()]
 
-    with open(cfg.translations()) as fp:
+    with open(cfg.translations(), encoding="utf-8") as fp:
         translations = [line.strip() for line in fp.readlines()]
 
     src_embeddings, mt_embeddings = build_embeddings(
@@ -210,7 +207,7 @@ def mbr_command() -> None:
         best_cand_idx = torch.argmax(mbr_matrix[i, :])
         best_candidates.append(samples[best_cand_idx])
 
-    with open(cfg.output, "w") as fp:
+    with open(cfg.output, "w", encoding="utf-8") as fp:
         for sample in best_candidates:
             fp.write(sample + "\n")
 

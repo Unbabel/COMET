@@ -20,9 +20,10 @@ XLM-RoBERTa Encoder
 from typing import Dict
 
 import torch
+from transformers import XLMRobertaModel, XLMRobertaTokenizer
+
 from comet.encoders.base import Encoder
 from comet.encoders.bert import BERTEncoder
-from transformers import XLMRobertaModel, XLMRobertaTokenizer
 
 
 class XLMREncoder(BERTEncoder):
@@ -39,12 +40,25 @@ class XLMREncoder(BERTEncoder):
         )
         self.model.encoder.output_hidden_states = True
 
+    @property
+    def size_separator(self):
+        """Number of tokens used between two segments. For BERT is just 1 ([SEP])
+        but models such as XLM-R use 2 (</s></s>)"""
+        return 2
+
+    @property
+    def uses_token_type_ids(self):
+        return False
+
     @classmethod
     def from_pretrained(cls, pretrained_model: str) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.
-        :param pretrained_model: Name of the pretrain model to be loaded.
 
-        :return: Encoder model
+        Args:
+            pretrained_model (str):Name of the pretrain model to be loaded.
+
+        Returns:
+            Encoder: XLMREncoder object.
         """
         return XLMREncoder(pretrained_model)
 

@@ -13,29 +13,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-MiniLM Encoder
-==============
-    Pretrained MiniLM encoder from Microsoft. This encoder uses a BERT 
-    architecture with an XLMR tokenizer.
+RemBERT Encoder
+===============
+    Pretrained RemBERT encoder from Google. This encoder is similar to BERT but uses 
+    sentencepiece like XLMR.
 """
-from transformers import BertModel, XLMRobertaTokenizer
+from transformers import RemBertModel, RemBertTokenizer
 
 from comet.encoders.xlmr import Encoder, XLMREncoder
 
 
-class MiniLMEncoder(XLMREncoder):
-    """MiniLMEncoder encoder.
+class RemBERTEncoder(XLMREncoder):
+    """RemBERT encoder.
 
     :param pretrained_model: Pretrained model from hugging face.
     """
 
     def __init__(self, pretrained_model: str) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = XLMRobertaTokenizer.from_pretrained(
+        self.tokenizer = RemBertTokenizer.from_pretrained(
             pretrained_model, use_fast=True
         )
-        self.model = BertModel.from_pretrained(pretrained_model)
+        self.model = RemBertModel.from_pretrained(pretrained_model)
         self.model.encoder.output_hidden_states = True
+
+    @property
+    def size_separator(self):
+        """Number of tokens used between two segments. For BERT is just 1 ([SEP])"""
+        return 1
+
+    @property
+    def uses_token_type_ids(self):
+        return True
 
     @classmethod
     def from_pretrained(cls, pretrained_model: str) -> Encoder:
@@ -45,6 +54,6 @@ class MiniLMEncoder(XLMREncoder):
             pretrained_model (str):Name of the pretrain model to be loaded.
 
         Returns:
-            Encoder: MiniLMEncoder object.
+            Encoder: RemBERTEncoder object.
         """
-        return MiniLMEncoder(pretrained_model)
+        return RemBERTEncoder(pretrained_model)
