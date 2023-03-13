@@ -1,8 +1,8 @@
 class_path: pytorch_lightning.trainer.trainer.Trainer
 init_args:
   accelerator: gpu
-  devices: auto
-  accumulate_grad_batches: 4
+  devices: 1
+  accumulate_grad_batches: 1
   amp_backend: native
   amp_level: null
   auto_lr_find: False
@@ -11,7 +11,7 @@ init_args:
   benchmark: null
   check_val_every_n_epoch: 1
   default_root_dir: null
-  deterministic: True
+  deterministic: False
   fast_dev_run: False
   gradient_clip_val: 1.0
   gradient_clip_algorithm: norm

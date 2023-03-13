@@ -14,7 +14,7 @@ ranking_metric:
     layer_transformation: sparsemax
     layer_norm: False
     dropout: 0.1
-    batch_size: 4
+    batch_size: 16
     train_data: 
       - data/1720-daRR.csv
     validation_data:

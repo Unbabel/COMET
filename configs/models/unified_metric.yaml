@@ -14,7 +14,7 @@ unified_metric:
     word_layer: 24
     loss: mse
     dropout: 0.1
-    batch_size: 2
+    batch_size: 16
     train_data: 
       - data/1720-da.csv
     validation_data: 

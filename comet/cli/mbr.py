@@ -201,7 +201,7 @@ def mbr_command() -> None:
         "--qe_model",
         type=str,
         required=False,
-        default="Unbabel/wmt22-cometkiwi-da",
+        default="Unbabel/wmt20-comet-qe-da",
         help="Reference Free model used for reranking before MBR.",
     )
     parser.add_argument(
