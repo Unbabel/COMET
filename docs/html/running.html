@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Running COMET &mdash; COMET 1.1.0 documentation</title>
+  <title>Running COMET &mdash; COMET 2.0.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/comet.css" type="text/css" />
@@ -12,14 +12,14 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="COMET Metrics" href="models.html" />
+    <link rel="next" title="Frequently Asked Questions" href="faqs.html" />
     <link rel="prev" title="Installation" href="installation.html" /> 
 </head>
 
@@ -28,11 +28,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> COMET
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            COMET
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -49,7 +53,9 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="faqs.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html#available-evaluation-models">Available Evaluation Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a></li>
 </ul>
 
@@ -66,8 +72,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Running COMET</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Running COMET</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/running.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -78,9 +84,9 @@
            <div itemprop="articleBody">
              
   <section id="running-comet">
-<h1>Running COMET<a class="headerlink" href="#running-comet" title="Permalink to this headline"></a></h1>
+<span id="running"></span><h1>Running COMET<a class="headerlink" href="#running-comet" title="Permalink to this heading"></a></h1>
 <section id="command-line-interface">
-<h2>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline"></a></h2>
+<h2>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this heading"></a></h2>
 <p>Our CLI supports 4 different commands:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">comet-score</span></code>: the <a class="reference internal" href="#scoring-command">Scoring Command</a> is used to evaluate MT.</p></li>
@@ -96,7 +102,7 @@
 </pre></div>
 </div>
 <section id="scoring-command">
-<h3>Scoring Command<a class="headerlink" href="#scoring-command" title="Permalink to this headline"></a></h3>
+<h3>Scoring Command<a class="headerlink" href="#scoring-command" title="Permalink to this heading"></a></h3>
 <p>Basic scoring command:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span>
 </pre></div>
@@ -112,63 +118,38 @@
 </div>
 <p>The default setting of <code class="docutils literal notranslate"><span class="pre">comet-score</span></code> prints the score for each segment individually.
 If you are only interested in the score for the whole dataset (computed as the average of the segment scores),
-you can use the <code class="docutils literal notranslate"><span class="pre">--quiet</span></code> flag. E.g:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">quiet</span>
+run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">quiet</span> <span class="o">--</span><span class="n">only_system</span>
 </pre></div>
 </div>
 <p>COMET provides a list of different model/metrics that you can use to evaluate your systems. You can select which one you want using the <code class="docutils literal notranslate"><span class="pre">--model</span></code> flag.</p>
 <p><strong>NOTE:</strong> For reference-free (QE-as-a-metric) models you don’t need to pass a reference. E.g:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">model</span> <span class="n">wmt20</span><span class="o">-</span><span class="n">comet</span><span class="o">-</span><span class="n">qe</span><span class="o">-</span><span class="n">da</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">model</span> <span class="n">Unbabel</span><span class="o">/</span><span class="n">wmt20</span><span class="o">-</span><span class="n">comet</span><span class="o">-</span><span class="n">qe</span><span class="o">-</span><span class="n">da</span>
 </pre></div>
 </div>
-<p>Following our work on <a class="reference external" href="https://aclanthology.org/2021.findings-emnlp.330/">Uncertainty-Aware MT Evaluation</a> you can use the <code class="docutils literal notranslate"><span class="pre">--mc_dropout</span></code> flag to get a variance/uncertainty value for each segment score.
-If this value is high, it means that the metric is less confident in that prediction.:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">mc_dropout</span> <span class="mi">30</span>
-</pre></div>
-</div>
-<p><strong>Multi-GPU Inference:</strong></p>
-<p>COMET is optimized to be used in a single GPU by taking advantage of length batching and embedding caching. When using Multi-GPU since data e spread
-across GPUs we will typically get fewer cache hits and the length batching samples is replaced by a <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#replace-sampler-ddp/">DistributedSampler</a>.
-Because of that, according to our experiments, using 1 GPU is faster than using 2 GPUs specially when scoring multiple systems
-for the same source and reference.</p>
-<p>Nonetheless, if your data does not have repetitions and you have more than 1 GPU available, you can <strong>run multi-GPU inference with the following command</strong>:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">gpus</span> <span class="mi">2</span> <span class="o">--</span><span class="n">quiet</span>
-</pre></div>
-</div>
-<p><strong>Changing Embedding Cache Size:</strong>
-You can change the cache size of COMET using the following env variable:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">COMET_EMBEDDINGS_CACHE</span><span class="o">=</span><span class="s2">&quot;2048&quot;</span>
-</pre></div>
-</div>
-<p>by default the COMET cache size is 1024.</p>
 </section>
 <section id="compare-command">
-<h3>Compare Command<a class="headerlink" href="#compare-command" title="Permalink to this headline"></a></h3>
-<p>When comparing MT systems <strong>we encourage you to check how significant are the improvements</strong> you observe for a given model.
-This command receives two system outputs and performs statistical significant testing with <em>Paired T-Test</em> and <em>bootstrap resampling</em>.:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">compare</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">x</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">y</span> <span class="n">hyp2</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span>
-</pre></div>
-</div>
+<h3>Compare Command<a class="headerlink" href="#compare-command" title="Permalink to this heading"></a></h3>
+<p>When comparing multiple MT systems we encourage you to run the <code class="docutils literal notranslate"><span class="pre">comet-compare</span></code> command to get <strong>statistical significance</strong> with Paired T-Test and bootstrap resampling.</p>
+<blockquote>
+<div><p>comet-compare -s src.de -t hyp1.en hyp2.en hyp3.en -r ref.en</p>
+</div></blockquote>
 </section>
 <section id="mbr-command">
-<h3>MBR Command<a class="headerlink" href="#mbr-command" title="Permalink to this headline"></a></h3>
+<h3>MBR Command<a class="headerlink" href="#mbr-command" title="Permalink to this heading"></a></h3>
 <p>Minimum Bayes-Risk (MBR) decoding aims to find the candidate hypothesis that has the least expected loss under a given metric.
 Recent studies showed that MBR with neural fine-tuned metrics such as COMET leads to significant improvement in automatic and
-human evaluations [<a class="reference external" href="https://arxiv.org/abs/2111.09388/">Freitag et al. 2022,</a> <a class="reference external" href="https://arxiv.org/abs/2203.00201/">Zhang et al. 2022</a>].</p>
-<p>We find that this is a promissing direction for MT in general and for that reason we developed the <code class="docutils literal notranslate"><span class="pre">comet-mbr</span></code> command. Our implementation is
-inspired by <a class="reference external" href="https://arxiv.org/abs/2202.05148/">Amrhein et al, 2022,</a>  caching approach.</p>
-<p>Example::</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">mbr</span> <span class="o">-</span><span class="n">s</span> <span class="n">source</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">t</span> <span class="n">samples</span><span class="o">.</span><span class="n">txt</span> <span class="o">--</span><span class="n">num_samples</span> <span class="n">n</span> <span class="o">-</span><span class="n">o</span> <span class="n">output</span><span class="o">.</span><span class="n">txt</span>
+human evaluations [<a class="reference external" href="https://aclanthology.org/2022.naacl-main.100/">Fernandes et al., NAACL 2022,</a> <a class="reference external" href="https://arxiv.org/abs/2203.00201/">Zhang et al. 2022</a>].</p>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">comet</span><span class="o">-</span><span class="n">mbr</span> <span class="o">-</span><span class="n">s</span> <span class="p">[</span><span class="n">SOURCE</span><span class="p">]</span><span class="o">.</span><span class="n">txt</span> <span class="o">-</span><span class="n">t</span> <span class="p">[</span><span class="n">MT_SAMPLES</span><span class="p">]</span><span class="o">.</span><span class="n">txt</span> <span class="o">--</span><span class="n">num_sample</span> <span class="p">[</span><span class="n">X</span><span class="p">]</span> <span class="o">-</span><span class="n">o</span> <span class="p">[</span><span class="n">OUTPUT_FILE</span><span class="p">]</span><span class="o">.</span><span class="n">txt</span>
 </pre></div>
 </div>
-<p>where <code class="docutils literal notranslate"><span class="pre">source.txt</span></code> is a text file with one source per line and <code class="docutils literal notranslate"><span class="pre">samples.txt</span></code> is a text file with <code class="docutils literal notranslate"><span class="pre">n</span></code> samples for each <code class="docutils literal notranslate"><span class="pre">source.txt</span></code> line.
-The command will write the best MT sample to the <code class="docutils literal notranslate"><span class="pre">output.txt</span></code> file.</p>
+<p>If working with a very large candidate list you can use <code class="docutils literal notranslate"><span class="pre">--rerank_top_k</span></code> flag to prune the topK most promissing candidates according to a reference-free metric.</p>
+<blockquote>
+<div><p>comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt –num_sample 1000 –rerank_top_k 100 –gpus 4 –qe_model Unbabel/wmt20-comet-qe-da</p>
+</div></blockquote>
 <p>Example with 2 source and 3 samples:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 26%" />
-<col style="width: 74%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>source.txt</p></th>
 <th class="head"><p>samples.txt</p></th>
@@ -205,13 +186,13 @@ up in the</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="models.html" class="btn btn-neutral float-right" title="COMET Metrics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="faqs.html" class="btn btn-neutral float-right" title="Frequently Asked Questions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2020, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
+    <p>&#169; Copyright 2022, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; COMET 1.1.0 documentation</title>
+  <title>Installation &mdash; COMET 2.0.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/comet.css" type="text/css" />
@@ -12,10 +12,10 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -28,11 +28,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> COMET
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            COMET
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -41,7 +45,9 @@
               <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running COMET</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faqs.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html#available-evaluation-models">Available Evaluation Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a></li>
 </ul>
 
@@ -58,8 +64,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Installation</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -69,17 +75,13 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="id1">
-<h1>Installation<a class="headerlink" href="#id1" title="Permalink to this headline"></a></h1>
-<p>Please note that since Python&gt;=3.7 is required, all of the following commands, especially <cite>pip</cite>,
+  <section id="installation">
+<span id="id1"></span><h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
+<p>Please note that since Python&gt;=3.8 is required, all of the following commands, especially <cite>pip</cite>,
 also have to be the Python 3 compliant versions thereof. This might require that you run <cite>pip3</cite> instead.</p>
 <p>Install COMET as a package with pip:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">--</span><span class="n">upgrade</span> <span class="n">pip</span>  <span class="c1"># ensures that pip is current</span>
 <span class="n">pip</span> <span class="n">install</span> <span class="n">unbabel</span><span class="o">-</span><span class="n">comet</span>
-</pre></div>
-</div>
-<p>or:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">unbabel</span><span class="o">-</span><span class="n">comet</span><span class="o">==</span><span class="mf">1.1.0</span> <span class="o">--</span><span class="n">use</span><span class="o">-</span><span class="n">feature</span><span class="o">=</span><span class="mi">2020</span><span class="o">-</span><span class="n">resolver</span>
 </pre></div>
 </div>
 <p>Inside your project you can now:</p>
@@ -99,7 +101,7 @@ also have to be the Python 3 compliant versions thereof. This might require that
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2020, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
+    <p>&#169; Copyright 2022, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

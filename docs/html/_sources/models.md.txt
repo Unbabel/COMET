@@ -6,65 +6,45 @@ Since COMET was released we have been training and releasing different models. I
 
 All COMET metrics follow one of the following architectures:
 
-[![Model Architectures](/_static/img/architectures.jpg)](https://raw.githubusercontent.com/Unbabel/COMET/docs-config/docs/source/_static/img/architectures.jpg)
+[![Model Architectures](/_static/img/architectures.png)](https://raw.githubusercontent.com/Unbabel/COMET/docs-config/docs/source/_static/img/architectures.png)
 
-1) Regression Metric (left diagram): This is the architecture that most models use. This model is trained on a regression task using source, MT and reference.
-2) Ranking Metric (middle diagram): Models that follow this architecture are trained in a Translation Ranking Task using a [Triple Margin Loss](https://pytorch.org/docs/stable/generated/torch.nn.TripletMarginLoss.html). This means that the model will learn to optimize the embedding space to encode _good_ translations closer to the anchors (source and reference) while pushing _bad_ translations away.
-3) Referenceless Metric (right diagram): This architecture resembles architecture 1) but **it does not use the reference translation!** This is purely a Quality Estimation system.
-
-## Available Metrics:
-
-| Model Name | Architecture | Short Description | 
-| :-------- | :----- | --------------- |
-|  <td colspan=3> [**WMT20 Metrics** ](#wmt20-comet-metrics)  |
-| `wmt20-comet-da` | Regression Metric | Our best performing metric from WMT20. | 
-| `wmt20-comet-qe-da` | Referenceless Metric | Referenceless metric trained to predict DA's from WMT17 to WMT19. This was the best performing _QE-as-a-metric_ from WMT20 shared task |
-| `wmt20-comet-qe-da-v2` | Referenceless Metric | Reimplementation of the above model without a bounded output. |
-| `emnlp20-comet-rank` | Ranking Metric | Translation Ranking model trained with DARR ranging from WMT17 to WMT19. |
-|  <td colspan=3>  [**WMT21 Metrics**](#wmt21-comet-metrics)  |
-| `wmt21-comet-mqm` | Regression Metric | Our best performing metric from WMT21 MQM benchmark. This metric was pretrained on DA's and adapted to MQM by finetuning on [Freitag et al, 2021](https://aclanthology.org/2021.tacl-1.87/) data. |
-| `wmt21-comet-qe-mqm` | Referenceless Metric | Referenceless version of the `wmt21-comet-mqm` metric. This was the best performing _QE-as-a-metric_ from WMT21 shared task |
-| `wmt21-cometinho-mqm` | Regression Metric | Trained with the same data as `wmt21-comet-mqm` but with a much smaller encoder model (MiniLMV2) | 
-| `wmt21-comet-da` | Regression Metric | Regression metric trained on DA's from WMT15 to WMT20. |
-| `wmt21-comet-qe-da` | Referenceless Metric | Referenceless metric trained on DA's from WMT15 to WMT20. |
-| `wmt21-cometinho-da` | Regression Metric | Regression metric trained on DA's from WMT15 to WMT20 using a light-weight encoder model. |
-
-Our _default_ metric is the <code>wmt20-comet-da</code> and our _default_ Referenceless (QE as a metric) is  <code>wmt21-comet-qe-da</code>.
+1) Regression Metric (top-left diagram): This is the architecture that most models use. This model is trained on a regression task using source, MT and reference.
+2) Ranking Metric (top-middle diagram): Models that follow this architecture are trained in a Translation Ranking Task using a [Triple Margin Loss](https://pytorch.org/docs/stable/generated/torch.nn.TripletMarginLoss.html). This means that the model will learn to optimize the embedding space to encode _good_ translations closer to the anchors (source and reference) while pushing _bad_ translations away.
+3) Referenceless Metric (top-right diagram): This architecture resembles architecture 1) but **it does not use the reference translation!** This is purely a Quality Estimation system.
+4) Unified Metric (bottom diagram): Unified architecture was proposed in [(Wan et al., ACL 2022)](https://aclanthology.org/2022.acl-long.558.pdf) and it is closely related to [BLEURT](https://aclanthology.org/2020.acl-main.704/) and [OpenKiwi](https://aclanthology.org/P19-3020/) models. This model can be trained with and without references
 
 
-## WMT20 COMET Metrics
+# Available Evaluation Models
 
-For [our participation in the WMT20 shared task](https://aclanthology.org/2020.wmt-1.101.pdf) we developed several models. Those models are the following:
+The two main COMET models are:
 
-- <code>wmt20-comet-da</code>: Our best regression metric that year. It is trained to predict _Direct Assessments_ using data ranging 2017 to 2019. (Same as <code>wmt-large-da-estimator-1719</code> from previous versions.)
-- <code>wmt20-comet-qe-da</code>: This was the model we used to participate in the QE-as-a-metric subtask. It is trained to predict _Direct Assessments_ using data ranging 2017 to 2019. This is a Referenceless Metric meaning that it uses **source and translation only!** (Same as <code>wmt-large-qe-estimator-1719</code> from previous versions.)
-- <code>emnlp20-comet-rank</code>: reimplementation of the ranking model from [Rei et al. 2020](https://aclanthology.org/2020.emnlp-main.213/) with _Direct Assessment Relative Ranks (DARR)_ ranging 2017 to 2019. (Same as <code>wmt-large-da-estimator-1719</code> from previous versions.)
+- **Default model:** [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) - This model uses a reference-based regression approach and is built on top of XLM-R. It has been trained on direct assessments from WMT17 to WMT20 and provides scores ranging from 0 to 1, where 1 represents a perfect translation.
+- **Upcoming model:** [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da) - This reference-free model uses a regression approach and is built on top of InfoXLM. It has been trained on direct assessments from WMT17 to WMT20, as well as direct assessments from the MLQE-PE corpus. Like the default model, it also provides scores ranging from 0 to 1.
 
-Our **Primary Metric** is <code>wmt20-comet-da</code>. This was one of the best performing metrics in the WMT20 shared task [[Mathur et al, 2020]](https://aclanthology.org/2020.wmt-1.77/) and the best performing metric in the large-scale study on metrics performed by Microsoft Research [[kocmi et al, 2021]](https://arxiv.org/abs/2107.10821).
+These two models were part of the final ensemble used in our WMT22 [Metrics](https://aclanthology.org/2022.wmt-1.52/) and [QE](https://aclanthology.org/2022.wmt-1.60/) shared tasks. 
 
-- <code>wmt20-comet-qe-da-v2</code>: The Referenceless model develop to the WMT20 shared task (<code>wmt20-comet-qe-da</code>) was trained with a sigmoid activation at the end. This was intended to improve interpretability but after the shared task we noted that this model predicts a lot of scores close to 0 (sometimes even with acceptable translations). This does not affect correlations of system-decisions but it **makes it harder to differentiate between low quality translations.** For that reason we decided to retrain the <code>wmt20-comet-qe-da</code> model without the Sigmoid activation. **The <code>wmt20-comet-qe-da-v2</code> is expected to perform as well as the <code>wmt20-comet-qe-da</code> but without producing as many 0's.**
+For versions prior to 2.0, you can still use [`Unbabel/wmt20-comet-da`](https://huggingface.co/Unbabel/wmt20-comet-da), which is the primary metric, and Unbabel/[`Unbabel/wmt20-comet-qe-da`](https://huggingface.co/Unbabel/wmt20-comet-qe-da) for the respective reference-free version.
 
+All other models developed through the years can be accessed through the following links:
 
-## WMT21 COMET Metrics
+| Model | Download Link | Paper | 
+| :---: | :-----------: | :---: |
+| `emnlp20-comet-rank` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/emnlp20-comet-rank.tar.gz) | [🔗](https://aclanthology.org/2020.emnlp-main.213/) |
+| `wmt20-comet-qe-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da.tar.gz) | [🔗](https://aclanthology.org/2020.wmt-1.101/) |
+| `wmt21-comet-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-da.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) |
+| `wmt21-comet-mqm` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-mqm.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) |
+| `wmt21-comet-qe-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-da.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) |
+| `wmt21-comet-qe-mqm` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-mqm.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) |
+| `wmt21-comet-qe-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-da.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) |
+| `wmt21-cometinho-mqm` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-mqm.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) |
+| `wmt21-cometinho-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-da.tar.gz) | [🔗](https://aclanthology.org/2021.wmt-1.111/) | 
+| `eamt22-cometinho-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-cometinho-da.tar.gz) | [🔗](https://aclanthology.org/2022.eamt-1.9/) |
+| `eamt22-prune-comet-da` | [🔗](https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-prune-comet-da.tar.gz) | [🔗](https://aclanthology.org/2022.eamt-1.9/) |
 
-### MQM Metrics
+Example :
 
-In  [our participation to the WMT21 shared task](https://aclanthology.org/2021.wmt-1.111.pdf) we steered COMET towards higher correlations with MQM. We do so by first pre-training on _Direct Assessments_ and then fine-tuning on z-normalized MQM scores.
-
-- <code>wmt21-comet-mqm</code>: This model was pre-trained on _Direct Assessments_ from WMT15 to WMT20 and then fine-tuned on MQM z-scores from [Freitag et al, 2021 (MQM)](https://aclanthology.org/2021.tacl-1.87/). This model was one of the best performing metrics that year [[Freitag et al. 2021 (WMT21)]](https://aclanthology.org/2021.wmt-1.73/).
-- <code>wmt21-comet-qe-mqm</code>: Reference-free version of <code>wmt21-comet-mqm</code>. This model was the best performing _QE-as-a-metric_ that year. [[Freitag et al. 2021 (WMT21)]](https://aclanthology.org/2021.wmt-1.73/).
-- <code>wmt21-cometinho-mqm</code>: Additionally, we introduced Cometinho, a light-weight COMET model that is built on top of a smaller XLM-R encoder ([MiniLMV2](https://aclanthology.org/2021.findings-acl.188/)). This model is NOT a distilled COMET model... It is simply built on top of a smaller pretrained encoder.
-
-### DA Metrics
-Along with the MQM models we release the checkpoints trained only on DA's data. 
-
-- <code>wmt21-comet-da</code>: Regression Model trained on _Direct Assessments_ from WMT15 to WMT20. 
-- <code>wmt21-comet-qe-da</code>: Referenceless Model trained on _Direct Assessments_ from WMT15 to WMT20. 
-- <code>wmt21-cometinho-da</code>: Regression Model trained on top of a smaller [MiniLMV2](https://aclanthology.org/2021.findings-acl.188/) encoder using _Direct Assessments_ from WMT15 to WMT20 
-
-**NOTE:** One thing we noticed in this year's models is that they have a lower variance between predicted scores than 2020 models. Nonetheless, correlations with human judgments in the form of both DA and MQM are high. Check our [FAQs for more insights on COMET scores](https://unbabel.github.io/COMET/html/faqs.html#is-there-a-theoretical-range-of-values-for-the-comet-regressor).
-
-
-## Benchmark
-
-TODO
+```
+wget https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-cometinho-da.tar.gz
+tar -xf eamt22-cometinho-da.tar.gz
+comet-score -s src.de -t hyp1.en -r ref.en --model eamt22-cometinho-da/checkpoints/model.ckpt
+```

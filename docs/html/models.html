@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>COMET Metrics &mdash; COMET 1.1.0 documentation</title>
+  <title>COMET Metrics &mdash; COMET 2.0.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/comet.css" type="text/css" />
@@ -12,10 +12,10 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -28,11 +28,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> COMET
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            COMET
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -44,16 +48,9 @@
 <li class="toctree-l1"><a class="reference internal" href="faqs.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">COMET Metrics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#model-architectures">Model Architectures:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#available-metrics">Available Metrics:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#wmt20-comet-metrics">WMT20 COMET Metrics</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#wmt21-comet-metrics">WMT21 COMET Metrics</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#mqm-metrics">MQM Metrics</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#da-metrics">DA Metrics</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#benchmark">Benchmark</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="#available-evaluation-models">Available Evaluation Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a></li>
 </ul>
 
@@ -70,8 +67,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>COMET Metrics</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">COMET Metrics</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/models.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -82,131 +79,101 @@
            <div itemprop="articleBody">
              
   <section id="comet-metrics">
-<h1>COMET Metrics<a class="headerlink" href="#comet-metrics" title="Permalink to this headline"></a></h1>
+<h1>COMET Metrics<a class="headerlink" href="#comet-metrics" title="Permalink to this heading"></a></h1>
 <p>Since COMET was released we have been training and releasing different models. In this page we will try to briefly explain the underlying differences and point you to the papers that used them.</p>
 <section id="model-architectures">
-<h2>Model Architectures:<a class="headerlink" href="#model-architectures" title="Permalink to this headline"></a></h2>
+<h2>Model Architectures:<a class="headerlink" href="#model-architectures" title="Permalink to this heading"></a></h2>
 <p>All COMET metrics follow one of the following architectures:</p>
-<p><a class="reference external" href="https://raw.githubusercontent.com/Unbabel/COMET/docs-config/docs/source/_static/img/architectures.jpg"><img alt="Model Architectures" src="_images/architectures.jpg" /></a></p>
+<p><a class="reference external" href="https://raw.githubusercontent.com/Unbabel/COMET/docs-config/docs/source/_static/img/architectures.png"><img alt="Model Architectures" src="_images/architectures.png" /></a></p>
 <ol class="simple">
-<li><p>Regression Metric (left diagram): This is the architecture that most models use. This model is trained on a regression task using source, MT and reference.</p></li>
-<li><p>Ranking Metric (middle diagram): Models that follow this architecture are trained in a Translation Ranking Task using a <a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.TripletMarginLoss.html">Triple Margin Loss</a>. This means that the model will learn to optimize the embedding space to encode <em>good</em> translations closer to the anchors (source and reference) while pushing <em>bad</em> translations away.</p></li>
-<li><p>Referenceless Metric (right diagram): This architecture resembles architecture 1) but <strong>it does not use the reference translation!</strong> This is purely a Quality Estimation system.</p></li>
+<li><p>Regression Metric (top-left diagram): This is the architecture that most models use. This model is trained on a regression task using source, MT and reference.</p></li>
+<li><p>Ranking Metric (top-middle diagram): Models that follow this architecture are trained in a Translation Ranking Task using a <a class="reference external" href="https://pytorch.org/docs/stable/generated/torch.nn.TripletMarginLoss.html">Triple Margin Loss</a>. This means that the model will learn to optimize the embedding space to encode <em>good</em> translations closer to the anchors (source and reference) while pushing <em>bad</em> translations away.</p></li>
+<li><p>Referenceless Metric (top-right diagram): This architecture resembles architecture 1) but <strong>it does not use the reference translation!</strong> This is purely a Quality Estimation system.</p></li>
+<li><p>Unified Metric (bottom diagram): Unified architecture was proposed in <a class="reference external" href="https://aclanthology.org/2022.acl-long.558.pdf">(Wan et al., ACL 2022)</a> and it is closely related to <a class="reference external" href="https://aclanthology.org/2020.acl-main.704/">BLEURT</a> and <a class="reference external" href="https://aclanthology.org/P19-3020/">OpenKiwi</a> models. This model can be trained with and without references</p></li>
 </ol>
 </section>
-<section id="available-metrics">
-<h2>Available Metrics:<a class="headerlink" href="#available-metrics" title="Permalink to this headline"></a></h2>
+</section>
+<section id="available-evaluation-models">
+<h1>Available Evaluation Models<a class="headerlink" href="#available-evaluation-models" title="Permalink to this heading"></a></h1>
+<p>The two main COMET models are:</p>
+<ul class="simple">
+<li><p><strong>Default model:</strong> <a class="reference external" href="https://huggingface.co/Unbabel/wmt22-comet-da"><code class="docutils literal notranslate"><span class="pre">Unbabel/wmt22-comet-da</span></code></a> - This model uses a reference-based regression approach and is built on top of XLM-R. It has been trained on direct assessments from WMT17 to WMT20 and provides scores ranging from 0 to 1, where 1 represents a perfect translation.</p></li>
+<li><p><strong>Upcoming model:</strong> <a class="reference external" href="https://huggingface.co/Unbabel/wmt22-cometkiwi-da"><code class="docutils literal notranslate"><span class="pre">Unbabel/wmt22-cometkiwi-da</span></code></a> - This reference-free model uses a regression approach and is built on top of InfoXLM. It has been trained on direct assessments from WMT17 to WMT20, as well as direct assessments from the MLQE-PE corpus. Like the default model, it also provides scores ranging from 0 to 1.</p></li>
+</ul>
+<p>These two models were part of the final ensemble used in our WMT22 <a class="reference external" href="https://aclanthology.org/2022.wmt-1.52/">Metrics</a> and <a class="reference external" href="https://aclanthology.org/2022.wmt-1.60/">QE</a> shared tasks.</p>
+<p>For versions prior to 2.0, you can still use <a class="reference external" href="https://huggingface.co/Unbabel/wmt20-comet-da"><code class="docutils literal notranslate"><span class="pre">Unbabel/wmt20-comet-da</span></code></a>, which is the primary metric, and Unbabel/<a class="reference external" href="https://huggingface.co/Unbabel/wmt20-comet-qe-da"><code class="docutils literal notranslate"><span class="pre">Unbabel/wmt20-comet-qe-da</span></code></a> for the respective reference-free version.</p>
+<p>All other models developed through the years can be accessed through the following links:</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
-<th align="left">Model Name</th>
-<th align="left">Architecture</th>
-<th>Short Description</th>
+<th style="text-align: center;">Model</th>
+<th style="text-align: center;">Download Link</th>
+<th style="text-align: center;">Paper</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="left"><td colspan=3> <a href="#wmt20-comet-metrics"><strong>WMT20 Metrics</strong> </a></td>
-<td align="left"></td>
-<td></td>
+<td style="text-align: center;"><code>emnlp20-comet-rank</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/emnlp20-comet-rank.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2020.emnlp-main.213/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><code>wmt20-comet-da</code></td>
-<td align="left">Regression Metric</td>
-<td>Our best performing metric from WMT20.</td>
+<td style="text-align: center;"><code>wmt20-comet-qe-da</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2020.wmt-1.101/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><code>wmt20-comet-qe-da</code></td>
-<td align="left">Referenceless Metric</td>
-<td>Referenceless metric trained to predict DA's from WMT17 to WMT19. This was the best performing <em>QE-as-a-metric</em> from WMT20 shared task</td>
+<td style="text-align: center;"><code>wmt21-comet-da</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-da.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2021.wmt-1.111/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><code>wmt20-comet-qe-da-v2</code></td>
-<td align="left">Referenceless Metric</td>
-<td>Reimplementation of the above model without a bounded output.</td>
+<td style="text-align: center;"><code>wmt21-comet-mqm</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-mqm.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2021.wmt-1.111/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><code>emnlp20-comet-rank</code></td>
-<td align="left">Ranking Metric</td>
-<td>Translation Ranking model trained with DARR ranging from WMT17 to WMT19.</td>
+<td style="text-align: center;"><code>wmt21-comet-qe-da</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-da.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2021.wmt-1.111/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><td colspan=3>  <a href="#wmt21-comet-metrics"><strong>WMT21 Metrics</strong></a></td>
-<td align="left"></td>
-<td></td>
+<td style="text-align: center;"><code>wmt21-comet-qe-mqm</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-mqm.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2021.wmt-1.111/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><code>wmt21-comet-mqm</code></td>
-<td align="left">Regression Metric</td>
-<td>Our best performing metric from WMT21 MQM benchmark. This metric was pretrained on DA's and adapted to MQM by finetuning on <a href="https://aclanthology.org/2021.tacl-1.87/">Freitag et al, 2021</a> data.</td>
+<td style="text-align: center;"><code>wmt21-comet-qe-da</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-da.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2021.wmt-1.111/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><code>wmt21-comet-qe-mqm</code></td>
-<td align="left">Referenceless Metric</td>
-<td>Referenceless version of the <code>wmt21-comet-mqm</code> metric. This was the best performing <em>QE-as-a-metric</em> from WMT21 shared task</td>
+<td style="text-align: center;"><code>wmt21-cometinho-mqm</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-mqm.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2021.wmt-1.111/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><code>wmt21-cometinho-mqm</code></td>
-<td align="left">Regression Metric</td>
-<td>Trained with the same data as <code>wmt21-comet-mqm</code> but with a much smaller encoder model (MiniLMV2)</td>
+<td style="text-align: center;"><code>wmt21-cometinho-da</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-da.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2021.wmt-1.111/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><code>wmt21-comet-da</code></td>
-<td align="left">Regression Metric</td>
-<td>Regression metric trained on DA's from WMT15 to WMT20.</td>
+<td style="text-align: center;"><code>eamt22-cometinho-da</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-cometinho-da.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2022.eamt-1.9/">🔗</a></td>
 </tr>
 <tr>
-<td align="left"><code>wmt21-comet-qe-da</code></td>
-<td align="left">Referenceless Metric</td>
-<td>Referenceless metric trained on DA's from WMT15 to WMT20.</td>
-</tr>
-<tr>
-<td align="left"><code>wmt21-cometinho-da</code></td>
-<td align="left">Regression Metric</td>
-<td>Regression metric trained on DA's from WMT15 to WMT20 using a light-weight encoder model.</td>
+<td style="text-align: center;"><code>eamt22-prune-comet-da</code></td>
+<td style="text-align: center;"><a href="https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-prune-comet-da.tar.gz">🔗</a></td>
+<td style="text-align: center;"><a href="https://aclanthology.org/2022.eamt-1.9/">🔗</a></td>
 </tr>
 </tbody>
-</table><p>Our <em>default</em> metric is the <code>wmt20-comet-da</code> and our <em>default</em> Referenceless (QE as a metric) is  <code>wmt21-comet-qe-da</code>.</p>
-</section>
-<section id="wmt20-comet-metrics">
-<h2>WMT20 COMET Metrics<a class="headerlink" href="#wmt20-comet-metrics" title="Permalink to this headline"></a></h2>
-<p>For <a class="reference external" href="https://aclanthology.org/2020.wmt-1.101.pdf">our participation in the WMT20 shared task</a> we developed several models. Those models are the following:</p>
-<ul class="simple">
-<li><p><code>wmt20-comet-da</code>: Our best regression metric that year. It is trained to predict <em>Direct Assessments</em> using data ranging 2017 to 2019. (Same as <code>wmt-large-da-estimator-1719</code> from previous versions.)</p></li>
-<li><p><code>wmt20-comet-qe-da</code>: This was the model we used to participate in the QE-as-a-metric subtask. It is trained to predict <em>Direct Assessments</em> using data ranging 2017 to 2019. This is a Referenceless Metric meaning that it uses <strong>source and translation only!</strong> (Same as <code>wmt-large-qe-estimator-1719</code> from previous versions.)</p></li>
-<li><p><code>emnlp20-comet-rank</code>: reimplementation of the ranking model from <a class="reference external" href="https://aclanthology.org/2020.emnlp-main.213/">Rei et al. 2020</a> with <em>Direct Assessment Relative Ranks (DARR)</em> ranging 2017 to 2019. (Same as <code>wmt-large-da-estimator-1719</code> from previous versions.)</p></li>
-</ul>
-<p>Our <strong>Primary Metric</strong> is <code>wmt20-comet-da</code>. This was one of the best performing metrics in the WMT20 shared task <a class="reference external" href="https://aclanthology.org/2020.wmt-1.77/">[Mathur et al, 2020]</a> and the best performing metric in the large-scale study on metrics performed by Microsoft Research <a class="reference external" href="https://arxiv.org/abs/2107.10821">[kocmi et al, 2021]</a>.</p>
-<ul class="simple">
-<li><p><code>wmt20-comet-qe-da-v2</code>: The Referenceless model develop to the WMT20 shared task (<code>wmt20-comet-qe-da</code>) was trained with a sigmoid activation at the end. This was intended to improve interpretability but after the shared task we noted that this model predicts a lot of scores close to 0 (sometimes even with acceptable translations). This does not affect correlations of system-decisions but it <strong>makes it harder to differentiate between low quality translations.</strong> For that reason we decided to retrain the <code>wmt20-comet-qe-da</code> model without the Sigmoid activation. <strong>The <code>wmt20-comet-qe-da-v2</code> is expected to perform as well as the <code>wmt20-comet-qe-da</code> but without producing as many 0’s.</strong></p></li>
-</ul>
-</section>
-<section id="wmt21-comet-metrics">
-<h2>WMT21 COMET Metrics<a class="headerlink" href="#wmt21-comet-metrics" title="Permalink to this headline"></a></h2>
-<section id="mqm-metrics">
-<h3>MQM Metrics<a class="headerlink" href="#mqm-metrics" title="Permalink to this headline"></a></h3>
-<p>In  <a class="reference external" href="https://aclanthology.org/2021.wmt-1.111.pdf">our participation to the WMT21 shared task</a> we steered COMET towards higher correlations with MQM. We do so by first pre-training on <em>Direct Assessments</em> and then fine-tuning on z-normalized MQM scores.</p>
-<ul class="simple">
-<li><p><code>wmt21-comet-mqm</code>: This model was pre-trained on <em>Direct Assessments</em> from WMT15 to WMT20 and then fine-tuned on MQM z-scores from <a class="reference external" href="https://aclanthology.org/2021.tacl-1.87/">Freitag et al, 2021 (MQM)</a>. This model was one of the best performing metrics that year <a class="reference external" href="https://aclanthology.org/2021.wmt-1.73/">[Freitag et al. 2021 (WMT21)]</a>.</p></li>
-<li><p><code>wmt21-comet-qe-mqm</code>: Reference-free version of <code>wmt21-comet-mqm</code>. This model was the best performing <em>QE-as-a-metric</em> that year. <a class="reference external" href="https://aclanthology.org/2021.wmt-1.73/">[Freitag et al. 2021 (WMT21)]</a>.</p></li>
-<li><p><code>wmt21-cometinho-mqm</code>: Additionally, we introduced Cometinho, a light-weight COMET model that is built on top of a smaller XLM-R encoder (<a class="reference external" href="https://aclanthology.org/2021.findings-acl.188/">MiniLMV2</a>). This model is NOT a distilled COMET model… It is simply built on top of a smaller pretrained encoder.</p></li>
-</ul>
-</section>
-<section id="da-metrics">
-<h3>DA Metrics<a class="headerlink" href="#da-metrics" title="Permalink to this headline"></a></h3>
-<p>Along with the MQM models we release the checkpoints trained only on DA’s data.</p>
-<ul class="simple">
-<li><p><code>wmt21-comet-da</code>: Regression Model trained on <em>Direct Assessments</em> from WMT15 to WMT20.</p></li>
-<li><p><code>wmt21-comet-qe-da</code>: Referenceless Model trained on <em>Direct Assessments</em> from WMT15 to WMT20.</p></li>
-<li><p><code>wmt21-cometinho-da</code>: Regression Model trained on top of a smaller <a class="reference external" href="https://aclanthology.org/2021.findings-acl.188/">MiniLMV2</a> encoder using <em>Direct Assessments</em> from WMT15 to WMT20</p></li>
-</ul>
-<p><strong>NOTE:</strong> One thing we noticed in this year’s models is that they have a lower variance between predicted scores than 2020 models. Nonetheless, correlations with human judgments in the form of both DA and MQM are high. Check our <a class="reference external" href="https://unbabel.github.io/COMET/html/faqs.html#is-there-a-theoretical-range-of-values-for-the-comet-regressor">FAQs for more insights on COMET scores</a>.</p>
-</section>
-</section>
-<section id="benchmark">
-<h2>Benchmark<a class="headerlink" href="#benchmark" title="Permalink to this headline"></a></h2>
-<p>TODO</p>
-</section>
+</table><p>Example :</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">unbabel</span><span class="o">-</span><span class="n">experimental</span><span class="o">-</span><span class="n">models</span><span class="o">.</span><span class="n">s3</span><span class="o">.</span><span class="n">amazonaws</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">comet</span><span class="o">/</span><span class="n">eamt22</span><span class="o">/</span><span class="n">eamt22</span><span class="o">-</span><span class="n">cometinho</span><span class="o">-</span><span class="n">da</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span>
+<span class="n">tar</span> <span class="o">-</span><span class="n">xf</span> <span class="n">eamt22</span><span class="o">-</span><span class="n">cometinho</span><span class="o">-</span><span class="n">da</span><span class="o">.</span><span class="n">tar</span><span class="o">.</span><span class="n">gz</span>
+<span class="n">comet</span><span class="o">-</span><span class="n">score</span> <span class="o">-</span><span class="n">s</span> <span class="n">src</span><span class="o">.</span><span class="n">de</span> <span class="o">-</span><span class="n">t</span> <span class="n">hyp1</span><span class="o">.</span><span class="n">en</span> <span class="o">-</span><span class="n">r</span> <span class="n">ref</span><span class="o">.</span><span class="n">en</span> <span class="o">--</span><span class="n">model</span> <span class="n">eamt22</span><span class="o">-</span><span class="n">cometinho</span><span class="o">-</span><span class="n">da</span><span class="o">/</span><span class="n">checkpoints</span><span class="o">/</span><span class="n">model</span><span class="o">.</span><span class="n">ckpt</span>
+</pre></div>
+</div>
 </section>
 
 
@@ -220,7 +187,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2020, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
+    <p>&#169; Copyright 2022, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

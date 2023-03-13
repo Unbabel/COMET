@@ -10,43 +10,63 @@ _Absolute scores via automatic metrics are meaningless (what does 31 BLEU mean w
 
 Check [[Kocmi et al. 2021]](https://aclanthology.org/2021.wmt-1.57/) and our discussion here: [#18](https://github.com/Unbabel/COMET/issues/18)
 
-Most COMET models are trained to regress on a specific quality assessment and in most cases we normalize those quality scores to obtain a [z-score](https://www.simplypsychology.org/z-score.html). This means that theoretically our models are unbounded! The score itself has no direct interpretation but they correctly rank translations and systems according to their quality!
+Most COMET models are trained to regress on a specific quality assessment and in most cases those scores are normalized for each annotator using a [z-score transformation](https://www.simplypsychology.org/z-score.html). The score itself has no direct interpretation but they correctly rank translations and systems according to their quality.
 
-Also, depending on the data that they were used to train, different models might have different score ranges. We observed that most scores for our `wmt20-comet-da` fall between -1.5 and 1, while our `wmt21-comet-qe-da` produces scores between -0.2 and 0.2.
-
-![WMT21 Distribution](/_static/img/distributions-WMT21.png)
+Also, depending on the data that they were used to train, different models might have different score ranges. We observed that most scores for our `Unbabel/wmt20-comet-da` fall between -1.5 and 1, while the new `Unbabel/wmt22-comet-da` model is normalized to score everything between 0 and 1. This means that you will observe larger score differences using `Unbabel/wmt20-comet-da`. Because of that **it is important to use the `comet-compare` command to obtain statistical significance.**
 
 ##### Which COMET model should I use?
 
-**For general purpose MT evaluation** we recommend you to use `wmt20-comet-da`. This is the most _stable_ model we have. It has been studied by several different authors and so far it seems to correlate well with different types of human assessments in different domains and languages.
+**For general purpose MT evaluation** we recommend you to use `Unbabel/wmt22-comet-da`. This is the most _stable_ model we have. It is an improved version of our previous model `Unbabel/wmt20-comet-da`. 
 
-Nonetheless, for the WMT 2021 shared task we developed several models that predict _Multidimensional Quality Metrics (MQM)_ rather than DA's. The MQM models have similar performance in terms of correlation with _Direct Assessments_ and higher correlation with MQM annotations. Use `wmt21-comet-mqm` if you wish to have a proxy for MQM.
-
-**For evaluating models without a reference** we recommend the models trained for our participation in the WMT21 shared task, namely: `wmt21-comet-qe-da` for higher correlations with DA, and `wmt21-comet-qe-mqm` for higher correlations with MQM.
+**For evaluating models without a reference** we recommend the `Unbabel/wmt20-comet-qe-da` for higher correlations with DA, and to [download `wmt21-comet-qe-mqm`](https://github.com/Unbabel/COMET/blob/master/MODELS.md) for higher correlations with MQM. 
 
 ##### Where can I find the data used to train COMET models?
 
 ###### Direct Assessments
-Every year the WMT News Translation task organizers collect thousands of quality annotations in the form of _Direct Assessments_. Most COMET models use that data either in the form of z-scores or in the form of relative-ranks.
 
-I'll leave here a table with links for that data.
+| year | data | paper |
+|:---: | :--: | :---: |
+| 2017 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2017-da.tar.gz) | [Findings of the 2017 Conference on Machine Translation (WMT17)](https://aclanthology.org/W17-4717.pdf) |
+| 2018 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2018-da.tar.gz) | [Findings of the 2018 Conference on Machine Translation (WMT18)](https://aclanthology.org/W18-6401.pdf) |
+| 2019 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2019-da.tar.gz) | [Findings of the 2019 Conference on Machine Translation (WMT19)](https://aclanthology.org/W19-5301.pdf) |
+| 2020 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2020-da.tar.gz) | [Findings of the 2020 Conference on Machine Translation (WMT20)](https://aclanthology.org/2020.wmt-1.1.pdf) |
+| 2021 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2021-da.tar.gz) | [Findings of the 2021 Conference on Machine Translation (WMT21)](https://aclanthology.org/2021.wmt-1.1.pdf) |
+| 2022 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2022-da.tar.gz) | [Findings of the 2022 Conference on Machine Translation (WMT22)](https://aclanthology.org/2022.wmt-1.1.pdf) |
 
-| year | DA | relative ranks | paper |
-|:---: | :--: | :---: | :---: |
-| 2017 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2017-da.csv.tar.gz) | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2017-daRR.csv.tar.gz) | [Results of the WMT17 Metrics Shared Task](https://statmt.org/wmt17/pdf/WMT55.pdf) |
-| 2018 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2018-da.csv.tar.gz) |  [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2018-daRR.csv.tar.gz) |[Results of the WMT18 Metrics Shared Task](https://statmt.org/wmt18/pdf/WMT078.pdf) |
-| 2019 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2019-da.csv.tar.gz) |  [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2019-daRR.csv.tar.gz) |[Results of the WMT19 Metrics Shared Task](https://statmt.org/wmt19/pdf/53/WMT02.pdf) |
-| 2020 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2020-da.csv.tar.gz) |  [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2020-daRR.csv.tar.gz) |[Results of the WMT21 Metrics Shared Task](https://aclanthology.org/2021.wmt-1.73.pdf) |
-| 2021 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2021-da.csv.tar.gz) |  [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2021-daRR.csv.tar.gz) |[Results of the WMT21 Metrics Shared Task](https://aclanthology.org/2021.wmt-1.73.pdf) |
+Another large source of DA annotations is the [MLQE-PE corpus](https://aclanthology.org/2022.lrec-1.530.pdf) that is typically used for quality estimation shared tasks [(Specia et al. 2020](https://aclanthology.org/2020.wmt-1.79.pdf)[, 2021](https://aclanthology.org/2021.wmt-1.71.pdf)[; Zerva et al. 2022)](https://aclanthology.org/2022.wmt-1.3.pdf).
 
+You can download MLQE-PE by using the following [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/mlqe-pe.tar.gz).
 
-###### Multidimensional Quality Metrics
+###### Direct Assessments: Relative Ranks
+Before 2021 the WMT Metrics shared task used relative ranks to evaluate metrics. 
 
-In the last editions of the WMT Metrics shared task the organizers decided to run evaluation of MT based on _Multidimensional Quality Metrics (MQM)_ based on findings that crowd-sourced _Direct Assessments_ are noisy and do not correlate well with annotations done by experts [[Freitag, et al. 2021]](https://aclanthology.org/2021.tacl-1.87.pdf).
+Relative ranks can be created when we have at least two DA scores for translations of the same source input, by converting those DA scores into a relative ranking judgement, if the difference in DA scores allows conclusion that one translation is better than the other (usually atleast 25 points). 
 
-| year | MQM | paper |
-|:---: | :--: | :---:|
-| 2020 | [🔗](https://github.com/google/wmt-mqm-human-evaluation) | [A Large-Scale Study of Human Evaluation for Machine Translation](https://aclanthology.org/2021.tacl-1.87.pdf) |
-| 2021 | [🔗](https://github.com/google/wmt-mqm-human-evaluation) | [Results of the WMT21 Metrics Shared Task](https://aclanthology.org/2021.wmt-1.73.pdf) |
+To make it easier to replicate results from previous Metrics shared tasks (2017-2020) you can find the preprocessed DA relative ranks in the table below:
 
-**Please cite the corresponding papers if you use any of these data!**
+| year | relative ranks | paper |
+|:---: | :--: | :---: |
+| 2017 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2017-daRR.csv.tar.gz) | [Results of the WMT17 Metrics Shared Task](https://statmt.org/wmt17/pdf/WMT55.pdf) |
+| 2018 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2018-daRR.csv.tar.gz) | [Results of the WMT18 Metrics Shared Task](https://statmt.org/wmt18/pdf/WMT078.pdf) |
+| 2019 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2019-daRR.csv.tar.gz) | [Results of the WMT19 Metrics Shared Task](https://statmt.org/wmt19/pdf/53/WMT02.pdf) |
+| 2020 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/wmt/2020-daRR.csv.tar.gz) | [Results of the WMT20 Metrics Shared Task](https://aclanthology.org/2020.wmt-1.77.pdf) |
+
+###### Direct Assessment + Scalar Quality Metric:
+
+In 2022, several changes were made to the annotation procedure used in the WMT Translation task. In contrast to the standard DA (sliding scale from 0-100) used in previous years, in 2022 annotators performed DA+SQM (Direct Assessment + Scalar Quality Metric). In DA+SQM, the annotators still provide a raw score between 0 and 100, but also are presented with seven labeled tick marks. DA+SQM helps to stabilize scores across annotators (as compared to DA).
+
+| year | data | paper |
+|:---: | :--: | :---: |
+| 2022 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2022-sqm.tar.gz) | [Findings of the 2022 Conference on Machine Translation (WMT22)](https://aclanthology.org/2022.wmt-1.1.pdf) |
+
+###### Multidimensional Quality Metrics:
+
+Since 2021 the WMT Metrics task decided to perform they own expert-based evaluation based on _Multidimensional Quality Metrics (MQM)_ framework. In the table below you can find MQM annotations from previous years.
+
+| year | data | paper |
+|:---: | :--: | :---: |
+| 2020 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2020-mqm.tar.gz) | [A Large-Scale Study of Human Evaluation for Machine Translation](https://aclanthology.org/2021.tacl-1.87.pdf) |
+| 2021 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2021-mqm.tar.gz) | [Results of the WMT21 Metrics Shared Task](https://aclanthology.org/2021.wmt-1.73.pdf) |
+| 2022 | [🔗](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/comet/data/2022-mqm.tar.gz) | [Results of the WMT22 Metrics Shared Task](https://aclanthology.org/2022.wmt-1.2.pdf) |
+
+**Note:** You can find the original MQM data [here](https://github.com/google/wmt-mqm-human-evaluation).

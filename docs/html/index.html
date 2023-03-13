@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>COMET: High-quality Machine Translation Evaluation &mdash; COMET 1.1.0 documentation</title>
+  <title>COMET: High-quality Machine Translation Evaluation &mdash; COMET 2.0.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/comet.css" type="text/css" />
@@ -12,10 +12,10 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -27,11 +27,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="#" class="icon icon-home"> COMET
+
+          
+          
+          <a href="#" class="icon icon-home">
+            COMET
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -42,6 +46,7 @@
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running COMET</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faqs.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html#available-evaluation-models">Available Evaluation Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a></li>
 </ul>
 
@@ -58,8 +63,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home"></a> &raquo;</li>
-      <li>COMET: High-quality Machine Translation Evaluation</li>
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">COMET: High-quality Machine Translation Evaluation</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -70,11 +75,11 @@
            <div itemprop="articleBody">
              
   <section id="comet-high-quality-machine-translation-evaluation">
-<h1>COMET: High-quality Machine Translation Evaluation<a class="headerlink" href="#comet-high-quality-machine-translation-evaluation" title="Permalink to this headline"></a></h1>
+<h1>COMET: High-quality Machine Translation Evaluation<a class="headerlink" href="#comet-high-quality-machine-translation-evaluation" title="Permalink to this heading"></a></h1>
 <a class="reference internal image-reference" href="_images/COMET_lockup-dark.png"><img alt="COMET by Unbabel" src="_images/COMET_lockup-dark.png" style="width: 800px;" /></a>
 </section>
 <section id="what-is-comet">
-<h1>What is COMET<a class="headerlink" href="#what-is-comet" title="Permalink to this headline"></a></h1>
+<h1>What is COMET<a class="headerlink" href="#what-is-comet" title="Permalink to this heading"></a></h1>
 <p>COMET is an open-source framework for MT evaluation that can be used for two purposes:</p>
 <ul class="simple">
 <li><p>To evaluate MT systems with our currently available high-performing metrics (check: <a class="reference internal" href="models.html#comet-metrics"><span class="std std-ref">COMET Metrics</span></a>).</p></li>
@@ -82,7 +87,7 @@
 </ul>
 </section>
 <section id="contents">
-<h1>Contents:<a class="headerlink" href="#contents" title="Permalink to this headline"></a></h1>
+<h1>Contents:<a class="headerlink" href="#contents" title="Permalink to this heading"></a></h1>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
@@ -98,12 +103,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="models.html#model-architectures">Model Architectures:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#available-metrics">Available Metrics:</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#wmt20-comet-metrics">WMT20 COMET Metrics</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#wmt21-comet-metrics">WMT21 COMET Metrics</a></li>
-<li class="toctree-l2"><a class="reference internal" href="models.html#benchmark">Benchmark</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="models.html#available-evaluation-models">Available Evaluation Models</a></li>
 <li class="toctree-l1"><a class="reference internal" href="training.html">Train your own Metric</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="training.html#config-files">Config Files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="training.html#input-data">Input Data</a></li>
@@ -114,21 +116,25 @@
 </div>
 </section>
 <section id="license">
-<h1>License<a class="headerlink" href="#license" title="Permalink to this headline"></a></h1>
-<p>Free software: Apache License 2.0</p>
+<h1>License<a class="headerlink" href="#license" title="Permalink to this heading"></a></h1>
+<p>Free software: Apache License 2.0
+Model Licenses can be found <a class="reference external" href="https://github.com/Unbabel/COMET/blob/master/LICENSE.models.md">here</a></p>
 </section>
 <section id="contributing">
-<h1>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline"></a></h1>
+<h1>Contributing<a class="headerlink" href="#contributing" title="Permalink to this heading"></a></h1>
 <p>We welcome contributions to improve COMET. Please refer to <a class="reference external" href="https://github.com/Unbabel/COMET/blob/master/CONTRIBUTING.md">CONTRIBUTING.md</a> for quick instructions or to contributing instructions for more detailed instructions on how to set up your development environment.</p>
 </section>
 <section id="publications">
-<h1>Publications<a class="headerlink" href="#publications" title="Permalink to this headline"></a></h1>
+<h1>Publications<a class="headerlink" href="#publications" title="Permalink to this heading"></a></h1>
 <ul class="simple">
-<li><p><a class="reference external" href="https://www.aclweb.org/anthology/2020.emnlp-main.213">COMET: A Neural Framework for MT Evaluation</a></p></li>
-<li><p><a class="reference external" href="https://aclanthology.org/2020.wmt-1.101/">Unbabel’s Participation in the WMT20 Metrics Shared Task</a></p></li>
-<li><p><a class="reference external" href="https://www.aclweb.org/anthology/2020.amta-user.4/">COMET - Deploying a New State-of-the-art MT Evaluation Metric in Production</a></p></li>
-<li><p><a class="reference external" href="https://aclanthology.org/2021.findings-emnlp.330/">Uncertainty-Aware Machine Translation Evaluation</a></p></li>
+<li><p><a class="reference external" href="https://aclanthology.org/2022.wmt-1.60/">CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task</a></p></li>
+<li><p><a class="reference external" href="https://aclanthology.org/2022.wmt-1.52/">COMET-22: Unbabel-IST 2022 Submission for the Metrics Shared Task</a></p></li>
+<li><p><a class="reference external" href="https://aclanthology.org/2022.eamt-1.9/">Searching for Cometinho: The Little Metric That Could</a></p></li>
 <li><p><a class="reference external" href="http://statmt.org/wmt21/pdf/2021.wmt-1.111.pdf">Are References Really Needed? Unbabel-IST 2021 Submission for the Metrics Shared Task</a></p></li>
+<li><p><a class="reference external" href="https://aclanthology.org/2021.findings-emnlp.330/">Uncertainty-Aware Machine Translation Evaluation</a></p></li>
+<li><p><a class="reference external" href="https://www.aclweb.org/anthology/2020.amta-user.4/">COMET - Deploying a New State-of-the-art MT Evaluation Metric in Production</a></p></li>
+<li><p><a class="reference external" href="https://aclanthology.org/2020.wmt-1.101/">Unbabel’s Participation in the WMT20 Metrics Shared Task</a></p></li>
+<li><p><a class="reference external" href="https://www.aclweb.org/anthology/2020.emnlp-main.213">COMET: A Neural Framework for MT Evaluation</a></p></li>
 </ul>
 </section>
 
@@ -142,7 +148,7 @@
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2020, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
+    <p>&#169; Copyright 2022, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

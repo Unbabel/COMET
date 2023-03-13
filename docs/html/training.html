@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Train your own Metric &mdash; COMET 1.1.0 documentation</title>
+  <title>Train your own Metric &mdash; COMET 2.0.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/comet.css" type="text/css" />
@@ -12,10 +12,10 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -27,11 +27,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> COMET
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            COMET
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -42,6 +46,7 @@
 <li class="toctree-l1"><a class="reference internal" href="running.html">Running COMET</a></li>
 <li class="toctree-l1"><a class="reference internal" href="faqs.html">Frequently Asked Questions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="models.html">COMET Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models.html#available-evaluation-models">Available Evaluation Models</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Train your own Metric</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#config-files">Config Files</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#input-data">Input Data</a></li>
@@ -63,8 +68,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Train your own Metric</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Train your own Metric</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/training.md.txt" rel="nofollow"> View page source</a>
       </li>
@@ -75,59 +80,56 @@
            <div itemprop="articleBody">
              
   <section id="train-your-own-metric">
-<h1>Train your own Metric<a class="headerlink" href="#train-your-own-metric" title="Permalink to this headline"></a></h1>
+<h1>Train your own Metric<a class="headerlink" href="#train-your-own-metric" title="Permalink to this heading"></a></h1>
 <p>To train your own metric we recommend you to install directly from source:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>   git clone https://github.com/Unbabel/COMET.git
-   poetry install
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="w">   </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/Unbabel/COMET.git
+<span class="w">   </span>poetry<span class="w"> </span>install
 </pre></div>
 </div>
 <p>After having your repo locally installed you can train your own model/metric with the following command:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>   comet-train --cfg configs/models/<span class="o">{</span>your_model_config<span class="o">}</span>.yaml
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>comet-score<span class="w"> </span>-s<span class="w"> </span>src.de<span class="w"> </span>-t<span class="w"> </span>hyp1.en<span class="w"> </span>-r<span class="w"> </span>ref.en<span class="w"> </span>--model<span class="w"> </span>PATH/TO/CHECKPOINT
 </pre></div>
 </div>
-<p>You can then use your own metric to score:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>   comet-score -s src.de -t hyp1.en -r ref.en --model PATH/TO/CHECKPOINT
-</pre></div>
-</div>
-<p><strong>NOTE:</strong> Please contact ricardo.rei&#64;unbabel.com if you wish to host your own metric within COMET available metrics!</p>
+<p>You can also upload your model to <a class="reference external" href="https://huggingface.co/docs/hub/index">Hugging Face Hub</a>. Use <a class="reference external" href="https://huggingface.co/Unbabel/wmt22-comet-da"><code class="docutils literal notranslate"><span class="pre">Unbabel/wmt22-comet-da</span></code></a> as example. Then you can use your model directly from the hub.</p>
 <section id="config-files">
-<h2>Config Files<a class="headerlink" href="#config-files" title="Permalink to this headline"></a></h2>
-<p>In COMET we use <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/">PyTorch-Lightning</a>  to train our models.
-With that said, our YAML files will be used to initialize various Lightning objects.</p>
+<h2>Config Files<a class="headerlink" href="#config-files" title="Permalink to this heading"></a></h2>
+<p>In COMET uses <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/">PyTorch-Lightning</a> to train models.
+With that said, YAML files will be used to initialize various Lightning objects.</p>
 <p>Config files for Lightning classes:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/Unbabel/COMET/blob/master/configs/trainer.yaml">trainer.yaml: </a> used to initialize <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-class-api/">Pytorch-Lightning Trainer</a>.</p></li>
 <li><p><a class="reference external" href="https://github.com/Unbabel/COMET/blob/master/configs/model_checkpoint.yaml">model_checkpoint.yaml: </a> used to initialize <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.callbacks.ModelCheckpoint.html?highlight=ModelCheckpoint#modelcheckpoint/">Pytorch-Lightning ModelCheckpoint</a>.</p></li>
 <li><p><a class="reference external" href="https://github.com/Unbabel/COMET/blob/master/configs/early_stopping.yaml">early_stopping.yaml: </a> used to initialize <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.callbacks.EarlyStopping.html#pytorch_lightning.callbacks.EarlyStopping/">Pytorch-Lightning EarlyStopping</a>.</p></li>
 </ul>
-<p>Then after setting up the these Lightning classes you can setup your model architecture. There are 3 different model architectures:</p>
+<p>Then after setting up the these Lightning classes you can setup your model architecture. There are 4 different model architectures:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://github.com/Unbabel/COMET/blob/master/comet/models/regression/regression_metric.py#L32%3E">RegressionMetric: </a> used to build metrics that regress on a score given a source, hypothesis and reference.</p></li>
 <li><p><a class="reference external" href="https://github.com/Unbabel/COMET/blob/master/comet/models/regression/referenceless.py#L30">ReferencelessRegression: </a> used to build metrics that regress on a score <strong>without a reference translation!</strong> (using only the source, hypothesis).</p></li>
 <li><p><a class="reference external" href="https://github.com/Unbabel/COMET/blob/master/comet/models/ranking/ranking_metric.py#L36%3E">RankingMetric: </a> used to build metrics that learn to rank <em>good</em> translations above <em>bad</em> transations.</p></li>
+<li><p><a class="reference external" href="https://github.com/Unbabel/COMET/blob/master/comet/models/multitask/unified_metric.py#L39%3E">UnifiedMetric: </a> was proposed in <a class="reference external" href="https://aclanthology.org/2022.acl-long.558.pdf">(Wan et al., ACL 2022)</a> and it is closely related to <a class="reference external" href="https://aclanthology.org/2020.acl-main.704/">BLEURT</a> and <a class="reference external" href="https://aclanthology.org/P19-3020/">OpenKiwi</a> models. This model can be trained with and without references</p></li>
 </ul>
 <p>For each class you can find a config example in <a class="reference external" href="https://github.com/Unbabel/COMET/tree/master/configs/models">configs/models/</a>.
 The <code class="docutils literal notranslate"><span class="pre">init_args</span></code> will then be used to initialize your model/metric.</p>
 </section>
 <section id="input-data">
-<h2>Input Data<a class="headerlink" href="#input-data" title="Permalink to this headline"></a></h2>
+<h2>Input Data<a class="headerlink" href="#input-data" title="Permalink to this heading"></a></h2>
 <p>To train your models you need to pass a train set and a validation set using the <code class="docutils literal notranslate"><span class="pre">training_data</span></code> and <code class="docutils literal notranslate"><span class="pre">validation_data</span></code> arguments respectively.</p>
 <p>Depending on the underlying models your data need to be formatted differently. RegressionMetrics expect the following format:</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
-<th align="center">src</th>
-<th align="center">mt</th>
-<th align="center">ref</th>
-<th align="center">score</th>
+<th style="text-align: center;">src</th>
+<th style="text-align: center;">mt</th>
+<th style="text-align: center;">ref</th>
+<th style="text-align: center;">score</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">isto é um exemplo</td>
-<td align="center">this is a example</td>
-<td align="center">this is an example</td>
-<td align="center">0.2</td>
+<td style="text-align: center;">isto é um exemplo</td>
+<td style="text-align: center;">this is a example</td>
+<td style="text-align: center;">this is an example</td>
+<td style="text-align: center;">0.2</td>
 </tr>
 </tbody>
 </table><p>For ReferencelessRegression you can drop the <code class="docutils literal notranslate"><span class="pre">ref</span></code> column but, if passed, it is ignored.</p>
@@ -135,31 +137,32 @@ The <code class="docutils literal notranslate"><span class="pre">init_args</span
 <table border="1" class="docutils">
 <thead>
 <tr>
-<th align="center">src</th>
-<th align="center">neg</th>
-<th align="center">pos</th>
-<th align="center">ref</th>
+<th style="text-align: center;">src</th>
+<th style="text-align: center;">neg</th>
+<th style="text-align: center;">pos</th>
+<th style="text-align: center;">ref</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td align="center">isto é um exemplo</td>
-<td align="center">this is a example</td>
-<td align="center">this is an example</td>
-<td align="center">this is an example</td>
+<td style="text-align: center;">isto é um exemplo</td>
+<td style="text-align: center;">this is a example</td>
+<td style="text-align: center;">this is an example</td>
+<td style="text-align: center;">this is an example</td>
 </tr>
 </tbody>
 </table><p>where <code class="docutils literal notranslate"><span class="pre">pos</span></code> column contains a postive sample and <code class="docutils literal notranslate"><span class="pre">neg</span></code> a negative sample.</p>
 <p>You can check the available <a class="reference external" href="https://unbabel.github.io/COMET/html/faqs.html#where-can-i-find-the-data-used-to-train-comet-models">data from previous WMT editions in here</a>.</p>
 </section>
 <section id="available-encoders">
-<h2>Available Encoders<a class="headerlink" href="#available-encoders" title="Permalink to this headline"></a></h2>
+<h2>Available Encoders<a class="headerlink" href="#available-encoders" title="Permalink to this heading"></a></h2>
 <p>All COMET models depend on an underlying encoder. We currently support the following encoders:</p>
 <ul class="simple">
 <li><p>BERT</p></li>
 <li><p>XLM-RoBERTa</p></li>
 <li><p>MiniLM</p></li>
 <li><p>XLM-RoBERTa-XL</p></li>
+<li><p>RemBERT</p></li>
 </ul>
 <p>You can change the underlying encoder architecture using the <code class="docutils literal notranslate"><span class="pre">encoder_model</span></code> argument in your config file.
 Then, you can select any compatible model from <a class="reference external" href="https://huggingface.co/models">HuggingFace Transformers</a> using the <code class="docutils literal notranslate"><span class="pre">pretrained_model</span></code> argument.</p>
@@ -176,7 +179,7 @@ Then, you can select any compatible model from <a class="reference external" hre
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2020, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
+    <p>&#169; Copyright 2022, Unbabel. All rights reserved.Source code available under Apache License 2.0.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
