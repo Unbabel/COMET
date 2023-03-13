@@ -4,18 +4,20 @@ referenceless_regression_metric:
     nr_frozen_epochs: 0.3
     keep_embeddings_frozen: True
     optimizer: AdamW
-    encoder_learning_rate: 5.0e-06
+    encoder_learning_rate: 1.0e-06
     learning_rate: 1.5e-05
     layerwise_decay: 0.95
     encoder_model: XLM-RoBERTa
     pretrained_model: xlm-roberta-large
     pool: avg
     layer: mix
+    layer_transformation: sparsemax
+    layer_norm: False
     loss: mse
     dropout: 0.1
-    batch_size: 4
+    batch_size: 16
     train_data: 
-      - data/2017-da.csv
+      - data/1720-da.csv
     validation_data: 
       - data/wmt-ende-newstest2021.csv
       - data/wmt-enru-newstest2021.csv

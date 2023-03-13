@@ -17,7 +17,8 @@ XLM-RoBERTa-XL Encoder
 ==============
     Pretrained XLM-RoBERTa-XL  encoder from Hugging Face.
 """
-from transformers import XLMRobertaTokenizer, XLMRobertaXLModel
+from transformers import (XLMRobertaTokenizerFast, XLMRobertaXLConfig,
+                          XLMRobertaXLModel)
 
 from comet.encoders.base import Encoder
 from comet.encoders.xlmr import XLMREncoder
@@ -26,25 +27,40 @@ from comet.encoders.xlmr import XLMREncoder
 class XLMRXLEncoder(XLMREncoder):
     """XLM-RoBERTA-XL Encoder encoder.
 
-    :param pretrained_model: Pretrained model from hugging face.
+    Args:
+        pretrained_model (str): Pretrained model from hugging face.
+        load_pretrained_weights (bool): If set to True loads the pretrained weights
+            from Hugging Face
     """
 
-    def __init__(self, pretrained_model: str) -> None:
+    def __init__(
+        self, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = XLMRobertaTokenizer.from_pretrained(pretrained_model)
-        self.model = XLMRobertaXLModel.from_pretrained(
-            pretrained_model, add_pooling_layer=False
-        )
+        self.tokenizer = XLMRobertaTokenizerFast.from_pretrained(pretrained_model)
+        if load_pretrained_weights:
+            self.model = XLMRobertaXLModel.from_pretrained(
+                pretrained_model, add_pooling_layer=False
+            )
+        else:
+            self.model = XLMRobertaXLModel(
+                XLMRobertaXLConfig.from_pretrained(pretrained_model),
+                add_pooling_layer=False,
+            )
         self.model.encoder.output_hidden_states = True
 
     @classmethod
-    def from_pretrained(cls, pretrained_model: str) -> Encoder:
+    def from_pretrained(
+        cls, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.
 
         Args:
-            pretrained_model (str):Name of the pretrain model to be loaded.
+            pretrained_model (str): Name of the pretrain model to be loaded.
+            load_pretrained_weights (bool): If set to True loads the pretrained weights
+                from Hugging Face
 
         Returns:
             Encoder: XLMRXLEncoder object.
         """
-        return XLMRXLEncoder(pretrained_model)
+        return XLMRXLEncoder(pretrained_model, load_pretrained_weights)

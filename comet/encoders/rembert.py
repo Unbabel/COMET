@@ -18,7 +18,7 @@ RemBERT Encoder
     Pretrained RemBERT encoder from Google. This encoder is similar to BERT but uses 
     sentencepiece like XLMR.
 """
-from transformers import RemBertModel, RemBertTokenizer
+from transformers import RemBertConfig, RemBertModel, RemBertTokenizerFast
 
 from comet.encoders.xlmr import Encoder, XLMREncoder
 
@@ -26,15 +26,24 @@ from comet.encoders.xlmr import Encoder, XLMREncoder
 class RemBERTEncoder(XLMREncoder):
     """RemBERT encoder.
 
-    :param pretrained_model: Pretrained model from hugging face.
+    Args:
+        pretrained_model (str): Pretrained model from hugging face.
+        load_pretrained_weights (bool): If set to True loads the pretrained weights
+            from Hugging Face
     """
 
-    def __init__(self, pretrained_model: str) -> None:
+    def __init__(
+        self, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = RemBertTokenizer.from_pretrained(
+        self.tokenizer = RemBertTokenizerFast.from_pretrained(
             pretrained_model, use_fast=True
         )
-        self.model = RemBertModel.from_pretrained(pretrained_model)
+        if load_pretrained_weights:
+            self.model = RemBertModel.from_pretrained(pretrained_model)
+        else:
+            self.model = RemBertModel(RemBertConfig.from_pretrained(pretrained_model))
+
         self.model.encoder.output_hidden_states = True
 
     @property
@@ -47,13 +56,17 @@ class RemBERTEncoder(XLMREncoder):
         return True
 
     @classmethod
-    def from_pretrained(cls, pretrained_model: str) -> Encoder:
+    def from_pretrained(
+        cls, pretrained_model: str, load_pretrained_weights: bool = True
+    ) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.
 
         Args:
-            pretrained_model (str):Name of the pretrain model to be loaded.
+            pretrained_model (str): Name of the pretrain model to be loaded.
+            load_pretrained_weights (bool): If set to True loads the pretrained weights
+                from Hugging Face
 
         Returns:
-            Encoder: RemBERTEncoder object.
+            Encoder: XLMRXLEncoder object.
         """
-        return RemBERTEncoder(pretrained_model)
+        return RemBERTEncoder(pretrained_model, load_pretrained_weights)

@@ -4,19 +4,21 @@ ranking_metric:
     nr_frozen_epochs: 0.3
     keep_embeddings_frozen: True
     optimizer: AdamW
-    encoder_learning_rate: 5.0e-06
+    encoder_learning_rate: 1.0e-06
     learning_rate: 1.5e-05
     layerwise_decay: 0.95
     encoder_model: XLM-RoBERTa
     pretrained_model: xlm-roberta-base
     pool: avg
     layer: mix
+    layer_transformation: sparsemax
+    layer_norm: False
     dropout: 0.1
-    batch_size: 4
+    batch_size: 16
     train_data: 
-      - data/2017-daRR.csv
+      - data/1720-daRR.csv
     validation_data:
-      - data/2019-daRR.dev.csv
+      - data/2021-daRR.csv
       
 trainer: ../trainer.yaml
 early_stopping: ../early_stopping.yaml

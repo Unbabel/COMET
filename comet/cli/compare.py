@@ -41,7 +41,7 @@ optional arguments:
   --t_test_alternative T_TEST_ALTERNATIVE
                         Alternative hypothesis from scipy.stats.ttest_rel. The
                         following options are available: 'two-sided', 'less', 
-                        'greater'. Defaults to 'less' (type: str, default: less)
+                        'greater'. Defaults to 'less' (type: str, default: two-sided)
   --to_json TO_JSON     Exports results to a json file. (type: str, default: "")
   --model MODEL         COMET model to be used. (type: str, default: wmt20-comet-da)
   --model_storage_path MODEL_STORAGE_PATH
@@ -70,8 +70,7 @@ from sacrebleu.utils import get_reference_files, get_source_file
 from scipy import stats
 from tabulate import tabulate
 
-from comet.download_utils import download_model
-from comet.models import available_metrics, load_from_checkpoint
+from comet import download_model, load_from_checkpoint
 
 Statistical_test_info = Dict[str, Union[Path_fr, Dict[str, float]]]
 
@@ -332,10 +331,10 @@ def get_cfg() -> Namespace:
     parser.add_argument(
         "--t_test_alternative",
         type=str,
-        default="less",
+        default="two-sided",
         help=(
             "Alternative hypothesis from scipy.stats.ttest_rel. The following options"
-            + " are available: 'two-sided', 'less', 'greater'. Defaults to 'less'"
+            + " are available: 'two-sided', 'less', 'greater'. Defaults to 'two-sided'"
         ),
     )
     parser.add_argument(
@@ -348,7 +347,7 @@ def get_cfg() -> Namespace:
         "--model",
         type=str,
         required=False,
-        default="wmt20-comet-da",
+        default="Unbabel/wmt22-comet-da",
         help="COMET model to be used.",
     )
     parser.add_argument(
@@ -412,16 +411,9 @@ def get_cfg() -> Namespace:
     if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
         cfg.model_path = cfg.model
 
-    elif cfg.model in available_metrics:
+    else:
         cfg.model_path = download_model(
             cfg.model, saving_directory=cfg.model_storage_path
-        )
-
-    else:
-        parser.error(
-            "{} is not a valid checkpoint path or model choice. Choose from {}".format(
-                cfg.model, list(available_metrics.keys())
-            )
         )
 
     return cfg, parser
@@ -477,7 +469,9 @@ def compare_command() -> None:
     # Paired T_Test Results:
     pairs = combinations(zip(cfg.translations, seg_scores), 2)
     for (x_name, x_seg_scores), (y_name, y_seg_scores) in pairs:
-        ttest_result = stats.ttest_rel(x_seg_scores, y_seg_scores)
+        ttest_result = stats.ttest_rel(
+            x_seg_scores, y_seg_scores, alternative=cfg.t_test_alternative
+        )
         for res in results:
             if res["x_name"] == x_name and res["y_name"] == y_name:
                 res["paired_t-test"] = {

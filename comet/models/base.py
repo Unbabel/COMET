@@ -27,7 +27,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pytorch_lightning as ptl
 import torch
-from torch.utils.data import DataLoader, RandomSampler, Subset
+from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, Subset
 
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
@@ -35,7 +35,14 @@ from comet.modules import LayerwiseAttention
 from .lru_cache import tensor_lru_cache
 from .pooling_utils import average_pooling, max_pooling
 from .predict_pbar import PredictProgressBar
-from .utils import OrderedSampler, Prediction, Target
+from .predict_writer import CustomWriter
+from .utils import (
+    OrderedSampler,
+    Prediction,
+    Target,
+    flatten_metadata,
+    restore_list_order,
+)
 
 if "COMET_EMBEDDINGS_CACHE" in os.environ:
     CACHE_SIZE = int(os.environ["COMET_EMBEDDINGS_CACHE"])
@@ -55,6 +62,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         keep_embeddings_frozen (bool): Keeps the encoder frozen during training. Defaults
             to True.
         optimizer (str): Optimizer used during training. Defaults to 'AdamW'.
+        warmup_steps (int): Warmup steps for LR scheduler.
         encoder_learning_rate (float): Learning rate used to fine-tune the encoder model.
             Defaults to 1.0e-06.
         learning_rate (float): Learning rate used to fine-tune the top layers. Defaults
@@ -85,6 +93,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         nr_frozen_epochs: Union[float, int] = 0.3,
         keep_embeddings_frozen: bool = True,
         optimizer: str = "AdamW",
+        warmup_steps: int = 0,
         encoder_learning_rate: float = 1.0e-06,
         learning_rate: float = 1.5e-05,
         layerwise_decay: float = 0.95,
@@ -100,11 +109,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         train_data: Optional[List[str]] = None,
         validation_data: Optional[List[str]] = None,
         class_identifier: Optional[str] = None,
+        load_pretrained_weights: bool = True
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
         self.encoder = str2encoder[self.hparams.encoder_model].from_pretrained(
-            self.hparams.pretrained_model
+            self.hparams.pretrained_model, load_pretrained_weights
         )
 
         self.epoch_nr = 0
@@ -417,12 +427,16 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         Return:
             Predicion object
         """
+        model_outputs = Prediction(scores=self(**batch).score)
         if self.mc_dropout:
-            mcd_outputs = torch.stack([self(**batch) for _ in range(self.mc_dropout)])
-            mcd_mean = mcd_outputs.mean(dim=0)
-            mcd_std = mcd_outputs.std(dim=0)
-            return mcd_mean, mcd_std
-        return Prediction(scores=self(**batch).score)
+            mcd_outputs = torch.stack(
+                [self(**batch).score for _ in range(self.mc_dropout)]
+            )
+            model_outputs["metadata"] = Prediction(
+                mcd_scores=mcd_outputs.mean(dim=0),
+                mcd_std=mcd_outputs.std(dim=0),
+            )
+        return model_outputs
 
     def validation_epoch_end(self, *args, **kwargs) -> None:
         """Computes and logs metrics."""
@@ -536,51 +550,22 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             gpus (int): Number of GPUs to be used. Defaults to 1.
             mc_dropout (int): Number of inference steps to run using MCD. Defaults to 0
             progress_bar (bool): Flag that turns on and off the predict progress bar.
-            accelarator (str): Pytorch Lightning accelerator (e.g: 'auto', 'gpu', 'cpu').
-            num_workers (int): Number of workers to use when loading and preparing data
+                Defaults to True
+            accelarator (str): Pytorch Lightning accelerator (e.g: 'cpu', 'cuda', 'hpu'
+                , 'ipu', 'mps', 'tpu'). Defaults to 'auto'
+            num_workers (int): Number of workers to use when loading and preparing
+                data. Defaults to None
             length_batching (bool): If set to true, reduces padding by sorting samples
-                by sequence length.
+                by sequence length. Defaults to True.
 
         Return:
             Prediction object with `scores`, `system_score` and any metadata returned
                 by the model.
         """
+        if mc_dropout > 0:
+            self.set_mc_dropout(mc_dropout)
 
-        def restore_list_order(sorted_list, sort_ids):
-            """Restores the original ids of a given list."""
-            unsorted_list = [None for _ in range(len(sorted_list))]
-            for i, s in zip(sort_ids, sorted_list):
-                unsorted_list[i] = s
-            return unsorted_list
-
-        def flatten_metadata(metadata):
-            metadata = Prediction(
-                **{k: [dic[k] for dic in metadata] for k in metadata[0]}
-            )
-            for k, v in metadata.items():
-                if torch.is_tensor(v[0]):
-                    # If we have tensors we can use cat to flatten them.
-                    metadata[k] = torch.cat(v, dim=0).tolist()
-                else:
-                    # for other predictions such as word tags we have to flatten the list.
-                    metadata[k] = [item for sublist in v for item in sublist]
-            return metadata
-
-        # HACK: Workaround pytorch bug that prevents ParameterList to be used in DP
-        # https://github.com/pytorch/pytorch/issues/36035
-        if self.layerwise_attention is not None and gpus > 1:
-            self.layerwise_attention.gamma_value = float(
-                self.layerwise_attention.gamma[0]
-            )
-            self.layerwise_attention.weights = [
-                float(parameter[0])
-                for parameter in self.layerwise_attention.scalar_parameters
-            ]
-
-        # TODO: ideally this should be based on the actual token_ids
-        # but that would require fundamentally changing the way dataloader is
-        # setup, so currently raw chars are used as an approximation
-        sampler = None
+        sampler = SequentialSampler(samples)
         if length_batching and gpus < 2:
             try:
                 sort_ids = np.argsort([len(sample["src"]) for sample in samples])
@@ -589,6 +574,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             sampler = OrderedSampler(sort_ids)
 
         if num_workers is None:
+            # Guideline for workers that typically works well.
             num_workers = 2 * gpus
 
         self.eval()
@@ -599,49 +585,51 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             collate_fn=self.prepare_for_inference,
             num_workers=num_workers,
         )
-        if gpus == 0:
-            accelerator = "cpu"
-        elif gpus == 1:
-            accelerator = "gpu"
+        if gpus > 1:
+            pred_writer = CustomWriter()
+            callbacks = [
+                pred_writer,
+            ]
         else:
-            accelerator = accelerator
+            callbacks = []
+
+        if progress_bar:
+            enable_progress_bar = True
+            callbacks.append(PredictProgressBar())
+        else:
+            enable_progress_bar = False
 
         warnings.filterwarnings(
             "ignore",
             category=UserWarning,
             message=".*Consider increasing the value of the `num_workers` argument` .*",
         )
-        if progress_bar:
-            trainer = ptl.Trainer(
-                devices=gpus if accelerator != "cpu" else "auto",
-                logger=False,
-                callbacks=[PredictProgressBar()],
-                accelerator=accelerator,
-                max_epochs=-1,
-            )
-        else:
-            trainer = ptl.Trainer(
-                devices=gpus if accelerator != "cpu" else "auto",
-                logger=False,
-                progress_bar_refresh_rate=0,
-                accelerator=accelerator,
-            )
-
-        # TODO:
-        # Remove this upon resolution of:
-        # https://github.com/PyTorchLightning/pytorch-lightning/discussions/11392
-        warnings.filterwarnings(
-            "ignore",
-            category=UserWarning,
-            message="Your `predict_dataloader`'s sampler has shuffling enabled.*",
+        trainer = ptl.Trainer(
+            devices=gpus if gpus > 0 else None,
+            logger=False,
+            callbacks=callbacks,
+            accelerator=accelerator if gpus > 0 else "cpu",
+            strategy=None if gpus < 2 else "ddp",
+            enable_progress_bar=enable_progress_bar,
         )
-
-        if mc_dropout > 0:
-            self.set_mc_dropout(mc_dropout)
-
+        return_predictions = False if gpus > 1 else True
         predictions = trainer.predict(
-            self, dataloaders=dataloader, return_predictions=True
+            self, dataloaders=dataloader, return_predictions=return_predictions
         )
+        if gpus > 1:
+            torch.distributed.barrier()  # Waits for all processes to finish predict
+
+        # If we are in the GLOBAL RANK we need to gather all predictions
+        if gpus > 1 and trainer.is_global_zero:
+            predictions = pred_writer.gather_all_predictions()
+            # Delete Temp folder.
+            pred_writer.cleanup()
+            return predictions
+
+        elif gpus > 1 and not trainer.is_global_zero:
+            # If we are not in the GLOBAL RANK we will return None
+            exit()
+
         scores = torch.cat([pred.scores for pred in predictions], dim=0).tolist()
         if "metadata" in predictions[0]:
             metadata = flatten_metadata([pred.metadata for pred in predictions])

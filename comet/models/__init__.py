@@ -14,8 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+from pathlib import Path
+from typing import Union
 
 import yaml
+from huggingface_hub import snapshot_download
 
 from .base import CometModel
 from .multitask.unified_metric import UnifiedMetric
@@ -30,30 +33,13 @@ str2model = {
     "unified_metric": UnifiedMetric,
 }
 
-available_metrics = {
-    # ------------------------------------  LEGACY MODELS ------------------------------#
-    # WMT20 Models
-    "emnlp20-comet-rank": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/emnlp20-comet-rank.tar.gz",
-    "wmt20-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-da.tar.gz",
-    "wmt20-comet-qe-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da.tar.gz",
-    "wmt20-comet-qe-da-v2": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da-v2.tar.gz",
-    # WMT21 Models
-    "wmt21-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-da.tar.gz",
-    "wmt21-comet-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-mqm.tar.gz",
-    "wmt21-cometinho-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-mqm.tar.gz",
-    "wmt21-cometinho-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-da.tar.gz",
-    "wmt21-comet-qe-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-mqm.tar.gz",
-    "wmt21-comet-qe-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-da.tar.gz",
-    # EAMT22 Models
-    "eamt22-cometinho-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-cometinho-da.tar.gz",
-    "eamt22-prune-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-prune-comet-da.tar.gz",
-    # ------------------------------------  NEW MODELS ------------------------------#
-    # WMT22 Models
-    "wmt22-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt22/wmt22-comet-da.tar.gz",
-    "wmt22-cometkiwi-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt22/wmt22-cometkiwi-da.tar.gz",
-    "wmt22-seqtag-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt22/wmt22-seqtag-mqm.tar.gz",
-}
-
+def download_model(
+    model: str, 
+    saving_directory: Union[str, Path, None] = None
+) -> str:
+    model_path = snapshot_download(repo_id=model, cache_dir=saving_directory)
+    checkpoint_path = os.path.join(*[model_path, "checkpoints", "model.ckpt"])
+    return checkpoint_path
 
 def load_from_checkpoint(checkpoint_path: str) -> CometModel:
     """Loads models from a checkpoint path.
@@ -66,8 +52,9 @@ def load_from_checkpoint(checkpoint_path: str) -> CometModel:
     """
     if not os.path.exists(checkpoint_path):
         raise Exception(f"Invalid checkpoint path: {checkpoint_path}")
-
-    hparams_file = os.path.normpath(checkpoint_path).split(os.path.sep)[:-2] + [
+    
+    parent_folder = os.path.join(*os.path.normpath(checkpoint_path).split(os.path.sep)[:-2])
+    hparams_file = parent_folder.split(os.path.sep) + [
         "hparams.yaml"
     ]
     # If the checkpoint starts with the root folder then we have an absolute path
@@ -77,12 +64,14 @@ def load_from_checkpoint(checkpoint_path: str) -> CometModel:
             os.path.abspath(os.sep),
         ] + hparams_file
     hparams_file = os.path.join(*hparams_file)
-
+    
     if os.path.exists(hparams_file):
         with open(hparams_file) as yaml_file:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)
         model_class = str2model[hparams["class_identifier"]]
-        model = model_class.load_from_checkpoint(checkpoint_path, **hparams)
+        model = model_class.load_from_checkpoint(
+            checkpoint_path, load_pretrained_weights=False
+        )
         return model
     else:
-        raise Exception(f"Cannot find hparams.yaml file in {hparams_file}!")
+        raise Exception(f"hparams.yaml file is missing from {parent_folder}!")

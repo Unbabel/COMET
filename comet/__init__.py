@@ -16,12 +16,11 @@
 
 import logging
 
-from .download_utils import download_model
-from .models import load_from_checkpoint
+from .models import load_from_checkpoint, download_model
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
-__version__ = "1.2.0"
+__version__ = "2.0.0"
 __copyright__ = "2020 Unbabel. All rights reserved."
