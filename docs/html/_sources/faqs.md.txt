@@ -2,17 +2,17 @@
 
 Since we released COMET we have received several questions related to interpretabilty of the scores and usage. In this section we try to address these questions the best we can! 
 
-##### Is there a theoretical range of values for the COMET regressor?
+##### Interpreting Scores:
 
-Before we dig deeper into details about COMET scores I would like to clarify something: 
+When using COMET to evaluate machine translation, it's important to understand how to interpret the scores it produces.
 
-_Absolute scores via automatic metrics are meaningless (what does 31 BLEU mean without context? it can be both awesome score for News EN-Finnish or really bad score for EN-French), and pretrained metrics only amplify it by using different scales for different languages and especially different domains._ 
+In general, COMET models are trained to predict quality scores for translations. These scores are typically normalized using a [z-score transformation](https://simplypsychology.org/z-score.html) to account for individual differences among annotators. While the raw score itself does not have a direct interpretation, it is useful for ranking translations and systems according to their quality.
 
-Check [[Kocmi et al. 2021]](https://aclanthology.org/2021.wmt-1.57/) and our discussion here: [#18](https://github.com/Unbabel/COMET/issues/18)
+However, for the latest COMET models like [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da), we have introduced a new training approach that scales the scores between 0 and 1. This makes it easier to interpret the scores: a score close to 1 indicates a high-quality translation, while a score close to 0 indicates a translation that is no better than random chance.
 
-Most COMET models are trained to regress on a specific quality assessment and in most cases those scores are normalized for each annotator using a [z-score transformation](https://www.simplypsychology.org/z-score.html). The score itself has no direct interpretation but they correctly rank translations and systems according to their quality.
+It's worth noting that when using COMET to compare the performance of two different translation systems, it's important to run the `comet-compare` command to obtain statistical significance measures. This command compares the output of two systems using a statistical hypothesis test, providing an estimate of the probability that the observed difference in scores between the systems is due to chance. This is an important step to ensure that any differences in scores between systems are statistically significant.
 
-Also, depending on the data that they were used to train, different models might have different score ranges. We observed that most scores for our `Unbabel/wmt20-comet-da` fall between -1.5 and 1, while the new `Unbabel/wmt22-comet-da` model is normalized to score everything between 0 and 1. This means that you will observe larger score differences using `Unbabel/wmt20-comet-da`. Because of that **it is important to use the `comet-compare` command to obtain statistical significance.**
+Overall, the added interpretability of scores in the latest COMET models, combined with the ability to assess statistical significance between systems using `comet-compare`, make COMET a valuable tool for evaluating machine translation.
 
 ##### Which COMET model should I use?
 
