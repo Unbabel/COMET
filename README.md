@@ -118,7 +118,11 @@ In general, COMET models are trained to predict quality scores for translations.
 
 However, for the latest COMET models like [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da), we have introduced a new training approach that scales the scores between 0 and 1. This makes it easier to interpret the scores: a score close to 1 indicates a high-quality translation, while a score close to 0 indicates a translation that is no better than random chance.
 
-It's worth noting that this new approach does come with some tradeoffs. For example, compared to previous COMET models, we have observed smaller differences between system scores. Nonetheless, we believe that the added interpretability of the scores is a valuable improvement that will make COMET even more useful for evaluating machine translation.
+However, for the latest COMET models like [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da), we have introduced a new training approach that scales the scores between 0 and 1. This makes it easier to interpret the scores: a score close to 1 indicates a high-quality translation, while a score close to 0 indicates a translation that is no better than random chance.
+
+It's worth noting that when using COMET to compare the performance of two different translation systems, it's important to run the `comet-compare` command to obtain statistical significance measures. This command compares the output of two systems using a statistical hypothesis test, providing an estimate of the probability that the observed difference in scores between the systems is due to chance. This is an important step to ensure that any differences in scores between systems are statistically significant.
+
+Overall, the added interpretability of scores in the latest COMET models, combined with the ability to assess statistical significance between systems using `comet-compare`, make COMET a valuable tool for evaluating machine translation.
 
 ## Languages Covered:
 
