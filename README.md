@@ -8,8 +8,6 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-> currently master is a a pre-release of v2.0 and not available via pypi
-
 # Quick Installation
 
 COMET requires python 3.8 or above! 
@@ -111,6 +109,16 @@ To evaluate your translations, we suggest using one of two models:
 - **Upcoming model:** [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da) - This reference-free model uses a regression approach and is built on top of InfoXLM. It has been trained on direct assessments from WMT17 to WMT20, as well as direct assessments from the MLQE-PE corpus. Like the default model, it also provides scores ranging from 0 to 1.
 
 For versions prior to 2.0, you can still use [`Unbabel/wmt20-comet-da`](https://huggingface.co/Unbabel/wmt20-comet-da), which is the primary metric, and [`Unbabel/wmt20-comet-qe-da`](https://huggingface.co/Unbabel/wmt20-comet-qe-da) for the **respective reference-free version**. You can find a list of all other models developed in previous versions on our [MODELS](MODELS.md) page. For more information, please refer to the [model licenses](LICENSE.models.md).
+
+## Interpreting Scores:
+
+When using COMET to evaluate machine translation, it's important to understand how to interpret the scores it produces.
+
+In general, COMET models are trained to predict quality scores for translations. These scores are typically normalized using a [z-score transformation](https://simplypsychology.org/z-score.html) to account for individual differences among annotators. While the raw score itself does not have a direct interpretation, it is useful for ranking translations and systems according to their quality.
+
+However, for the latest COMET models like [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da), we have introduced a new training approach that scales the scores between 0 and 1. This makes it easier to interpret the scores: a score close to 1 indicates a high-quality translation, while a score close to 0 indicates a translation that is no better than random chance.
+
+It's worth noting that this new approach does come with some tradeoffs. For example, compared to previous COMET models, we have observed smaller differences between system scores. Nonetheless, we believe that the added interpretability of the scores is a valuable improvement that will make COMET even more useful for evaluating machine translation.
 
 ## Languages Covered:
 
