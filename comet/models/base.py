@@ -109,7 +109,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         train_data: Optional[List[str]] = None,
         validation_data: Optional[List[str]] = None,
         class_identifier: Optional[str] = None,
-        load_pretrained_weights: bool = True
+        load_pretrained_weights: bool = True,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
@@ -532,6 +532,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         samples: List[Dict[str, str]],
         batch_size: int = 16,
         gpus: int = 1,
+        devices: Union[List[int], str, int] = None,
         mc_dropout: int = 0,
         progress_bar: bool = True,
         accelerator: str = "auto",
@@ -547,7 +548,8 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             samples (List[Dict[str, str]]): List with dictionaries with source,
                 translations and/or references.
             batch_size (int): Batch size used during inference. Defaults to 16
-            gpus (int): Number of GPUs to be used. Defaults to 1.
+            devices (Optional[List[int]]): A sequence of device indices to be used.
+                Default: None.
             mc_dropout (int): Number of inference steps to run using MCD. Defaults to 0
             progress_bar (bool): Flag that turns on and off the predict progress bar.
                 Defaults to True
@@ -564,6 +566,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         """
         if mc_dropout > 0:
             self.set_mc_dropout(mc_dropout)
+
+        if devices is not None:
+            assert len(devices) == gpus, AssertionError(
+                "List of devices must be same size as `gpus`"
+            )
+        else:
+            devices = gpus if gpus > 0 else None
 
         sampler = SequentialSampler(samples)
         if length_batching and gpus < 2:
@@ -605,7 +614,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             message=".*Consider increasing the value of the `num_workers` argument` .*",
         )
         trainer = ptl.Trainer(
-            devices=gpus if gpus > 0 else None,
+            devices=devices,
             logger=False,
             callbacks=callbacks,
             accelerator=accelerator if gpus > 0 else "cpu",
