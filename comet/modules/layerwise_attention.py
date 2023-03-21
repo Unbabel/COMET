@@ -49,6 +49,7 @@ class LayerwiseAttention(torch.nn.Module):
         self.transform_fn = torch.softmax
         if layer_transformation == "sparsemax":
             from entmax import sparsemax
+
             self.transform_fn = sparsemax
 
         if layer_weights is None:
@@ -84,7 +85,6 @@ class LayerwiseAttention(torch.nn.Module):
         tensors: List[torch.Tensor],  # pylint: disable=arguments-differ
         mask: torch.Tensor = None,
     ) -> torch.Tensor:
-
         if len(tensors) != self.num_layers:
             raise Exception(
                 "{} tensors were passed, but the module was initialized to \
@@ -96,28 +96,17 @@ class LayerwiseAttention(torch.nn.Module):
         def _layer_norm(tensor, broadcast_mask, mask):
             tensor_masked = tensor * broadcast_mask
             batch_size, _, input_dim = tensors[0].size()
-            num_elements_not_masked = torch.tensor(
-                [mask[i].sum() * input_dim for i in range(batch_size)],
-                device=tensor.device,
-            )
-            # mean for each sentence
-            mean = torch.sum(torch.sum(tensor_masked, dim=2), dim=1)
-            mean = mean / num_elements_not_masked
 
-            variance = torch.vstack(
-                [
-                    torch.sum(((tensor_masked[i] - mean[i]) * broadcast_mask[i]) ** 2)
-                    / num_elements_not_masked[i]
-                    for i in range(batch_size)
-                ]
-            )
-            normalized_tensor = torch.vstack(
-                [
-                    ((tensor[i] - mean[i]) / torch.sqrt(variance[i] + 1e-12)).unsqueeze(
-                        0
-                    )
-                    for i in range(batch_size)
-                ]
+            # mean for each sentence
+            num_elements_not_masked = mask.sum(1) * input_dim
+            mean = tensor_masked.view(batch_size, -1).sum(1)
+            mean = (mean / num_elements_not_masked).view(batch_size, 1, 1)
+
+            variance = (((tensor_masked - mean) * broadcast_mask) ** 2).view(
+                batch_size, -1
+            ).sum(1) / num_elements_not_masked
+            normalized_tensor = (tensor - mean) / torch.sqrt(variance + 1e-12).view(
+                batch_size, 1, 1
             )
             return normalized_tensor
 
