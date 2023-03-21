@@ -50,22 +50,15 @@ def load_from_checkpoint(checkpoint_path: str) -> CometModel:
     Return:
         COMET model.
     """
-    if not os.path.exists(checkpoint_path):
+    checkpoint_path = Path(checkpoint_path)
+
+    if not checkpoint_path.is_file():
         raise Exception(f"Invalid checkpoint path: {checkpoint_path}")
     
-    parent_folder = os.path.join(*os.path.normpath(checkpoint_path).split(os.path.sep)[:-2])
-    hparams_file = parent_folder.split(os.path.sep) + [
-        "hparams.yaml"
-    ]
-    # If the checkpoint starts with the root folder then we have an absolute path
-    # and we need to add root before joining the folders
-    if checkpoint_path.startswith(os.sep):
-        hparams_file = [
-            os.path.abspath(os.sep),
-        ] + hparams_file
-    hparams_file = os.path.join(*hparams_file)
-    
-    if os.path.exists(hparams_file):
+    parent_folder = checkpoint_path.parents[1] # .parent.parent
+    hparams_file = parent_folder / "hparams.yaml"
+
+    if hparams_file.is_file():
         with open(hparams_file) as yaml_file:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)
         model_class = str2model[hparams["class_identifier"]]
