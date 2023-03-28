@@ -172,8 +172,8 @@ You can also upload your model to [Hugging Face Hub](https://huggingface.co/docs
 In order to run the toolkit tests you must run the following command:
 
 ```bash
-coverage run --source=comet -m unittest discover
-coverage report -m # Expected coverage 78%
+poetry run coverage run --source=comet -m unittest discover
+poetry run coverage report -m # Expected coverage 78%
 ```
 
 **Note:** Testing on CPU takes a long time
