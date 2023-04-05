@@ -173,7 +173,7 @@ In order to run the toolkit tests you must run the following command:
 
 ```bash
 poetry run coverage run --source=comet -m unittest discover
-poetry run coverage report -m # Expected coverage 78%
+poetry run coverage report -m # Expected coverage 80%
 ```
 
 **Note:** Testing on CPU takes a long time
