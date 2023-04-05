@@ -51,17 +51,23 @@ def _make_key(
     new_args = []
     for x in args:
         if torch.is_tensor(x):
-            new_args.append(
-                # HACK: Tensor representations omit some tensor content.
-                # Nonetheless converting the tensor into a tuple is too slow.
-                # The current solution is an approximation to the actual tensor
-                # full representation. This can still lead to `false` cache hits!
-                x.__repr__()
-                + "\n"
-                + x.diagonal().__repr__()
-                + "\n"
-                + x.shape.__repr__()
-            )
+            if len(x.size()) == 0:
+                raise Exception("Tensor needs to be at least 1-Dimensional.")
+            
+            if len(x.size()) == 1:
+                new_args.append("\n".join([repr(x), repr(x.shape)]))
+            else:
+                new_args.append(
+                    # HACK: Tensor representations omit some tensor content.
+                    # Nonetheless converting the tensor into a tuple is too slow.
+                    # The current solution is an approximation to the actual tensor
+                    # full representation. This can still lead to `false` cache hits!
+                    x.__repr__()
+                    + "\n"
+                    + x.diagonal().__repr__()
+                    + "\n"
+                    + x.shape.__repr__()
+                )
         else:
             new_args.append(x)
 
