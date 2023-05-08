@@ -25,6 +25,7 @@ from transformers import (XLMRobertaConfig, XLMRobertaModel,
 
 from comet.encoders.base import Encoder
 from comet.encoders.bert import BERTEncoder
+from comet.encoders.sparse_xlmr import SparseRobertaSelfAttention
 
 
 class XLMREncoder(BERTEncoder):
@@ -51,6 +52,16 @@ class XLMREncoder(BERTEncoder):
                 add_pooling_layer=False,
             )
         self.model.encoder.output_hidden_states = True
+        
+        original_parameters = []
+        for i, layer in enumerate(self.model.encoder.layer):
+            original_parameters.append(layer.attention.self.state_dict())
+
+        for i, layer in enumerate(self.model.encoder.layer):
+            layer.attention.self = SparseRobertaSelfAttention(
+                self.model.config, alpha=1.0, retain_value_grad=False
+            )
+            layer.attention.self.load_state_dict(original_parameters[i])
 
     @property
     def size_separator(self):
@@ -81,15 +92,17 @@ class XLMREncoder(BERTEncoder):
     def forward(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor, **kwargs
     ) -> Dict[str, torch.Tensor]:
-        last_hidden_states, _, all_layers = self.model(
+        outputs = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
             output_hidden_states=True,
-            return_dict=False,
+            output_attentions=True,
+            return_dict=True,
         )
         return {
-            "sentemb": last_hidden_states[:, 0, :],
-            "wordemb": last_hidden_states,
-            "all_layers": all_layers,
+            "sentemb": outputs.last_hidden_state[:, 0, :],
+            "wordemb": outputs.last_hidden_state,
+            "all_layers": outputs.hidden_states,
+            "attention": outputs.attentions,
             "attention_mask": attention_mask,
         }

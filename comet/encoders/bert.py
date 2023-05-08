@@ -67,6 +67,11 @@ class BERTEncoder(Encoder):
         return self.model.config.num_hidden_layers + 1
 
     @property
+    def num_heads(self):
+        """Number of model layers available."""
+        return self.model.config.num_attention_heads
+    
+    @property
     def size_separator(self) -> int:
         """Size of the seperator.
         E.g: For BERT is just 1 ([SEP]) but models such as XLM-R use 2 (</s></s>).
@@ -97,7 +102,7 @@ class BERTEncoder(Encoder):
                 from Hugging Face
 
         Returns:
-            Encoder: XLMREncoder object.
+            Encoder: BERTEncoder object.
         """
         return BERTEncoder(pretrained_model, load_pretrained_weights)
 
@@ -152,16 +157,18 @@ class BERTEncoder(Encoder):
             Dict[str, torch.Tensor]: dictionary with 'sentemb', 'wordemb', 'all_layers'
                 and 'attention_mask'.
         """
-        last_hidden_states, pooler_output, all_layers = self.model(
+        last_hidden_states, pooler_output, all_layers, attentions = self.model(
             input_ids=input_ids,
             token_type_ids=token_type_ids,
             attention_mask=attention_mask,
             output_hidden_states=True,
+            output_attentions=True,
             return_dict=False,
         )
         return {
             "sentemb": pooler_output,
             "wordemb": last_hidden_states,
             "all_layers": all_layers,
+            "attention": attentions,
             "attention_mask": attention_mask,
         }

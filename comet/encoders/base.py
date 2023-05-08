@@ -37,7 +37,13 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
     def max_positions(self) -> int:
         """Max number of tokens the encoder handles."""
         pass
-
+    
+    @property
+    @abc.abstractmethod
+    def num_heads(self):
+        """Number of model heads available."""
+        pass
+    
     @property
     @abc.abstractmethod
     def num_layers(self) -> int:
