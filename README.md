@@ -1,12 +1,28 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/Unbabel/COMET/master/docs/source/_static/img/COMET_lockup-dark.png">
-  <br />
-  <br />
-  <a href="https://github.com/Unbabel/COMET/blob/master/LICENSE"><img alt="License" src="https://img.shields.io/github/license/Unbabel/COMET" /></a>
-  <a href="https://github.com/Unbabel/COMET/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/Unbabel/COMET" /></a>
-  <a href=""><img alt="PyPI" src="https://img.shields.io/pypi/v/unbabel-comet" /></a>
-  <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
-</p>
+# The Inside Story: ACL 2023
+
+This branch holds the code to replicate the experiments from our ACL 2023 paper on explainability methods for neural evaluation metrics.
+
+![Explaining Neural Metrics](docs/source/_static/img/comet-exp.png)
+
+### Reproducing our results:
+
+Download the models from HF Hub:
+- [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da)
+- [`Unbabel/wmt22-unite-da`](https://huggingface.co/Unbabel/wmt22-unite-da)
+
+Then to replicate our experiments you can run download the data from the following links:
+
+- [ZhEn MQM](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/acl2023/zhen-2021-concat.csv): WMT 2021 MQM annotations.
+- [ZhEn SMAUG](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/acl2023/zhen-smaug.csv): SMAUG Perturbations.
+- [EnDe MQM](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/acl2023/ende-2021-concat.csv): WMT 2021 MQM annotations.
+- [EnRu MQM](https://unbabel-experimental-data-sets.s3.eu-west-1.amazonaws.com/acl2023/enru-2021-concat.csv): WMT 2021 MQM annotations.
+
+and run the scripts inside `explainable-metrics` folder.
+
+```bash
+python explainable-metrics/explain_unite.py -m PATH/TO/UNITE.ckpt -t PATH/TO/DATA --batch_size 8
+python explainable-metrics/explain_comet.py -m PATH/TO/COMET.ckpt -t PATH/TO/DATA --batch_size 8
+```
 
 # Quick Installation
 
