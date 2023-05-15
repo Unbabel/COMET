@@ -35,9 +35,10 @@ str2model = {
 
 def download_model(
     model: str, 
-    saving_directory: Union[str, Path, None] = None
+    saving_directory: Union[str, Path, None] = None,
+    local_files_only: bool = False
 ) -> str:
-    model_path = snapshot_download(repo_id=model, cache_dir=saving_directory)
+    model_path = snapshot_download(repo_id=model, cache_dir=saving_directory, local_files_only=local_files_only)
     checkpoint_path = os.path.join(*[model_path, "checkpoints", "model.ckpt"])
     return checkpoint_path
 
