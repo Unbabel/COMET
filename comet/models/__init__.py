@@ -33,13 +33,18 @@ str2model = {
     "unified_metric": UnifiedMetric,
 }
 
+
 def download_model(
-    model: str, 
-    saving_directory: Union[str, Path, None] = None
+    model: str,
+    saving_directory: Union[str, Path, None] = None,
+    local_files_only: bool = False
 ) -> str:
-    model_path = snapshot_download(repo_id=model, cache_dir=saving_directory)
+    model_path = snapshot_download(
+        repo_id=model, cache_dir=saving_directory, local_files_only=local_files_only
+    )
     checkpoint_path = os.path.join(*[model_path, "checkpoints", "model.ckpt"])
     return checkpoint_path
+
 
 def load_from_checkpoint(checkpoint_path: str) -> CometModel:
     """Loads models from a checkpoint path.
@@ -54,8 +59,8 @@ def load_from_checkpoint(checkpoint_path: str) -> CometModel:
 
     if not checkpoint_path.is_file():
         raise Exception(f"Invalid checkpoint path: {checkpoint_path}")
-    
-    parent_folder = checkpoint_path.parents[1] # .parent.parent
+
+    parent_folder = checkpoint_path.parents[1]  # .parent.parent
     hparams_file = parent_folder / "hparams.yaml"
 
     if hparams_file.is_file():
