@@ -116,7 +116,10 @@ def alignment_explanations(
     )
     ref_explanations = get_similarity_scores(mt_embs, ref_embs)
     src_explanations = get_similarity_scores(mt_embs, src_embs)
-    return src_explanations, ref_explanations
+    src_ref_explanations = get_similarity_scores(
+        mt_embs, torch.cat((src_embs, ref_embs), dim=1)
+    )
+    return src_explanations, ref_explanations, src_ref_explanations
         
 def mock_forward(
     model: RegressionMetric, 
@@ -335,10 +338,10 @@ if __name__ == "__main__":
         model_inputs = prepare_data(model, data.to_dict("records"), args.batch_size)
 
         #  ------------------------- Alignment Explanations --------------------
-        ref_subword_scores, src_subword_scores = [], []
+        ref_subword_scores, src_subword_scores, src_ref_subword_scores = [], [], []
         for batch in tqdm(model_inputs):
             batch = {k: v.to(CUDA) for k, v in batch.items()}
-            src_align, ref_align = alignment_explanations(model, batch)
+            src_align, ref_align, src_ref_align = alignment_explanations(model, batch)
             ref_subword_scores.append({
                 "subword_scores": ref_align,
                 "input_ids": batch["mt_input_ids"].cpu(),
@@ -350,12 +353,19 @@ if __name__ == "__main__":
                 "input_ids": batch["mt_input_ids"].cpu(),
                 "in_span_mask": batch["mt_in_span_mask"].cpu()
             })
+            src_ref_subword_scores.append({
+                "subword_scores": src_ref_align,
+                "input_ids": batch["mt_input_ids"].cpu(),
+                "in_span_mask": batch["mt_in_span_mask"].cpu()
+            })
+            
         src_align_score = metric(src_subword_scores)
         ref_align_score = metric(ref_subword_scores)
-        
+        src_ref_align_score = metric(src_ref_subword_scores)
         print ("Src Align {}: {}".format(args.metric, src_align_score))
         print ("Ref Align {}: {}".format(args.metric, ref_align_score))
-        
+        print ("Src+Ref Align {}: {}".format(args.metric, src_ref_align_score))
+    
         # -------------------- Attention x Grad explanations -------------
         subword_scores = []
         for batch in tqdm(model_inputs):
@@ -375,16 +385,4 @@ if __name__ == "__main__":
         for pos in topk_heads:
             print (f"{pos}")
         
-        # ------------------------- ENSEMBLE top 5 --------------------
-        ensemble_subword_scores = []
-        for batch in tqdm(model_inputs):
-            batch = {k: v.to(CUDA) for k, v in batch.items()}        
-            ensemble_subword_scores.append({
-                "subword_scores": ensemble_topk_features(model, batch, topk_heads, multiply_by_grad=True),
-                "input_ids": batch["mt_input_ids"].cpu(),
-                "in_span_mask": batch["mt_in_span_mask"].cpu()
-            })
-        
-        score = metric(ensemble_subword_scores)
-        print ("Top-5 Attention x Grad {}: {}".format(args.metric, score))
         
