@@ -1,4 +1,4 @@
-# The Inside Story: ACL 2023
+# [The Inside Story: ACL 2023](https://arxiv.org/pdf/2305.11806.pdf)
 
 This branch holds the code to replicate the experiments from our ACL 2023 paper on explainability methods for neural evaluation metrics.
 
@@ -197,6 +197,8 @@ poetry run coverage report -m # Expected coverage 80%
 # Publications
 
 If you use COMET please cite our work **and don't forget to say which model you used!**
+
+- [The Inside Story: Towards Better Understanding of Machine Translation Neural Evaluation Metrics](https://arxiv.org/pdf/2305.11806.pdf)
 
 - [CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task](https://aclanthology.org/2022.wmt-1.60/)
 
