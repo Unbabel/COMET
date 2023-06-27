@@ -44,7 +44,10 @@ def download_model(
             repo_id=model, cache_dir=saving_directory, local_files_only=local_files_only
         )
     except Exception:
-        checkpoint_path = download_model_legacy(model, saving_directory)
+        try:
+            checkpoint_path = download_model_legacy(model, saving_directory)
+        except Exception:
+            raise KeyError(f"Model '{model}' not found in the available models list.")
     else:
         checkpoint_path = os.path.join(*[model_path, "checkpoints", "model.ckpt"])
     return checkpoint_path
