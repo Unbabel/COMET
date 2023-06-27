@@ -47,7 +47,7 @@ def download_model(
         try:
             checkpoint_path = download_model_legacy(model, saving_directory)
         except Exception:
-            raise KeyError(f"Model '{model}' not found in the available models list.")
+            raise KeyError(f"Model '{model}' not supported by COMET.")
     else:
         checkpoint_path = os.path.join(*[model_path, "checkpoints", "model.ckpt"])
     return checkpoint_path
