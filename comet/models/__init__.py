@@ -21,6 +21,7 @@ import yaml
 from huggingface_hub import snapshot_download
 
 from .base import CometModel
+from .download_utils import download_model_legacy
 from .multitask.unified_metric import UnifiedMetric
 from .ranking.ranking_metric import RankingMetric
 from .regression.referenceless import ReferencelessRegression
@@ -38,10 +39,17 @@ def download_model(
     saving_directory: Union[str, Path, None] = None,
     local_files_only: bool = False
 ) -> str:
-    model_path = snapshot_download(
-        repo_id=model, cache_dir=saving_directory, local_files_only=local_files_only
-    )
-    checkpoint_path = os.path.join(*[model_path, "checkpoints", "model.ckpt"])
+    try:
+        model_path = snapshot_download(
+            repo_id=model, cache_dir=saving_directory, local_files_only=local_files_only
+        )
+    except Exception:
+        try:
+            checkpoint_path = download_model_legacy(model, saving_directory)
+        except Exception:
+            raise KeyError(f"Model '{model}' not supported by COMET.")
+    else:
+        checkpoint_path = os.path.join(*[model_path, "checkpoints", "model.ckpt"])
     return checkpoint_path
 
 def load_from_checkpoint(checkpoint_path: str) -> CometModel:
