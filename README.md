@@ -8,6 +8,8 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
+**NEWS:** CometKiwi model from WMT22 is officially released and available on Hugging Face Hub. Please check all [available models here](https://github.com/Unbabel/COMET/blob/master/MODELS.md)
+ 
 # Quick Installation
 
 COMET requires python 3.8 or above! 
