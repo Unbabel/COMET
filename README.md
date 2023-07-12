@@ -72,10 +72,10 @@ comet-score -s src.de -t hyp1.en -r ref.en --quiet --only_system
 ### Reference-free evaluation:
 
 ```bash
-comet-score -s src.de -t hyp1.en --model Unbabel/wmt20-comet-qe-da
+comet-score -s src.de -t hyp1.en --model Unbabel/wmt22-cometkiwi-da
 ```
 
-**Note:** We are currently working on Licensing and releasing `Unbabel/wmt22-cometkiwi-da` but meanwhile that models is not available.
+**Note:** To use the `Unbabel/wmt22-cometkiwi-da` you first have to acknowledge its license on Hugging Face Hub.
 
 ### Comparing multiple systems:
 
@@ -98,7 +98,7 @@ If working with a very large candidate list you can use `--rerank_top_k` flag to
 Example for a candidate list of 1000 samples:
 
 ```bash
-comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 1000 --rerank_top_k 100 --gpus 4 --qe_model Unbabel/wmt20-comet-qe-da
+comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 1000 --rerank_top_k 100 --gpus 4 --qe_model Unbabel/wmt22-cometkiwi-da
 ```
 
 # COMET Models:
