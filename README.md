@@ -77,7 +77,7 @@ comet-score -s src.de -t hyp1.en -r ref.en --quiet --only_system
 comet-score -s src.de -t hyp1.en --model Unbabel/wmt22-cometkiwi-da
 ```
 
-**Note:** To use the `Unbabel/wmt22-cometkiwi-da` you first have to acknowledge its license on Hugging Face Hub.
+**Note:** To use the `Unbabel/wmt22-cometkiwi-da` you first have to acknowledge its license on [Hugging Face Hub](https://huggingface.co/Unbabel/wmt22-cometkiwi-da).
 
 ### Comparing multiple systems:
 
