@@ -11,10 +11,10 @@ For versions prior to 2.0, you can still use [`Unbabel/wmt20-comet-da`](https://
 
 ## UniTE Models:
 
-[UniTE Metric](https://aclanthology.org/2022.acl-long.558/) was developed by the NLP2CT Lab at the University of Macau and Alibaba Group, and all credits should be attributed to these groups. COMET framework fully supports running UniTE checkpoints and thus we made them available in our Hugging Face Hub. We have two checkpoints available, one is the original UniTE-MUP and the other was trained by Unbabel using the same data as our default model.
+[UniTE Metric](https://aclanthology.org/2022.acl-long.558/) was developed by the NLP2CT Lab at the University of Macau and Alibaba Group, and all credits should be attributed to these groups. COMET framework fully supports running UniTE and thus we made the original UniTE-MUP checkpoint available in Hugging Face Hub. Additionally, we also trained our own UniTE model using the same data as `wmt22-comet-da`. You can access both models here:
 
 - [`Unbabel/unite-mup`](https://huggingface.co/Unbabel/unite-mup) - This is the original UniTE Metric proposed in the [UniTE: Unified Translation Evaluation](https://aclanthology.org/2022.acl-long.558/) paper.
-- [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-unite-da) - This model was trained for our paper [The Inside Story](https://aclanthology.org/2023.acl-short.94/) and it uses the same data as [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) thus, the outputed scores are between 0 and 1.
+- [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-unite-da) - This model was trained for our paper [(Rei et al., ACL 2023)](https://aclanthology.org/2023.acl-short.94/) and it uses the same data as [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) thus, the outputed scores are between 0 and 1.
 
 ## Older Models:
 
