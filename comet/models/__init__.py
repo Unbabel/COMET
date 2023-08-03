@@ -17,15 +17,17 @@ import os
 from pathlib import Path
 from typing import Union
 
+import torch
 import yaml
 from huggingface_hub import snapshot_download
 
 from .base import CometModel
-from .download_utils import download_model_legacy
 from .multitask.unified_metric import UnifiedMetric
 from .ranking.ranking_metric import RankingMetric
 from .regression.referenceless import ReferencelessRegression
 from .regression.regression_metric import RegressionMetric
+from .download_utils import download_model_legacy
+
 
 str2model = {
     "referenceless_regression_metric": ReferencelessRegression,
@@ -34,10 +36,11 @@ str2model = {
     "unified_metric": UnifiedMetric,
 }
 
+
 def download_model(
     model: str,
     saving_directory: Union[str, Path, None] = None,
-    local_files_only: bool = False
+    local_files_only: bool = False,
 ) -> str:
     try:
         model_path = snapshot_download(
@@ -52,12 +55,19 @@ def download_model(
         checkpoint_path = os.path.join(*[model_path, "checkpoints", "model.ckpt"])
     return checkpoint_path
 
-def load_from_checkpoint(checkpoint_path: str) -> CometModel:
+
+def load_from_checkpoint(
+    checkpoint_path: str, reload_hparams: bool = False, strict: bool = False
+) -> CometModel:
     """Loads models from a checkpoint path.
 
     Args:
         checkpoint_path (str): Path to a model checkpoint.
-
+        reload_hparams (bool): hparams.yaml file located in the parent folder is
+            only use for deciding the `class_identifier`. By setting this flag
+            to True all hparams will be reloaded.
+        strict (bool): Strictly enforce that the keys in checkpoint_path match the
+            keys returned by this module's state dict. Defaults to False
     Return:
         COMET model.
     """
@@ -65,8 +75,8 @@ def load_from_checkpoint(checkpoint_path: str) -> CometModel:
 
     if not checkpoint_path.is_file():
         raise Exception(f"Invalid checkpoint path: {checkpoint_path}")
-    
-    parent_folder = checkpoint_path.parents[1] # .parent.parent
+
+    parent_folder = checkpoint_path.parents[1]  # .parent.parent
     hparams_file = parent_folder / "hparams.yaml"
 
     if hparams_file.is_file():
@@ -74,7 +84,11 @@ def load_from_checkpoint(checkpoint_path: str) -> CometModel:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)
         model_class = str2model[hparams["class_identifier"]]
         model = model_class.load_from_checkpoint(
-            checkpoint_path, load_pretrained_weights=False
+            checkpoint_path,
+            load_pretrained_weights=False,
+            hparams_file=hparams_file if reload_hparams else None,
+            map_location=torch.device("cpu"),
+            strict=strict,
         )
         return model
     else:
