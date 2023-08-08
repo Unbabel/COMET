@@ -109,11 +109,12 @@ class RegressionMetrics(Metric):
 
     def compute(self) -> torch.Tensor:
         """Computes spearmans correlation coefficient."""
-        preds = torch.cat(self.preds, dim=0)
-        target = torch.cat(self.target, dim=0)
-        kendall, _ = stats.kendalltau(preds.tolist(), target.tolist())
-        spearman, _ = stats.spearmanr(preds.tolist(), target.tolist())
-        pearson, _ = stats.pearsonr(preds.tolist(), target.tolist())
+        preds = torch.cat(self.preds, dim=0).tolist()  if isinstance(self.preds, (tuple, list)) else self.preds.tolist()
+        target = torch.cat(self.target, dim=0).tolist() if isinstance(self.target, (tuple, list)) else self.target.tolist()
+
+        kendall, _ = stats.kendalltau(preds, target)
+        spearman, _ = stats.spearmanr(preds, target)
+        pearson, _ = stats.pearsonr(preds, target)
         report = {
             self.prefix + "_kendall": kendall,
             self.prefix + "_spearman": spearman,
@@ -122,7 +123,7 @@ class RegressionMetrics(Metric):
 
         if len(self.systems) > 0:
             system_acc = system_accuracy(
-                preds.cpu().tolist(), target.cpu().tolist(), self.systems
+                preds, target, self.systems
             )
             report["system_acc"] = system_acc
 
