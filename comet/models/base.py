@@ -22,6 +22,7 @@ import abc
 import logging
 import os
 import warnings
+from functools import partial
 from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -496,7 +497,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             dataset=train_dataset,
             sampler=RandomSampler(train_dataset),
             batch_size=self.hparams.batch_size,
-            collate_fn=lambda s: self.prepare_sample(s, stage="fit"),
+            collate_fn=partial(self.prepare_sample, stage="fit"),
             num_workers=2 * self.trainer.num_devices,
         )
 
@@ -506,7 +507,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             DataLoader(
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
-                collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
+                collate_fn=partial(self.prepare_sample, stage="validate"),
                 num_workers=2 * self.trainer.num_devices,
             )
         ]
@@ -515,17 +516,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 DataLoader(
                     dataset=validation_set,
                     batch_size=self.hparams.batch_size,
-                    collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
+                    collate_fn=partial(self.prepare_sample, stage="validate"),
                     num_workers=2 * self.trainer.num_devices,
                 )
             )
         return val_data
-
-    def prepare_for_inference(self, sample):
-        """This is to avoid having a lamba function inside the predict dataloader
-        `collate_fn=lambda x: self.prepare_sample(x, inference=True)`
-        """
-        return self.prepare_sample(sample, stage="predict")
 
     def predict(
         self,
@@ -591,7 +586,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             dataset=samples,
             batch_size=batch_size,
             sampler=sampler,
-            collate_fn=self.prepare_for_inference,
+            collate_fn=partial(self.prepare_sample, stage="predict"),
             num_workers=num_workers,
         )
         if gpus > 1:
