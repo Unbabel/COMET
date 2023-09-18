@@ -616,11 +616,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             message=".*Consider increasing the value of the `num_workers` argument` .*",
         )
         trainer = ptl.Trainer(
-            devices=devices,
+            devices=devices if gpus > 0 else "auto",
             logger=False,
             callbacks=callbacks,
             accelerator=accelerator if gpus > 0 else "cpu",
-            strategy=None if gpus < 2 else "ddp",
+            strategy="auto" if gpus < 2 else "ddp",
             enable_progress_bar=enable_progress_bar,
         )
         return_predictions = False if gpus > 1 else True

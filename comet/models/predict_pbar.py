@@ -24,7 +24,6 @@ class PredictProgressBar(ptl.callbacks.progress.tqdm_progress.TQDMProgressBar):
     def init_predict_tqdm(self) -> tqdm:
         bar = tqdm(
             desc="Predicting",
-            initial=self.train_batch_idx,
             position=(2 * self.process_position),
             disable=self.is_disabled,
             leave=True,
