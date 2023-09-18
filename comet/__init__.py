@@ -22,5 +22,5 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
-__version__ = "2.0.2"
+__version__ = "2.1.0"
 __copyright__ = "2020 Unbabel. All rights reserved."
