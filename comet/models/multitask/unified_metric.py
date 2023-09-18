@@ -449,7 +449,6 @@ class UnifiedMetric(CometModel):
         """
         sentence_loss = self.sentloss(prediction.score, target.score)
         if self.word_level:
-            sentence_loss = self.sentloss(prediction.score, target.score)
             predictions = prediction.logits.reshape(-1, 2)
             targets = target.labels.view(-1).type(torch.LongTensor).cuda()
             word_loss = self.wordloss(predictions, targets)
@@ -557,7 +556,7 @@ class UnifiedMetric(CometModel):
                 self.val_mcc[dataloader_idx - 1].update(logits, targets)
 
     # Overwriting this method to log correlation and classification metrics
-    def validation_epoch_end(self, *args, **kwargs) -> None:
+    def on_validation_epoch_end(self, *args, **kwargs) -> None:
         """Computes and logs metrics."""
         self.log_dict(self.train_corr.compute(), prog_bar=False, sync_dist=True)
         self.train_corr.reset()

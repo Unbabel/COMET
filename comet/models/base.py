@@ -438,7 +438,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             )
         return model_outputs
 
-    def validation_epoch_end(self, *args, **kwargs) -> None:
+    def on_validation_epoch_end(self, *args, **kwargs) -> None:
         """Computes and logs metrics."""
         self.log_dict(self.train_metrics.compute(), prog_bar=False, sync_dist=True)
         self.train_metrics.reset()
