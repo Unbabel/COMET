@@ -8,7 +8,7 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-**NEWS:** CometKiwi model from WMT22 is officially released and available on Hugging Face Hub. Please check all [available models here](https://github.com/Unbabel/COMET/blob/master/MODELS.md)
+**NEWS:** We release CometKiwi -XL (3.5B) and -XXL (10.7B) QE models. These models were the best performing QE models on the WMT23 QE shared task. Please check all available models [here](https://github.com/Unbabel/COMET/blob/master/MODELS.md)
  
 # Quick Installation
 
@@ -20,6 +20,9 @@ Simple installation from PyPI
 pip install --upgrade pip  # ensures that pip is current 
 pip install unbabel-comet
 ```
+
+**Note:** To use some COMET models such as `Unbabel/wmt22-cometkiwi-da` you must acknowledge it's license on Hugging Face Hub and [log-in into hugging face hub](https://huggingface.co/docs/huggingface_hub/quick-start#:~:text=Once%20you%20have%20your%20User%20Access%20Token%2C%20run%20the%20following%20command%20in%20your%20terminal%3A).
+
 
 To develop locally install run the following commands:
 ```bash
@@ -42,21 +45,21 @@ PYTHONPATH=. ./comet/cli/score.py
 Test examples:
 
 ```bash
-echo -e "Dem Feuer konnte Einhalt geboten werden\nSchulen und Kindergärten wurden eröffnet." >> src.de
-echo -e "The fire could be stopped\nSchools and kindergartens were open" >> hyp1.en
-echo -e "The fire could have been stopped\nSchools and pre-school were open" >> hyp2.en
-echo -e "They were able to control the fire.\nSchools and kindergartens opened" >> ref.en
+echo -e "10 到 15 分钟可以送到吗\nPode ser entregue dentro de 10 a 15 minutos?" >> src.txt
+echo -e "Can I receive my food in 10 to 15 minutes?\nCan it be delivered in 10 to 15 minutes?" >> hyp1.txt
+echo -e "Can it be delivered within 10 to 15 minutes?\nCan you send it for 10 to 15 minutes?" >> hyp2.txt
+echo -e "Can it be delivered between 10 to 15 minutes?\nCan it be delivered between 10 to 15 minutes?" >> ref.txt
 ```
 
 Basic scoring command:
 ```bash
-comet-score -s src.de -t hyp1.en -r ref.en
+comet-score -s src.txt -t hyp1.txt -r ref.txt
 ```
 > you can set the number of gpus using `--gpus` (0 to test on CPU).
 
 Scoring multiple systems:
 ```bash
-comet-score -s src.de -t hyp1.en hyp2.en -r ref.en
+comet-score -s src.txt -t hyp1.txt hyp2.txt -r ref.txt
 ```
 
 WMT test sets via [SacreBLEU](https://github.com/mjpost/sacrebleu):
@@ -68,16 +71,16 @@ comet-score -d wmt22:en-de -t PATH/TO/TRANSLATIONS
 If you are only interested in a system-level score use the following command:
 
 ```bash
-comet-score -s src.de -t hyp1.en -r ref.en --quiet --only_system
+comet-score -s src.txt -t hyp1.txt -r ref.txt --quiet --only_system
 ```
 
 ### Reference-free evaluation:
 
 ```bash
-comet-score -s src.de -t hyp1.en --model Unbabel/wmt22-cometkiwi-da
+comet-score -s src.txt -t hyp1.txt --model Unbabel/wmt23-cometkiwi-da-xl
 ```
 
-**Note:** To use the `Unbabel/wmt22-cometkiwi-da` you first have to acknowledge its license on [Hugging Face Hub](https://huggingface.co/Unbabel/wmt22-cometkiwi-da).
+**Note:** To use the `Unbabel/wmt23-cometkiwi-da-xl` you first have to acknowledge its license on [Hugging Face Hub](https://huggingface.co/Unbabel/Unbabel/wmt23-cometkiwi-da-xl).
 
 ### Comparing multiple systems:
 
@@ -100,17 +103,17 @@ If working with a very large candidate list you can use `--rerank_top_k` flag to
 Example for a candidate list of 1000 samples:
 
 ```bash
-comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 1000 --rerank_top_k 100 --gpus 4 --qe_model Unbabel/wmt22-cometkiwi-da
+comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 1000 --rerank_top_k 100 --gpus 4 --qe_model Unbabel/wmt23-cometkiwi-da-xl
 ```
 
-# COMET Models:
+# COMET Models
 
-To evaluate your translations, we suggest using one of two models:
+Within COMET, there are several evaluation models available. You can refer to the [MODELS](MODELS.md) page for a comprehensive list of all available models. Here is a concise list of the primary reference-based and reference-free models:
 
-- **Default model:** [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) - This model uses a reference-based regression approach and is built on top of XLM-R. It has been trained on direct assessments from WMT17 to WMT20 and provides scores ranging from 0 to 1, where 1 represents a perfect translation.
-- **Reference-free:** [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da) - This reference-free model uses a regression approach and is built on top of InfoXLM. It has been trained on direct assessments from WMT17 to WMT20, as well as direct assessments from the MLQE-PE corpus. Like the default model, it also provides scores ranging from 0 to 1.
+- **Default Model:** [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) - This model employs a reference-based regression approach and is built upon the XLM-R architecture. It has been trained on direct assessments from WMT17 to WMT20 and provides scores ranging from 0 to 1, where 1 signifies a perfect translation.
+- **Reference-free Model:** [`Unbabel/wmt23-cometkiwi-da-xl`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da) - This reference-free model adopts a regression approach and is built on top of the XLM-R XL architecture. It has undergone training on direct assessments from WMT17 to WMT20, as well as direct assessments from the WMT23 QE shared task. Similar to the default model, it also generates scores ranging from 0 to 1. This model has 3.5 billion parameters and requires a minimum of 15GB of GPU memory. For a more lightweight evaluation, please consult `Unbabel/wmt22-cometkiwi-da`, and if you seek the best overall performance with over 44GB of GPU memory, consider `Unbabel/wmt23-cometkiwi-da-xxl`.
 
-For versions prior to 2.0, you can still use [`Unbabel/wmt20-comet-da`](https://huggingface.co/Unbabel/wmt20-comet-da), which is the primary metric, and [`Unbabel/wmt20-comet-qe-da`](https://huggingface.co/Unbabel/wmt20-comet-qe-da) for the **respective reference-free version**. You can find a list of all other models developed in previous versions on our [MODELS](MODELS.md) page. For more information, please refer to the [model licenses](LICENSE.models.md).
+If you intend to compare your results with papers published before 2022, it's likely that they used older evaluation models. In such cases, please refer to [`Unbabel/wmt20-comet-da`](https://huggingface.co/Unbabel/wmt20-comet-da) and [`Unbabel/wmt20-comet-qe-da`](https://huggingface.co/Unbabel/wmt20-comet-qe-da), which were the primary checkpoints used in previous versions (<2.0) of COMET.
 
 ## Interpreting Scores:
 
@@ -141,14 +144,14 @@ model_path = download_model("Unbabel/wmt22-comet-da")
 model = load_from_checkpoint(model_path)
 data = [
     {
-        "src": "Dem Feuer konnte Einhalt geboten werden",
-        "mt": "The fire could be stopped",
-        "ref": "They were able to control the fire."
+        "src": "10 到 15 分钟可以送到吗",
+        "mt": "Can I receive my food in 10 to 15 minutes?",
+        "ref": "Can it be delivered between 10 to 15 minutes?"
     },
     {
-        "src": "Schulen und Kindergärten wurden eröffnet.",
-        "mt": "Schools and kindergartens were open",
-        "ref": "Schools and kindergartens opened"
+        "src": "Pode ser entregue dentro de 10 a 15 minutos?",
+        "mt": "Can you send it for 10 to 15 minutes?",
+        "ref": "Can it be delivered between 10 to 15 minutes?"
     }
 ]
 model_output = model.predict(data, batch_size=8, gpus=1)

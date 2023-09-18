@@ -35,9 +35,9 @@ optional arguments:
                        Chooses the topK candidates according to --qe_model before
                        applying MBR. Disabled by default. (type: int, default: 0)
   --qe_model QE_MODEL   Reference Free model used for reranking before MBR. (type: str,
-                        default: Unbabel/wmt22-cometkiwi-da)
+                        default: Unbabel/wmt23-cometkiwi-da-xl)
   --model MODEL         COMET model to be used. 
-                        (type: str, default: Unbabel/wmt22-comet-da)
+                        (type: str, default: Unbabel/wmt23-comet-da-xl)
   --model_storage_path MODEL_STORAGE_PATH
                         Path to the directory where models will be stored. By default
                         its saved in ~/.cache/torch/unbabel_comet/ (default: null)
@@ -208,7 +208,7 @@ def mbr_command() -> None:
         "--model",
         type=str,
         required=False,
-        default="Unbabel/wmt22-comet-da",
+        default="Unbabel/wmt23-comet-da-xl",
         help="COMET model to be used.",
     )
     parser.add_argument(
