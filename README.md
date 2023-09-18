@@ -94,6 +94,7 @@ comet-compare -s src.de -t hyp1.en hyp2.en hyp3.en -r ref.en
 
 The MBR command allows you to rank translations and select the best one according to COMET metrics. For more details you can read our paper on [Quality-Aware Decoding for Neural Machine Translation](https://aclanthology.org/2022.naacl-main.100.pdf).
 
+
 ```bash
 comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt --num_sample [X] -o [OUTPUT_FILE].txt
 ```
@@ -105,6 +106,8 @@ Example for a candidate list of 1000 samples:
 ```bash
 comet-mbr -s [SOURCE].txt -t [MT_SAMPLES].txt -o [OUTPUT_FILE].txt --num_sample 1000 --rerank_top_k 100 --gpus 4 --qe_model Unbabel/wmt23-cometkiwi-da-xl
 ```
+
+Your source and samples file should be [formated in this way](https://unbabel.github.io/COMET/html/running.html#:~:text=Example%20with%202%20source%20and%203%20samples%3A).
 
 # COMET Models
 
