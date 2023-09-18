@@ -440,7 +440,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
     def validation_epoch_end(self, *args, **kwargs) -> None:
         """Computes and logs metrics."""
-        self.log_dict(self.train_metrics.compute(), prog_bar=False)
+        self.log_dict(self.train_metrics.compute(), prog_bar=False, sync_dist=True)
         self.train_metrics.reset()
 
         val_metrics = []
@@ -448,7 +448,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             results = self.val_metrics[i].compute()
             self.val_metrics[i].reset()
             # Log to tensorboard the results for this validation set.
-            self.log_dict(results, prog_bar=False)
+            self.log_dict(results, prog_bar=False, sync_dist=True)
             val_metrics.append(results)
 
         average_results = {"val_" + k.split("_")[-1]: [] for k in val_metrics[0].keys()}
@@ -457,7 +457,9 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 average_results["val_" + k.split("_")[-1]].append(v)
 
         self.log_dict(
-            {k: sum(v) / len(v) for k, v in average_results.items()}, prog_bar=True
+            {k: sum(v) / len(v) for k, v in average_results.items()},
+            prog_bar=True,
+            sync_dist=True,
         )
 
     def setup(self, stage: str) -> None:

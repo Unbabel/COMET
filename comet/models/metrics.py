@@ -25,7 +25,8 @@ from typing import Any, Callable, List, Optional
 import pandas as pd
 import scipy.stats as stats
 import torch
-from torchmetrics import MatthewsCorrCoef, Metric
+from torchmetrics import Metric
+from torchmetrics.classification import MulticlassMatthewsCorrCoef
 
 
 def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> float:
@@ -40,7 +41,17 @@ def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> fl
     Return:
         Float: System-level accuracy.
     """
-    data = pd.DataFrame({"y_hat": y_hat, "y": y, "system": system})
+    try:
+        data = pd.DataFrame({"y_hat": y_hat, "y": y, "system": system})
+    except ValueError:
+        raise Exception(
+            "The program will be interrupted, followed by a series of errors."
+            " This probably happens because you're using ddp strategy in the"
+            " trainer config. System accuracy computation does not currently"
+            " work with ddp. Please make sure your VALIDATION data DOES NOT"
+            " include a 'system' column, and try again."
+        )
+
     data = data.groupby("system").mean()
     pairs = list(combinations(data.index.tolist(), 2))
 
@@ -55,7 +66,7 @@ def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> fl
     return float(accuracy)
 
 
-class MCCMetric(MatthewsCorrCoef):
+class MCCMetric(MulticlassMatthewsCorrCoef):
     def __init__(self, prefix: str = "", **kwargs) -> None:
         super().__init__(**kwargs)
         self.prefix = prefix
@@ -69,6 +80,7 @@ class MCCMetric(MatthewsCorrCoef):
 class RegressionMetrics(Metric):
     is_differentiable = False
     higher_is_better = True
+    full_state_update = False
     preds: List[torch.Tensor]
     target: List[torch.Tensor]
 
@@ -86,7 +98,7 @@ class RegressionMetrics(Metric):
         )
         self.add_state("preds", default=[], dist_reduce_fx="cat")
         self.add_state("target", default=[], dist_reduce_fx="cat")
-        self.add_state("systems", default=[], dist_reduce_fx="sum")
+        self.add_state("systems", default=[], dist_reduce_fx=None)
         self.prefix = prefix
 
     def update(
@@ -109,8 +121,12 @@ class RegressionMetrics(Metric):
 
     def compute(self) -> torch.Tensor:
         """Computes spearmans correlation coefficient."""
-        preds = torch.cat(self.preds, dim=0)
-        target = torch.cat(self.target, dim=0)
+        try:
+            preds = torch.cat(self.preds, dim=0)
+            target = torch.cat(self.target, dim=0)
+        except TypeError:
+            preds = self.preds
+            target = self.target
         kendall, _ = stats.kendalltau(preds.tolist(), target.tolist())
         spearman, _ = stats.spearmanr(preds.tolist(), target.tolist())
         pearson, _ = stats.pearsonr(preds.tolist(), target.tolist())
@@ -130,6 +146,8 @@ class RegressionMetrics(Metric):
 
 
 class WMTKendall(Metric):
+    full_state_update = True
+
     def __init__(
         self,
         prefix: str = "",

@@ -113,7 +113,7 @@ class UnifiedMetric(CometModel):
         word_level_training: bool = False,
         word_weights: List[float] = [0.15, 0.85],
         loss_lambda: float = 0.65,
-        load_pretrained_weights: bool = True
+        load_pretrained_weights: bool = True,
     ) -> None:
         super().__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -132,7 +132,7 @@ class UnifiedMetric(CometModel):
             train_data=train_data,
             validation_data=validation_data,
             class_identifier="unified_metric",
-            load_pretrained_weights=load_pretrained_weights
+            load_pretrained_weights=load_pretrained_weights,
         )
         self.save_hyperparameters()
         self.estimator = FeedForward(
@@ -360,7 +360,7 @@ class UnifiedMetric(CometModel):
 
         scores = [float(s["score"]) for s in sample]
         targets = Target(score=torch.tensor(scores, dtype=torch.float))
-        
+
         if "system" in inputs:
             targets["system"] = inputs["system"]
 
@@ -559,11 +559,11 @@ class UnifiedMetric(CometModel):
     # Overwriting this method to log correlation and classification metrics
     def validation_epoch_end(self, *args, **kwargs) -> None:
         """Computes and logs metrics."""
-        self.log_dict(self.train_corr.compute(), prog_bar=False)
+        self.log_dict(self.train_corr.compute(), prog_bar=False, sync_dist=True)
         self.train_corr.reset()
 
         if self.word_level:
-            self.log_dict(self.train_mcc.compute(), prog_bar=False)
+            self.log_dict(self.train_mcc.compute(), prog_bar=False, sync_dist=True)
             self.train_mcc.reset()
 
         val_metrics = []
@@ -578,7 +578,7 @@ class UnifiedMetric(CometModel):
                 results = corr_metrics
 
             # Log to tensorboard the results for this validation set.
-            self.log_dict(results, prog_bar=False)
+            self.log_dict(results, prog_bar=False, sync_dist=True)
             val_metrics.append(results)
 
         average_results = {"val_" + k.split("_")[-1]: [] for k in val_metrics[0].keys()}
@@ -587,7 +587,9 @@ class UnifiedMetric(CometModel):
                 average_results["val_" + k.split("_")[-1]].append(v)
 
         self.log_dict(
-            {k: sum(v) / len(v) for k, v in average_results.items()}, prog_bar=True
+            {k: sum(v) / len(v) for k, v in average_results.items()},
+            prog_bar=True,
+            sync_dist=True,
         )
 
     def set_mc_dropout(self, value: int):
