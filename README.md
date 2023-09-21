@@ -12,9 +12,7 @@
  
 # Quick Installation
 
-COMET requires python 3.8 or above! 
-
-Simple installation from PyPI
+COMET requires python 3.8 or above. Simple installation from PyPI
 
 ```bash
 pip install --upgrade pip  # ensures that pip is current 
@@ -111,12 +109,14 @@ Your source and samples file should be [formated in this way](https://unbabel.gi
 
 # COMET Models
 
-Within COMET, there are several evaluation models available. You can refer to the [MODELS](MODELS.md) page for a comprehensive list of all available models. Here is a concise list of the primary reference-based and reference-free models:
+Within COMET, there are several evaluation models available. You can refer to the [MODELS](MODELS.md) page for a comprehensive list of all available models. Here is a concise list of the main reference-based and reference-free models:
 
 - **Default Model:** [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) - This model employs a reference-based regression approach and is built upon the XLM-R architecture. It has been trained on direct assessments from WMT17 to WMT20 and provides scores ranging from 0 to 1, where 1 signifies a perfect translation.
-- **Reference-free Model:** [`Unbabel/wmt23-cometkiwi-da-xl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) - This reference-free model adopts a regression approach and is built on top of the XLM-R XL architecture. It has undergone training on direct assessments from WMT17 to WMT20, as well as direct assessments from the WMT23 QE shared task. Similar to the default model, it also generates scores ranging from 0 to 1. This model has 3.5 billion parameters and requires a minimum of 15GB of GPU memory. For a more lightweight evaluation, please consult [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da), and if you seek the best overall performance with over 44GB of GPU memory, consider [`Unbabel/wmt23-cometkiwi-da-xxl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl).
+- **Reference-free Model:** [`Unbabel/wmt23-cometkiwi-da-xl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) - This reference-free model adopts a regression approach and is built on top of the XLM-R XL architecture. It has undergone training on direct assessments from WMT17 to WMT20, as well as direct assessments from the WMT23 QE shared task. Similar to the default model, it also generates scores ranging from 0 to 1. This model has 3.5 billion parameters and requires a minimum of 15GB of GPU memory. For a more lightweight evaluation, please consult [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da), and if you seek the best overall performance consider [`Unbabel/wmt23-cometkiwi-da-xxl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) which requires a minimum of 44GB GPU memory.
 
 If you intend to compare your results with papers published before 2022, it's likely that they used older evaluation models. In such cases, please refer to [`Unbabel/wmt20-comet-da`](https://huggingface.co/Unbabel/wmt20-comet-da) and [`Unbabel/wmt20-comet-qe-da`](https://huggingface.co/Unbabel/wmt20-comet-qe-da), which were the primary checkpoints used in previous versions (<2.0) of COMET.
+
+Also, [UniTE Metric](https://aclanthology.org/2022.acl-long.558/) developed by the NLP2CT Lab at the University of Macau and Alibaba Group can be used directly through COMET check [here for more details](https://huggingface.co/Unbabel/unite-mup).
 
 ## Interpreting Scores:
 
@@ -189,6 +189,8 @@ poetry run coverage report -m # Expected coverage 80%
 # Publications
 
 If you use COMET please cite our work **and don't forget to say which model you used!**
+
+- [Scaling up CometKiwi: Unbabel-IST 2023 Submission for the Quality Estimation Shared Task](TBA)
 
 - [CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task](https://aclanthology.org/2022.wmt-1.60/)
 
