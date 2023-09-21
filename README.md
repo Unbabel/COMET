@@ -8,7 +8,7 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-**NEWS:** We release CometKiwi -XL (3.5B) and -XXL (10.7B) QE models. These models were the best performing QE models on the WMT23 QE shared task. Please check all available models [here](https://github.com/Unbabel/COMET/blob/master/MODELS.md)
+**NEWS:** We release [CometKiwi -XL (3.5B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) and [-XXL (10.7B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) QE models. These models were the best performing QE models on the WMT23 QE shared task. Please check all available models [here](https://github.com/Unbabel/COMET/blob/master/MODELS.md)
  
 # Quick Installation
 
