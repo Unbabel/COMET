@@ -190,7 +190,7 @@ poetry run coverage report -m # Expected coverage 80%
 
 If you use COMET please cite our work **and don't forget to say which model you used!**
 
-- [Scaling up CometKiwi: Unbabel-IST 2023 Submission for the Quality Estimation Shared Task](TBA)
+- [Scaling up CometKiwi: Unbabel-IST 2023 Submission for the Quality Estimation Shared Task](https://arxiv.org/pdf/2309.11925.pdf)
 
 - [CometKiwi: IST-Unbabel 2022 Submission for the Quality Estimation Shared Task](https://aclanthology.org/2022.wmt-1.60/)
 
