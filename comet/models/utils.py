@@ -20,14 +20,14 @@ from torch.utils.data import Sampler
 from transformers.utils import ModelOutput
 
 
-@dataclass
+@dataclass(init=False)
 class Prediction(ModelOutput):
     """Renamed ModelOutput"""
 
     pass
 
 
-@dataclass
+@dataclass(init=False)
 class Target(ModelOutput):
     """Renamed ModelOutput into Targets to keep same behaviour"""
 
