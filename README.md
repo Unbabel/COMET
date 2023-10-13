@@ -158,7 +158,7 @@ data = [
     }
 ]
 model_output = model.predict(data, batch_size=8, gpus=1)
-print(model_output)
+print(model_output.to_tuple())
 ```
 
 # Train your own Metric: 
