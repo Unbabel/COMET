@@ -75,10 +75,10 @@ comet-score -s src.txt -t hyp1.txt -r ref.txt --quiet --only_system
 ### Reference-free evaluation:
 
 ```bash
-comet-score -s src.txt -t hyp1.txt --model Unbabel/wmt23-cometkiwi-da-xl
+comet-score -s src.txt -t hyp1.txt --model Unbabel/wmt22-cometkiwi-da
 ```
 
-**Note:** To use the `Unbabel/wmt23-cometkiwi-da-xl` you first have to acknowledge its license on [Hugging Face Hub](https://huggingface.co/Unbabel/Unbabel/wmt23-cometkiwi-da-xl).
+**Note:** To use the `Unbabel/wmt22-cometkiwi-da-xl` you first have to acknowledge its license on [Hugging Face Hub](https://huggingface.co/Unbabel/Unbabel/wmt23-cometkiwi-da-xl).
 
 ### Comparing multiple systems:
 
@@ -112,7 +112,7 @@ Your source and samples file should be [formated in this way](https://unbabel.gi
 Within COMET, there are several evaluation models available. You can refer to the [MODELS](MODELS.md) page for a comprehensive list of all available models. Here is a concise list of the main reference-based and reference-free models:
 
 - **Default Model:** [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) - This model employs a reference-based regression approach and is built upon the XLM-R architecture. It has been trained on direct assessments from WMT17 to WMT20 and provides scores ranging from 0 to 1, where 1 signifies a perfect translation.
-- **Reference-free Model:** [`Unbabel/wmt23-cometkiwi-da-xl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) - This reference-free model adopts a regression approach and is built on top of the XLM-R XL architecture. It has undergone training on direct assessments from WMT17 to WMT20, as well as direct assessments from the WMT23 QE shared task. Similar to the default model, it also generates scores ranging from 0 to 1. This model has 3.5 billion parameters and requires a minimum of 15GB of GPU memory. For a more lightweight evaluation, please consult [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da), and if you seek the best overall performance consider [`Unbabel/wmt23-cometkiwi-da-xxl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) which requires a minimum of 44GB GPU memory.
+- **Reference-free Model:** [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da) - This reference-free model employs a regression approach and is built on top of InfoXLM. It has been trained using direct assessments from WMT17 to WMT20, as well as direct assessments from the MLQE-PE corpus. Similar to other models, it generates scores ranging from 0 to 1. For those interested, we also offer larger versions of this model: [`Unbabel/wmt23-cometkiwi-da-xl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) with 3.5 billion parameters and [`Unbabel/wmt23-cometkiwi-da-xxl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) with 10.7 billion parameters.
 
 If you intend to compare your results with papers published before 2022, it's likely that they used older evaluation models. In such cases, please refer to [`Unbabel/wmt20-comet-da`](https://huggingface.co/Unbabel/wmt20-comet-da) and [`Unbabel/wmt20-comet-qe-da`](https://huggingface.co/Unbabel/wmt20-comet-qe-da), which were the primary checkpoints used in previous versions (<2.0) of COMET.
 
