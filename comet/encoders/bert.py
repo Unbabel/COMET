@@ -90,12 +90,10 @@ class BERTEncoder(Encoder):
         cls, pretrained_model: str, load_pretrained_weights: bool = True
     ) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.
-
         Args:
             pretrained_model (str):Name of the pretrain model to be loaded.
             load_pretrained_weights (bool): If set to True loads the pretrained weights
                 from Hugging Face
-
         Returns:
             Encoder: XLMREncoder object.
         """
@@ -116,21 +114,28 @@ class BERTEncoder(Encoder):
         Returns:
             list: List of model parameters for all layers and the corresponding lr.
         """
-        # Embedding Layer
+        # Last layer keeps LR
         opt_parameters = [
+            {
+                "params": self.model.encoder.layer[-1].parameters(),
+                "lr": lr,
+            }
+        ]
+        # Decay at each layer.
+        for i in range(2, self.num_layers):
+            opt_parameters.append(
+                {
+                    "params": self.model.encoder.layer[-i].parameters(),
+                    "lr": lr * decay ** (i - 1),
+                }
+            )
+        # Embedding Layer
+        opt_parameters.append(
             {
                 "params": self.model.embeddings.parameters(),
                 "lr": lr * decay ** (self.num_layers),
             }
-        ]
-        # All layers
-        opt_parameters += [
-            {
-                "params": self.model.encoder.layer[i].parameters(),
-                "lr": lr * decay**i,
-            }
-            for i in range(self.num_layers - 2, 0, -1)
-        ]
+        )
         return opt_parameters
 
     def forward(

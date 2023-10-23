@@ -37,7 +37,7 @@ class MiniLMEncoder(XLMREncoder):
     ) -> None:
         super(Encoder, self).__init__()
         self.tokenizer = XLMRobertaTokenizerFast.from_pretrained(
-            pretrained_model, use_fast=True
+            "xlm-roberta-base", use_fast=True
         )
         if load_pretrained_weights:
             self.model = BertModel.from_pretrained(pretrained_model)

@@ -86,6 +86,8 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             loaded consecutively for each epoch. Defaults to None.
         validation_data (Optional[List[str]]): List of paths to validation data.
             Validation results are averaged across validation set. Defaults to None.
+        load_pretrained_weights (Bool): If set to False it avoids loading the weights
+            of the pretrained model (e.g. XLM-R) before it loads the COMET checkpoint
     """
 
     def __init__(
@@ -376,7 +378,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.unfreeze_encoder()
             self._frozen = False
 
-        self.log("train_loss", loss_value, on_step=True, on_epoch=True)
+        self.log(
+            "train_loss",
+            loss_value,
+            on_step=True,
+            on_epoch=True,
+            batch_size=batch_target.score.shape[0],
+        )
         return loss_value
 
     def validation_step(
@@ -385,7 +393,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         batch_nb: int,
         dataloader_idx: int,
     ) -> None:
-        """Pytorch Lightning validation step. Runs model and logs metircs.
+        """Pytorch Lightning validation step. Runs model and logs metrics.
 
         Args:
             batch (Tuple[dict, Target]): The output of your `prepare_sample` method.
@@ -440,7 +448,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
     def on_validation_epoch_end(self, *args, **kwargs) -> None:
         """Computes and logs metrics."""
-        self.log_dict(self.train_metrics.compute(), prog_bar=False, sync_dist=True)
+        self.log_dict(self.train_metrics.compute(), prog_bar=False)
         self.train_metrics.reset()
 
         val_metrics = []
@@ -448,7 +456,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             results = self.val_metrics[i].compute()
             self.val_metrics[i].reset()
             # Log to tensorboard the results for this validation set.
-            self.log_dict(results, prog_bar=False, sync_dist=True)
+            self.log_dict(results, prog_bar=False)
             val_metrics.append(results)
 
         average_results = {"val_" + k.split("_")[-1]: [] for k in val_metrics[0].keys()}
@@ -457,9 +465,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 average_results["val_" + k.split("_")[-1]].append(v)
 
         self.log_dict(
-            {k: sum(v) / len(v) for k, v in average_results.items()},
-            prog_bar=True,
-            sync_dist=True,
+            {k: sum(v) / len(v) for k, v in average_results.items()}, prog_bar=True
         )
 
     def setup(self, stage: str) -> None:
@@ -571,7 +577,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
         if devices is not None:
             assert len(devices) == gpus, AssertionError(
-                "List of devices must be same size as `gpus`"
+                "List of devices must be same size as `gpus` or None if `gpus=0`"
             )
         else:
             devices = gpus if gpus > 0 else None
@@ -616,7 +622,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             message=".*Consider increasing the value of the `num_workers` argument` .*",
         )
         trainer = ptl.Trainer(
-            devices=devices if gpus > 0 else "auto",
+            devices=devices,
             logger=False,
             callbacks=callbacks,
             accelerator=accelerator if gpus > 0 else "cpu",
@@ -647,13 +653,19 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         else:
             metadata = []
 
+        output = Prediction(scores=scores, system_score=sum(scores) / len(scores))
+
+        # Restore order of samples!
         if length_batching and gpus < 2:
-            scores = restore_list_order(scores, sort_ids)
-            output = Prediction(scores=scores, system_score=sum(scores) / len(scores))
+            output["scores"] = restore_list_order(scores, sort_ids)
             if metadata:
                 output["metadata"] = Prediction(
                     **{k: restore_list_order(v, sort_ids) for k, v in metadata.items()}
                 )
             return output
         else:
-            return Prediction(scores=scores, system_score=sum(scores) / len(scores))
+            # Add metadata to output
+            if metadata:
+                output["metadata"] = metadata
+
+            return output

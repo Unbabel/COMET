@@ -17,8 +17,7 @@ XLM-RoBERTa-XL Encoder
 ==============
     Pretrained XLM-RoBERTa-XL  encoder from Hugging Face.
 """
-from transformers import (XLMRobertaTokenizerFast, XLMRobertaXLConfig,
-                          XLMRobertaXLModel)
+from transformers import XLMRobertaTokenizerFast, XLMRobertaXLConfig, XLMRobertaXLModel
 
 from comet.encoders.base import Encoder
 from comet.encoders.xlmr import XLMREncoder

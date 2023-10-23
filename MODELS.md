@@ -4,6 +4,7 @@ Within COMET, there are several evaluation models available. The primary referen
 
 - **Default Model:** [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) - This model employs a reference-based regression approach and is built upon the XLM-R architecture. It has been trained on direct assessments from WMT17 to WMT20 and provides scores ranging from 0 to 1, where 1 signifies a perfect translation.
 - **Reference-free Model:** [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da) - This reference-free model employs a regression approach and is built on top of InfoXLM. It has been trained using direct assessments from WMT17 to WMT20, as well as direct assessments from the MLQE-PE corpus. Similar to other models, it generates scores ranging from 0 to 1. For those interested, we also offer larger versions of this model: [`Unbabel/wmt23-cometkiwi-da-xl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) with 3.5 billion parameters and [`Unbabel/wmt23-cometkiwi-da-xxl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) with 10.7 billion parameters.
+- **eXplainable COMET (XCOMET):** [`Unbabel/XCOMET-XXL`](https://huggingface.co/Unbabel/XCOMET-XXL) - Our latest model is trained to identify error spans and assign a final quality score, resulting in an explainable neural metric. We offer this version in XXL with 10.7 billion parameters, as well as the XL variant with 3.5 billion parameters ([`Unbabel/XCOMET-XL`](https://huggingface.co/Unbabel/XCOMET-XL)). These models have demonstrated the highest correlation with MQM and are our best performing evaluation models.
 
 If you intend to compare your results with papers published before 2022, it's likely that they used older evaluation models. In such cases, please refer to [Unbabel/wmt20-comet-da](https://huggingface.co/Unbabel/wmt20-comet-da) and [Unbabel/wmt20-comet-qe-da](https://huggingface.co/Unbabel/wmt20-comet-qe-da), which were the primary checkpoints used in previous versions (<2.0) of COMET.
 
@@ -13,6 +14,8 @@ If you intend to compare your results with papers published before 2022, it's li
 
 - [`Unbabel/unite-mup`](https://huggingface.co/Unbabel/unite-mup) - This is the original UniTE Metric proposed in the [UniTE: Unified Translation Evaluation](https://aclanthology.org/2022.acl-long.558/) paper.
 - [`Unbabel/wmt22-unite-da`](https://huggingface.co/Unbabel/wmt22-unite-da) - This model was trained for our paper [(Rei et al., ACL 2023)](https://aclanthology.org/2023.acl-short.94/) and it uses the same data as [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) thus, the outputed scores are between 0 and 1.
+- [`Unbabel/unite-xxl`](https://huggingface.co/Unbabel/unite-xxl) - xCOMET models [(Guerreiro et al. 2023)](https://arxiv.org/pdf/2310.10482.pdf) are training following a curriculum. The checkpoint resulting from the first phase of that curriculum (before the introduction of a sequence tagging task and MQM data) is a [UniTE Model](https://aclanthology.org/2022.acl-long.558/). An [XL version](https://huggingface.co/Unbabel/unite-xl) is also available.
+
 
 ## Older Models:
 

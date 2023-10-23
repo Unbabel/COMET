@@ -15,5 +15,9 @@ Starting at version 2.0 new models will be hosted on [Hugging Face Hub](https://
 | [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt22-cometkiwi-da) | [CC-BY-NC-SA](https://huggingface.co/Unbabel/wmt22-cometkiwi-da/blob/main/LICENSE) |
 | [`Unbabel/wmt23-cometkiwi-da-xl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) | [CC-BY-NC-SA](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl/blob/main/LICENSE) |
 | [`Unbabel/wmt23-cometkiwi-da-xxl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) | [CC-BY-NC-SA](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl/blob/main/LICENSE) |
+| [`Unbabel/unite-xl`](https://huggingface.co/Unbabel/unite-xl) | [CC-BY-NC-SA](https://huggingface.co/Unbabel/unite-xl/blob/main/LICENSE) |
+| [`Unbabel/unite-xxl`](https://huggingface.co/Unbabel/unite-xxl) | [CC-BY-NC-SA](https://huggingface.co/Unbabel/unite-xxl/blob/main/LICENSE) |
+| [`Unbabel/XCOMET-XL`](https://huggingface.co/Unbabel/XCOMET-XL) | [CC-BY-NC-SA](https://huggingface.co/Unbabel/XCOMET-XL/blob/main/LICENSE) |
+| [`Unbabel/XCOMET-XXL`](https://huggingface.co/Unbabel/XCOMET-XXL) | [CC-BY-NC-SA](https://huggingface.co/Unbabel/XCOMET-XXL/blob/main/LICENSE) |
 
 Please check the `models licenses` before using them.

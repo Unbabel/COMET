@@ -23,6 +23,7 @@ from huggingface_hub import snapshot_download
 
 from .base import CometModel
 from .multitask.unified_metric import UnifiedMetric
+from .multitask.xcomet_metric import XCOMETMetric
 from .ranking.ranking_metric import RankingMetric
 from .regression.referenceless import ReferencelessRegression
 from .regression.regression_metric import RegressionMetric
@@ -34,6 +35,7 @@ str2model = {
     "regression_metric": RegressionMetric,
     "ranking_metric": RankingMetric,
     "unified_metric": UnifiedMetric,
+    "xcomet_metric": XCOMETMetric,
 }
 
 
