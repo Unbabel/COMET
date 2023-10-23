@@ -5,7 +5,6 @@ from comet.encoders.rembert import RemBERTEncoder
 
 
 class TestRemBERTEncoder(unittest.TestCase):
-
     bert = RemBERTEncoder.from_pretrained("google/rembert")
 
     def test_num_layers(self):
@@ -34,11 +33,14 @@ class TestRemBERTEncoder(unittest.TestCase):
 
     def test_concat_sequences(self):
         """Basic testcase to check if we can joint two sequences into a contiguous input"""
-        translations = ["Bem vindos ao <v>COMET</v>", "Isto é um exemplo!"]
+        translations = ["Bem vindos ao COMET", "Isto é um exemplo!"]
         source = ["Welcome to COMET!", "This is an example!"]
-        self.bert.add_span_tokens("<v>", "</v>")
+        annotations = [
+            [{"start": 14, "end": 19, "text": "COMET", "severity": "major"}],
+            [],
+        ]
         translations_input = self.bert.prepare_sample(
-            translations, word_level_training=True
+            translations, word_level=True, annotations=annotations
         )
         source_input = self.bert.prepare_sample(source)
         expected_tokens = [
@@ -48,7 +50,6 @@ class TestRemBERTEncoder(unittest.TestCase):
                 16833,
                 759,
                 1425,
-                573,
                 148577,
                 862,
                 313,
@@ -59,25 +60,23 @@ class TestRemBERTEncoder(unittest.TestCase):
                 646,
                 313,
             ],
-            [312, 58378, 921, 835, 17293, 646, 313, 1357, 619, 666, 7469, 646, 313, 0, 0],
+            [312, 58378, 921, 835, 17293, 646, 313, 1357, 619, 666, 7469, 646, 313, 0],
         ]
-        expected_in_span_mask = [
-            [0, 0, 0, 0, 0, 0, 1,  1,  0, -1, -1, -1, -1, -1, -1],
-            [0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1],
+        expected_labels = [
+            [0, 0, 0, 0, 0, 2, 2, 0, -1, -1, -1, -1, -1, -1],
+            [0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1],
         ]
         expected_token_type_ids = [
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
-            [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
         ]
-        seq_size = [15, 13]
+        seq_size = [14, 13]
         continuous_input = self.bert.concat_sequences(
-            [translations_input, source_input], return_in_span_mask=True
+            [translations_input, source_input], return_label_ids=True
         )
         self.assertListEqual(continuous_input[0]["input_ids"].tolist(), expected_tokens)
         self.assertListEqual(
             continuous_input[0]["token_type_ids"].tolist(), expected_token_type_ids
         )
         self.assertListEqual(continuous_input[1].tolist(), seq_size)
-        self.assertListEqual(
-            continuous_input[0]["in_span_mask"].tolist(), expected_in_span_mask
-        )
+        self.assertListEqual(continuous_input[0]["label_ids"].tolist(), expected_labels)

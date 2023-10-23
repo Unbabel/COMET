@@ -8,7 +8,11 @@
   <a href="https://github.com/psf/black"><img alt="Code Style" src="https://img.shields.io/badge/code%20style-black-black" /></a>
 </p>
 
-**NEWS:** We release [CometKiwi -XL (3.5B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) and [-XXL (10.7B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) QE models. These models were the best performing QE models on the WMT23 QE shared task. Please check all available models [here](https://github.com/Unbabel/COMET/blob/master/MODELS.md)
+**NEWS:** 
+1) We released our new eXplainable COMET models ([XCOMET-XL](https://huggingface.co/Unbabel/XCOMET-XL) and [-XXL](https://huggingface.co/Unbabel/XCOMET-XXL)) which along with quality scores detects which errors in the translation are minor, major or critical according to MQM typology
+2) We release [CometKiwi -XL (3.5B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) and [-XXL (10.7B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) QE models. These models were the best performing QE models on the WMT23 QE shared task. 
+
+Please check all available models [here](https://github.com/Unbabel/COMET/blob/master/MODELS.md)
  
 # Quick Installation
 
@@ -54,6 +58,12 @@ Basic scoring command:
 comet-score -s src.txt -t hyp1.txt -r ref.txt
 ```
 > you can set the number of gpus using `--gpus` (0 to test on CPU).
+
+For better error analysis, you can use XCOMET models such as [`Unbabel/XCOMET-XL`](https://huggingface.co/Unbabel/XCOMET-XL), you can export the identified errors using the `--to_json` flag:
+
+```bash
+comet-score -s src.txt -t hyp1.txt -r ref.txt --model Unbabel/XCOMET-XL --to_json output.json
+```
 
 Scoring multiple systems:
 ```bash
@@ -113,6 +123,9 @@ Within COMET, there are several evaluation models available. You can refer to th
 
 - **Default Model:** [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da) - This model employs a reference-based regression approach and is built upon the XLM-R architecture. It has been trained on direct assessments from WMT17 to WMT20 and provides scores ranging from 0 to 1, where 1 signifies a perfect translation.
 - **Reference-free Model:** [`Unbabel/wmt22-cometkiwi-da`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da) - This reference-free model employs a regression approach and is built on top of InfoXLM. It has been trained using direct assessments from WMT17 to WMT20, as well as direct assessments from the MLQE-PE corpus. Similar to other models, it generates scores ranging from 0 to 1. For those interested, we also offer larger versions of this model: [`Unbabel/wmt23-cometkiwi-da-xl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) with 3.5 billion parameters and [`Unbabel/wmt23-cometkiwi-da-xxl`](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) with 10.7 billion parameters.
+- **eXplainable COMET (XCOMET):** [`Unbabel/XCOMET-XXL`](https://huggingface.co/Unbabel/XCOMET-XXL) - Our latest model is trained to identify error spans and assign a final quality score, resulting in an explainable neural metric. We offer this version in XXL with 10.7 billion parameters, as well as the XL variant with 3.5 billion parameters ([`Unbabel/XCOMET-XL`](https://huggingface.co/Unbabel/XCOMET-XL)). These models have demonstrated the highest correlation with MQM and are our best performing evaluation models.
+
+Please be aware that different models may be subject to varying licenses. To learn more, kindly refer to the [LICENSES.models](LICENSE.models.md) and model licenses sections.
 
 If you intend to compare your results with papers published before 2022, it's likely that they used older evaluation models. In such cases, please refer to [`Unbabel/wmt20-comet-da`](https://huggingface.co/Unbabel/wmt20-comet-da) and [`Unbabel/wmt20-comet-qe-da`](https://huggingface.co/Unbabel/wmt20-comet-qe-da), which were the primary checkpoints used in previous versions (<2.0) of COMET.
 
@@ -124,7 +137,7 @@ When using COMET to evaluate machine translation, it's important to understand h
 
 In general, COMET models are trained to predict quality scores for translations. These scores are typically normalized using a [z-score transformation](https://simplypsychology.org/z-score.html) to account for individual differences among annotators. While the raw score itself does not have a direct interpretation, it is useful for ranking translations and systems according to their quality.
 
-However, for the latest COMET models like [`Unbabel/wmt22-comet-da`](https://huggingface.co/Unbabel/wmt22-comet-da), we have introduced a new training approach that scales the scores between 0 and 1. This makes it easier to interpret the scores: a score close to 1 indicates a high-quality translation, while a score close to 0 indicates a translation that is no better than random chance.
+However, since 2022 we have introduced a new training approach that scales the scores between 0 and 1. This makes it easier to interpret the scores: a score close to 1 indicates a high-quality translation, while a score close to 0 indicates a translation that is no better than random chance. Also, with the introduction of XCOMET models we can now analyse which text spans are part of minor, major or critical errors according to the MQM typology.
 
 It's worth noting that when using COMET to compare the performance of two different translation systems, it's important to run the `comet-compare` command to obtain statistical significance measures. This command compares the output of two systems using a statistical hypothesis test, providing an estimate of the probability that the observed difference in scores between the systems is due to chance. This is an important step to ensure that any differences in scores between systems are statistically significant.
 
@@ -132,7 +145,7 @@ Overall, the added interpretability of scores in the latest COMET models, combin
 
 ## Languages Covered:
 
-All the above mentioned models are build on top of XLM-R which cover the following languages:
+All the above mentioned models are build on top of XLM-R (variants) which cover the following languages:
 
 Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, Belarusian, Bengali, Bengali Romanized, Bosnian, Breton, Bulgarian, Burmese, Burmese, Catalan, Chinese (Simplified), Chinese (Traditional), Croatian, Czech, Danish, Dutch, English, Esperanto, Estonian, Filipino, Finnish, French, Galician, Georgian, German, Greek, Gujarati, Hausa, Hebrew, Hindi, Hindi Romanized, Hungarian, Icelandic, Indonesian, Irish, Italian, Japanese, Javanese, Kannada, Kazakh, Khmer, Korean, Kurdish (Kurmanji), Kyrgyz, Lao, Latin, Latvian, Lithuanian, Macedonian, Malagasy, Malay, Malayalam, Marathi, Mongolian, Nepali, Norwegian, Oriya, Oromo, Pashto, Persian, Polish, Portuguese, Punjabi, Romanian, Russian, Sanskri, Scottish, Gaelic, Serbian, Sindhi, Sinhala, Slovak, Slovenian, Somali, Spanish, Sundanese, Swahili, Swedish, Tamil, Tamil Romanized, Telugu, Telugu Romanized, Thai, Turkish, Ukrainian, Urdu, Urdu Romanized, Uyghur, Uzbek, Vietnamese, Welsh, Western, Frisian, Xhosa, Yiddish.
 
@@ -143,8 +156,15 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 ```python
 from comet import download_model, load_from_checkpoint
 
-model_path = download_model("Unbabel/wmt22-comet-da")
+# Choose your model from Hugging Face Hub
+model_path = download_model("Unbabel/XCOMET-XXL")
+# or for example:
+# model_path = download_model("Unbabel/wmt22-comet-da")
+
+# Load the model checkpoint:
 model = load_from_checkpoint(model_path)
+
+# Data must be in the following format:
 data = [
     {
         "src": "10 到 15 分钟可以送到吗",
@@ -157,8 +177,14 @@ data = [
         "ref": "Can it be delivered between 10 to 15 minutes?"
     }
 ]
+# Call predict method:
 model_output = model.predict(data, batch_size=8, gpus=1)
-print(model_output.to_tuple())
+print(model_output)
+print(model_output.scores) # sentence-level scores
+print(model_output.system_score) # system-level score
+
+# Not all COMET models return metadata with detected errors.
+print(model_output.metadata.error_spans) # detected error spans
 ```
 
 # Train your own Metric: 
@@ -181,7 +207,7 @@ In order to run the toolkit tests you must run the following command:
 
 ```bash
 poetry run coverage run --source=comet -m unittest discover
-poetry run coverage report -m # Expected coverage 80%
+poetry run coverage report -m # Expected coverage 76%
 ```
 
 **Note:** Testing on CPU takes a long time
@@ -189,6 +215,8 @@ poetry run coverage report -m # Expected coverage 80%
 # Publications
 
 If you use COMET please cite our work **and don't forget to say which model you used!**
+
+- [xCOMET: Transparent Machine Translation Evaluation through Fine-grained Error Detection](https://arxiv.org/pdf/2310.10482.pdf)
 
 - [Scaling up CometKiwi: Unbabel-IST 2023 Submission for the Quality Estimation Shared Task](https://arxiv.org/pdf/2309.11925.pdf)
 

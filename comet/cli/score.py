@@ -199,10 +199,16 @@ def score_command() -> None:
             length_batching=(not cfg.disable_length_batching),
         )
         seg_scores = outputs.scores
+        if "metadata" in outputs and "error_spans" in outputs.metadata:
+            errors = outputs.metadata.error_spans
+        else:
+            errors = []
+        
         if len(cfg.translations) > 1:
             seg_scores = np.array_split(seg_scores, len(cfg.translations))
             sys_scores = [sum(split) / len(split) for split in seg_scores]
             data = np.array_split(data, len(cfg.translations))
+            errors = np.array_split(outputs.metadata.errors, len(cfg.translations))
         else:
             sys_scores = [
                 outputs.system_score,
@@ -210,13 +216,14 @@ def score_command() -> None:
             seg_scores = [
                 seg_scores,
             ]
+            errors = [errors, ]
             data = [
                 np.array(data),
             ]
     else:
         # If not using Multiple GPUs we will score each system independently
         # to maximize cache hits!
-        seg_scores, sys_scores = [], []
+        seg_scores, sys_scores, errors = [], [], []
         new_data = []
         for i in range(len(cfg.translations)):
             sys_data = {k: v[i] for k, v in data.items()}
@@ -233,6 +240,8 @@ def score_command() -> None:
             )
             seg_scores.append(outputs.scores)
             sys_scores.append(outputs.system_score)
+            if "metadata" in outputs and "error_spans" in outputs.metadata:
+                errors.append(outputs.metadata.error_spans)
         data = new_data
 
     files = [path_fr.rel_path for path_fr in cfg.translations]
@@ -240,6 +249,9 @@ def score_command() -> None:
     for i in range(len(data[files[0]])):  # loop over (src, ref)
         for j in range(len(files)):  # loop of system
             data[files[j]][i]["COMET"] = seg_scores[j][i]
+            if errors:
+                data[files[j]][i]["errors"] = errors[j][i]
+                
             if not cfg.only_system:
                 print(
                     "{}\tSegment {}\tscore: {:.4f}".format(

@@ -20,8 +20,7 @@ XLM-RoBERTa Encoder
 from typing import Dict
 
 import torch
-from transformers import (XLMRobertaConfig, XLMRobertaModel,
-                          XLMRobertaTokenizerFast)
+from transformers import XLMRobertaConfig, XLMRobertaModel, XLMRobertaTokenizerFast
 
 from comet.encoders.base import Encoder
 from comet.encoders.bert import BERTEncoder
