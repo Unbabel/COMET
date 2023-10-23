@@ -575,12 +575,14 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         if mc_dropout > 0:
             self.set_mc_dropout(mc_dropout)
 
-        if devices is not None:
+        if gpus > 0 and devices is not None:
             assert len(devices) == gpus, AssertionError(
                 "List of devices must be same size as `gpus` or None if `gpus=0`"
             )
-        else:
-            devices = gpus if gpus > 0 else None
+        elif gpus > 0:
+            devices = gpus
+        else: # gpu = 0
+            devices = "auto"
 
         sampler = SequentialSampler(samples)
         if length_batching and gpus < 2:
