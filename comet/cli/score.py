@@ -59,6 +59,7 @@ from pytorch_lightning import seed_everything
 from sacrebleu.utils import get_reference_files, get_source_file
 
 from comet import download_model, load_from_checkpoint
+from comet.models.utils import split_sequence_into_sublists
 
 
 def score_command() -> None:
@@ -208,7 +209,7 @@ def score_command() -> None:
             seg_scores = np.array_split(seg_scores, len(cfg.translations))
             sys_scores = [sum(split) / len(split) for split in seg_scores]
             data = np.array_split(data, len(cfg.translations))
-            errors = np.array_split(outputs.metadata.errors, len(cfg.translations))
+            errors = split_sequence_into_sublists(errors, len(cfg.translations))
         else:
             sys_scores = [
                 outputs.system_score,
@@ -249,7 +250,7 @@ def score_command() -> None:
     for i in range(len(data[files[0]])):  # loop over (src, ref)
         for j in range(len(files)):  # loop of system
             data[files[j]][i]["COMET"] = seg_scores[j][i]
-            if errors:
+            if errors and errors[j] and errors[j][i]:
                 data[files[j]][i]["errors"] = errors[j][i]
                 
             if not cfg.only_system:
