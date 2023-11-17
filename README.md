@@ -151,6 +151,10 @@ Afrikaans, Albanian, Amharic, Arabic, Armenian, Assamese, Azerbaijani, Basque, B
 
 **Thus, results for language pairs containing uncovered languages are unreliable!**
 
+### COMET for African Languages:
+
+If you are interested in COMET metrics for african languages please visit [afriCOMET](https://github.com/masakhane-io/africomet). 
+
 ## Scoring within Python:
 
 ```python
