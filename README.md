@@ -9,8 +9,9 @@
 </p>
 
 **NEWS:** 
-1) We released our new eXplainable COMET models ([XCOMET-XL](https://huggingface.co/Unbabel/XCOMET-XL) and [-XXL](https://huggingface.co/Unbabel/XCOMET-XXL)) which along with quality scores detects which errors in the translation are minor, major or critical according to MQM typology
-2) We release [CometKiwi -XL (3.5B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) and [-XXL (10.7B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) QE models. These models were the best performing QE models on the WMT23 QE shared task. 
+1) [AfriCOMET](https://arxiv.org/pdf/2311.09828.pdf) released, a new model to embrace under-resourced African Languages.
+2) We released our new eXplainable COMET models ([XCOMET-XL](https://huggingface.co/Unbabel/XCOMET-XL) and [-XXL](https://huggingface.co/Unbabel/XCOMET-XXL)) which along with quality scores detects which errors in the translation are minor, major or critical according to MQM typology
+3) We release [CometKiwi -XL (3.5B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) and [-XXL (10.7B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) QE models. These models were the best performing QE models on the WMT23 QE shared task.
 
 Please check all available models [here](https://github.com/Unbabel/COMET/blob/master/MODELS.md)
  
