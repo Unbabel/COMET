@@ -649,7 +649,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             # If we are not in the GLOBAL RANK we will return None
             exit()
 
-        scores = torch.cat([pred.scores for pred in predictions], dim=0).tolist()
+        scores = torch.cat([pred["scores"] for pred in predictions], dim=0).tolist()
         if "metadata" in predictions[0]:
             metadata = flatten_metadata([pred.metadata for pred in predictions])
         else:
