@@ -53,6 +53,7 @@ import logging
 import os
 
 import numpy as np
+import torch
 from jsonargparse import ArgumentParser
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
@@ -61,6 +62,7 @@ from sacrebleu.utils import get_reference_files, get_source_file
 from comet import download_model, load_from_checkpoint
 from comet.models.utils import split_sequence_into_sublists
 
+torch.set_float32_matmul_precision('high')
 
 def score_command() -> None:
     parser = ArgumentParser(description="Command for scoring MT systems.")

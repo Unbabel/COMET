@@ -55,6 +55,7 @@ from tqdm import tqdm
 
 from comet.models import RegressionMetric, download_model, load_from_checkpoint
 
+torch.set_float32_matmul_precision('high')
 
 def build_embeddings(
     sources: List[str],

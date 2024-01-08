@@ -63,6 +63,7 @@ from itertools import combinations
 from typing import Dict, Generator, List, Tuple, Union
 
 import numpy as np
+import torch
 from jsonargparse import ArgumentParser, Namespace
 from jsonargparse.typing import Path_fr
 from pytorch_lightning import seed_everything
@@ -71,6 +72,8 @@ from scipy import stats
 from tabulate import tabulate
 
 from comet import download_model, load_from_checkpoint
+
+torch.set_float32_matmul_precision('high')
 
 Statistical_test_info = Dict[str, Union[Path_fr, Dict[str, float]]]
 
