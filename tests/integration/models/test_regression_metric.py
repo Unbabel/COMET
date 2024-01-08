@@ -84,5 +84,6 @@ class TestRegressionMetric(unittest.TestCase):
         predictions = trainer.predict(
             ckpt_path="best", dataloaders=dataloader, return_predictions=True
         )
-        y_hat = torch.cat([p.scores for p in predictions], dim=0).tolist()
+        breakpoint()
+        y_hat = torch.cat([p["scores"] for p in predictions], dim=0).tolist()
         assert pearsonr(y_hat, y)[0] > 0.85

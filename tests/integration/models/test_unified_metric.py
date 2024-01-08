@@ -87,7 +87,7 @@ class TestUnifiedMetric(unittest.TestCase):
         predictions = trainer.predict(
             ckpt_path="best", dataloaders=dataloader, return_predictions=True
         )
-        y_hat = torch.cat([p.scores for p in predictions], dim=0).tolist()
+        y_hat = torch.cat([p["scores"] for p in predictions], dim=0).tolist()
         assert pearsonr(y_hat, y)[0] > 0.9
 
     def test_regression_without_references(self):
@@ -153,6 +153,6 @@ class TestUnifiedMetric(unittest.TestCase):
         predictions = trainer.predict(
             ckpt_path="best", dataloaders=dataloader, return_predictions=True
         )
-        y_hat = torch.cat([p.scores for p in predictions], dim=0).tolist()
+        y_hat = torch.cat([p["scores"] for p in predictions], dim=0).tolist()
         assert pearsonr(y_hat, y)[0] > 0.9
 
