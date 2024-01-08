@@ -48,7 +48,7 @@ torchmetrics = "^0.10.2"
 sacrebleu = "^2.0.0"
 scipy = "^1.5.4"
 entmax = "^1.1"
-huggingface-hub = "^0.16.0"
+huggingface-hub = ">=0.19.3,<1.0"
 protobuf = "^4.24.4"
 
 [tool.poetry.dev-dependencies]
