@@ -97,7 +97,7 @@ class CustomWriter(BasePredictionWriter):
         files = sorted(os.listdir(self.output_dir))
         pred = flatten_predictions(
             [
-                flatten_predictions(torch.load(os.path.join(self.output_dir, f))[0])
+                flatten_predictions(torch.load(os.path.join(self.output_dir, f)))
                 for f in files
                 if "pred" in f
             ]
