@@ -183,3 +183,15 @@ def restore_list_order(sorted_list, sort_ids):
     for i, s in zip(sort_ids, sorted_list):
         unsorted_list[i] = s
     return unsorted_list
+
+
+def split_sequence_into_sublists(sequence, n):
+    elements_per_chunk, remainder = divmod(len(sequence), n)
+    return [
+        sequence[
+            i * elements_per_chunk
+            + min(i, remainder) : (i + 1) * elements_per_chunk
+            + min(i + 1, remainder)
+        ]
+        for i in range(n)
+    ]
