@@ -86,7 +86,7 @@ class CustomWriter(BasePredictionWriter):
 
         def flatten_predictions(predictions):
             flatten_pred = Prediction(
-                scores=torch.cat([pred.scores for pred in predictions], dim=0)
+                scores=torch.cat([pred["scores"] for pred in predictions], dim=0)
             )
             if "metadata" in predictions[0]:
                 flatten_pred["metadata"] = flatten_metadata(
