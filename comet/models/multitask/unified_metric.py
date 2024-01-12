@@ -384,7 +384,7 @@ class UnifiedMetric(CometModel):
         """
         inputs = {k: [d[k] for d in sample] for k in sample[0]}
         input_sequences = [
-            self.encoder.prepare_sample(inputs["mt"], self.word_level, None),
+            self.encoder.prepare_sample(inputs["mt"], self.word_level, inputs["errors"]),
         ]
 
         src_input, ref_input = False, False
