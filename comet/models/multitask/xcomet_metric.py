@@ -146,7 +146,7 @@ class XCOMETMetric(UnifiedMetric):
                     elif annotation["severity"] == "major":
                         sentence_score += 5
                     elif annotation["severity"] == "critical":
-                        sentence_score += 10
+                        sentence_score += 25
 
                 if sentence_score > 25:
                     sentence_score = 25
@@ -154,7 +154,7 @@ class XCOMETMetric(UnifiedMetric):
                 scores.append(sentence_score)
 
             # Rescale between 0 and 1
-            scores = (torch.tensor(scores) * -1 + 25) / 25
+            #scores = (torch.tensor(scores) * -1 + 25) / 25
             return scores
 
         # XCOMET is suposed to be used with a reference thus 3 different inputs.
