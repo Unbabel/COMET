@@ -134,6 +134,8 @@ Also, [UniTE Metric](https://aclanthology.org/2022.acl-long.558/) developed by t
 
 ## Interpreting Scores:
 
+**New:** An excellent reference for learning how to interpret machine translation metrics is the analysis paper by Kocmi et al. (2024), available [at this link.](https://arxiv.org/pdf/2401.06760.pdf)
+
 When using COMET to evaluate machine translation, it's important to understand how to interpret the scores it produces.
 
 In general, COMET models are trained to predict quality scores for translations. These scores are typically normalized using a [z-score transformation](https://simplypsychology.org/z-score.html) to account for individual differences among annotators. While the raw score itself does not have a direct interpretation, it is useful for ranking translations and systems according to their quality.
