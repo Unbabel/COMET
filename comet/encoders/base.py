@@ -17,14 +17,19 @@ Encoder Model base
     Module defining the common interface between all pretrained encoder models.
 """
 import abc
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
+from tokenizers import Encoding
+
+from comet.models.utils import LabelSet
 
 
 class Encoder(nn.Module, metaclass=abc.ABCMeta):
     """Base class for an encoder model."""
+
+    labelset = LabelSet()
 
     @property
     @abc.abstractmethod
@@ -119,71 +124,40 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         """
         pass
 
-    def add_span_tokens(self, begin_of_span: str, end_of_span: str) -> None:
-        """For sequence tagging the training data will have special tokens
-        delimiting the annotation spans such as <v> and </v>. We need to add those to the
-        vocab.
+    def align_tokens_and_annotations(
+        self, tokenized: Encoding, annotations: List[dict]
+    ) -> Tuple[List[int], List[int]]:
+        """Inspired by: https://github.com/LightTag/sequence-labeling-with-transformers/"""
+        tokens = tokenized.tokens
+        aligned_labels = ["O"] * len(tokens)
+        for anno in annotations:
+            # A set that stores the token indices of the annotation
+            annotation_token_ix_set = set()
+            for char_ix in range(anno["start"], anno["end"]):
+                token_ix = tokenized.char_to_token(char_ix)
+                if token_ix is not None:
+                    annotation_token_ix_set.add(token_ix)
+            for _, token_ix in enumerate(sorted(annotation_token_ix_set)):
+                prefix = "I"
+                aligned_labels[token_ix] = f"{prefix}-{anno['severity']}"
 
-        Args:
-            begin_of_span (str): Token that marks a begin of span, e.g: <v>.
-            end_of_span (src): Token that marks a end of span, e.g: </v>.
-        """
-        tokens = [begin_of_span, end_of_span]
-        num_added_toks = self.tokenizer.add_tokens(tokens)
-        assert len(tokens) == num_added_toks
-        self.span_tokens = self.tokenizer.get_added_vocab()
-        self.begin_of_span_id = self.span_tokens[begin_of_span]
-        self.end_of_span_id = self.span_tokens[end_of_span]
-
-    def extract_tag_spans(self, input_ids: List[int]) -> Tuple[List[int], List[int]]:
-        """When doing sequence tagging we will encode sentences with annotation spans
-        that are marked in text with special tokens (e.g <v> and </v>). Everything in
-        between those delimiters will receive a label 1 while other tokens will receive
-        a label 0.
-
-        Args:
-            begin_of_span (str): Token that marks a begin of span, e.g: <v>.
-            end_of_span (src): Token that marks a end of span, e.g: </v>.
-
-        Returns:
-            Tuple[List[int], List[int]]: the input_ids without the begin_of_span and
-                end_of_span token ids and a 'in_span_mask' where each token within a
-                span is assigned a value 1
-        """
-        token_ids, in_span_mask = [], []
-        for i in range(len(input_ids)):
-            in_span = 0
-            tag_seq, input_tokens = [], []
-            for j in range(len(input_ids[i])):
-                if input_ids[i][j] == self.begin_of_span_id:
-                    in_span += 1
-
-                elif input_ids[i][j] == self.end_of_span_id:
-                    in_span -= 1
-
-                elif in_span > 0:
-                    input_tokens.append(input_ids[i][j])
-                    tag_seq.append(1)
-
-                else:
-                    input_tokens.append(input_ids[i][j])
-                    tag_seq.append(0)
-
-            assert len(tag_seq) == len(input_tokens)
-            if (self.begin_of_span_id in input_tokens) or (
-                self.end_of_span_id in input_tokens
-            ):
+        def get_label_id(item):
+            """Aux function that replaces the `get` function from labels_to_id
+            dictionary to raise an exception when a label is not found.
+            """
+            label = self.labelset.labels_to_id.get(item)
+            if label is None:
                 raise Exception(
-                    "Malformed sequence span found in {}".format(
-                        self.tokenizer.decode(input_tokens)
-                    )
+                    f"{label} does not exist in self.labelset: {self.labelset.labels_to_id.keys()}"
                 )
+            return label
 
-            token_ids.append(input_tokens)
-            in_span_mask.append(tag_seq)
-        return token_ids, in_span_mask
+        #print(aligned_labels)
+        return list(map(get_label_id, aligned_labels))
 
-    def subword_tokenize(self, sample: List[str]) -> Dict[str, torch.Tensor]:
+    def subword_tokenize(
+        self, sample: List[str], annotations: List[dict]
+    ) -> Dict[str, torch.Tensor]:
         """Segment each token into subwords while keeping track of
         token boundaries and convert subwords into IDs.
 
@@ -199,34 +173,48 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
             truncation=True,
             max_length=self.max_positions - 2,
         )
-        input_ids, in_span_mask = self.extract_tag_spans(encoder_input.input_ids)
+        input_ids, offsets, label_ids = [], [], []
+        for i in range(len(sample)):
+            tokenized_text, sent_annot = encoder_input[i], annotations[i]
+            input_ids.append(tokenized_text.ids)
+            label_ids.append(
+                self.align_tokens_and_annotations(tokenized_text, sent_annot)
+            )
+            offsets.append(tokenized_text.offsets)
+
         attention_mask = [[1 for _ in seq] for seq in input_ids]
         max_length = max([len(l) for l in input_ids])
         input_ids = self.pad_list(input_ids, max_length, self.tokenizer.pad_token_id)
-        in_span_mask = self.pad_list(in_span_mask, max_length, -1)
+        label_ids = self.pad_list(label_ids, max_length, -1)
         attention_mask = self.pad_list(attention_mask, max_length, 0)
         return {
             "input_ids": torch.tensor(input_ids),
-            "in_span_mask": torch.tensor(in_span_mask),
+            "label_ids": torch.tensor(label_ids),
             "attention_mask": torch.tensor(attention_mask),
+            "offsets": offsets,  # Used during inference
         }
 
     def prepare_sample(
-        self, sample: List[str], word_level_training: bool = False
+        self,
+        sample: List[str],
+        word_level: bool = False,
+        annotations: Optional[List[dict]] = None,
     ) -> Dict[str, torch.Tensor]:
         """Receives a list of strings and applies tokenization and vectorization.
 
         Args:
             sample (List[str]): List with text segments to be tokenized and padded.
-            word_level_training (bool, optional): True for subword tokenization.
+            word_level (bool, optional): True for subword tokenization.
                 Defaults to False.
 
         Returns:
             Dict[str, torch.Tensor]: dict with 'input_ids', 'attention_mask' and
                 'subword_mask' if word_level_training=True
         """
-        if word_level_training:
-            return self.subword_tokenize(sample)
+        if word_level:
+            if annotations is None:
+                annotations = [[]] * len(sample)
+            return self.subword_tokenize(sample, annotations)
         else:
             tokenizer_output = self.tokenizer(
                 sample,
@@ -275,14 +263,14 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         return torch.cat((tensor, padding), dim=0)
 
     def concat_sequences(
-        self, inputs: List[Dict[str, torch.Tensor]], return_in_span_mask=False
+        self, inputs: List[Dict[str, torch.Tensor]], return_label_ids=False
     ) -> Dict[str, torch.Tensor]:
         """Receives a list of model input sentences and concatenates them into
         one single sequence.
 
         Args:
             inputs (List[Dict[str, torch.Tensor]]): List of model inputs
-            return_in_span_mask (bool, optional): For word-level models we also need to
+            return_label_ids (bool, optional): For word-level models we also need to
                 pad in_span masks. Defaults to False.
 
         Returns:
@@ -333,15 +321,16 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         lengths = torch.tensor(lengths, dtype=torch.long)
         padded = torch.stack(padded, dim=0).contiguous()
         attention_mask = torch.arange(max_len)[None, :] < lengths[:, None]
-        if return_in_span_mask:
-            in_span_mask = [
-                self.pad_tensor(t, max_len, -1) for t in inputs[0]["in_span_mask"]
+        if return_label_ids:
+            label_ids = [
+                self.pad_tensor(t, max_len, -1) for t in inputs[0]["label_ids"]
             ]
-            in_span_mask = torch.stack(in_span_mask, dim=0).contiguous()
+            label_ids = torch.stack(label_ids, dim=0).contiguous()
             encoder_input = {
                 "input_ids": padded,
                 "attention_mask": attention_mask,
-                "in_span_mask": in_span_mask,
+                "label_ids": label_ids,
+                "mt_offsets": inputs[0]["offsets"],  # Used during inference
             }
 
         else:

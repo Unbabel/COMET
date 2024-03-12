@@ -86,7 +86,7 @@ class CustomWriter(BasePredictionWriter):
 
         def flatten_predictions(predictions):
             flatten_pred = Prediction(
-                scores=torch.cat([pred.scores for pred in predictions], dim=0)
+                scores=torch.cat([pred["scores"] for pred in predictions], dim=0)
             )
             if "metadata" in predictions[0]:
                 flatten_pred["metadata"] = flatten_metadata(
@@ -97,7 +97,7 @@ class CustomWriter(BasePredictionWriter):
         files = sorted(os.listdir(self.output_dir))
         pred = flatten_predictions(
             [
-                flatten_predictions(torch.load(os.path.join(self.output_dir, f))[0])
+                flatten_predictions(torch.load(os.path.join(self.output_dir, f)))
                 for f in files
                 if "pred" in f
             ]

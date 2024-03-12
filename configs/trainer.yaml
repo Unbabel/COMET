@@ -1,43 +1,40 @@
 class_path: pytorch_lightning.trainer.trainer.Trainer
 init_args:
   accelerator: gpu
-  devices: 1
-  accumulate_grad_batches: 1
-  amp_backend: native
-  amp_level: null
-  auto_lr_find: False
-  auto_scale_batch_size: False
-  auto_select_gpus: False
+  devices: 2
+  strategy: ddp # Uncomment this line for distributed training
+  #precision: 16
+  accumulate_grad_batches: 8
   benchmark: null
   check_val_every_n_epoch: 1
   default_root_dir: null
   deterministic: False
   fast_dev_run: False
-  gradient_clip_val: 1.0
-  gradient_clip_algorithm: norm
-  limit_train_batches: 1.0
-  limit_val_batches: 1.0
-  limit_test_batches: 1.0
-  limit_predict_batches: 1.0
-  log_every_n_steps: 50
-  profiler: null
-  overfit_batches: 0
-  plugins: null
-  precision: 16
-  max_epochs: 4
+  max_epochs: 5
   min_epochs: 1
   max_steps: -1
   min_steps: null
   max_time: null
-  num_nodes: 1
-  num_sanity_val_steps: 10
-  reload_dataloaders_every_n_epochs: 0
-  replace_sampler_ddp: True
-  sync_batchnorm: False
-  detect_anomaly: False
-  tpu_cores: null
-  track_grad_norm: -1
+  limit_train_batches: 1.0
+  limit_val_batches: 1.0
+  limit_test_batches: 1.0
+  limit_predict_batches: 1.0
+  overfit_batches: 0
   val_check_interval: 1.0
-  enable_model_summary: True
-  move_metrics_to_cpu: True
-  multiple_trainloader_mode: max_size_cycle
+  check_val_every_n_epoch: 1
+  num_sanity_val_steps: 3
+  log_every_n_steps: 50
+  enable_progress_bar: true
+  enable_model_summary: true
+  gradient_clip_val: 1.0
+  gradient_clip_algorithm: norm
+  deterministic: false
+  benchmark: null
+  inference_mode: true
+  use_distributed_sampler: true
+  profiler: null
+  detect_anomaly: false
+  barebones: false
+  sync_batchnorm: false
+  reload_dataloaders_every_n_epochs: 0
+  default_root_dir: null

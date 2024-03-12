@@ -5,7 +5,6 @@ from comet.encoders.xlmr import XLMREncoder
 
 
 class TestXLMREncoder(unittest.TestCase):
-
     xlmr = XLMREncoder.from_pretrained("xlm-roberta-base")
 
     def test_num_layers(self):
@@ -34,11 +33,16 @@ class TestXLMREncoder(unittest.TestCase):
 
     def test_concat_sequences(self):
         """Basic testcase to check if we can joint two sequences into a contiguous input"""
-        source = ["Bem vindos ao <v>COMET</v>", "Isto é um exemplo!"]
-        translations = ["Welcome to COMET!", "This is an example!"]
-        self.xlmr.add_span_tokens("<v>", "</v>")
-        source_input = self.xlmr.prepare_sample(source, word_level_training=True)
-        translations_input = self.xlmr.prepare_sample(translations)
+        translations = ["Bem vindos ao COMET", "Isto é um exemplo!"]
+        source = ["Welcome to COMET!", "This is an example!"]
+        annotations = [
+            [{"start": 14, "end": 19, "text": "COMET", "severity": "major"}],
+            [],
+        ]
+        translations_input = self.xlmr.prepare_sample(
+            translations, word_level=True, annotations=annotations
+        )
+        source_input = self.xlmr.prepare_sample(source)
         expected_tokens = [
             [
                 0,
@@ -59,16 +63,14 @@ class TestXLMREncoder(unittest.TestCase):
             ],
             [0, 40088, 393, 286, 15946, 38, 2, 2, 3293, 83, 142, 27781, 38, 2, 1],
         ]
-        expected_in_span_mask = [
-            [0, 0, 0, 0, 0, 1, 1, 0, -1, -1, -1, -1, -1, -1, -1],
+        expected_labels = [
+            [0, 0, 0, 0, 0, 2, 2, 0, -1, -1, -1, -1, -1, -1, -1],
             [0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -1, -1, -1, -1, -1],
         ]
         seq_size = [15, 14]
         continuous_input = self.xlmr.concat_sequences(
-            [source_input, translations_input], return_in_span_mask=True
+            [translations_input, source_input], return_label_ids=True
         )
         self.assertListEqual(continuous_input[0]["input_ids"].tolist(), expected_tokens)
         self.assertListEqual(continuous_input[1].tolist(), seq_size)
-        self.assertListEqual(
-            continuous_input[0]["in_span_mask"].tolist(), expected_in_span_mask
-        )
+        self.assertListEqual(continuous_input[0]["label_ids"].tolist(), expected_labels)

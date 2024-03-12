@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "unbabel-comet"
-version = "2.0.2"
+version = "2.2.1"
 description = "High-quality Machine Translation Evaluation"
 authors = ["Ricardo Rei, Craig Stewart, Catarina Farinha, Alon Lavie"]
 license = "Apache-2.0"
@@ -40,20 +40,21 @@ python = "^3.8.0"
 sentencepiece = "^0.1.96"
 pandas = ">=1.4.1"
 transformers = "^4.17"
-pytorch-lightning = "^1.6.4"
+pytorch-lightning = "^2.0.0"
 jsonargparse = "3.13.1"
 torch = ">=1.6.0"
 numpy = "^1.20.0"
-torchmetrics = "0.8.2"
+torchmetrics = "^0.10.2"
 sacrebleu = "^2.0.0"
 scipy = "^1.5.4"
 entmax = "^1.1"
-huggingface-hub = "^0.16.0"
+huggingface-hub = ">=0.19.3,<1.0"
+protobuf = "^4.24.4"
 
 [tool.poetry.dev-dependencies]
 sphinx-markdown-tables = "0.0.15"
 coverage = "^5.5"
-scikit-learn = "0.24"
+scikit-learn = "^1.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
