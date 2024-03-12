@@ -494,11 +494,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         different trainset if `reload_dataloaders_every_n_epochs=1` in Lightning
         Trainer.
         """
-        data_path = self.hparams.train_data[
-            self.current_epoch % len(self.hparams.train_data)
-        ]
-        train_dataset = self.read_training_data(data_path)
-        logger.info(f"Loading {data_path}.")
+        #data_path = self.hparams.train_data[
+        #    self.current_epoch % len(self.hparams.train_data)
+        #]
+        train_dataset = []
+        for data_path in self.hparams.train_data:
+            train_dataset += self.read_training_data(data_path)
+            logger.info(f"Loading {data_path}.")
 
         return DataLoader(
             dataset=train_dataset,

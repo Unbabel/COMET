@@ -67,6 +67,9 @@ class XCOMETMetric(UnifiedMetric):
         loss_lambda: float = 0.055,
         cross_entropy_weights: Optional[List[float]] = [0.08, 0.486, 0.505, 0.533],
         load_pretrained_weights: bool = True,
+        rescale_score: bool = False, 
+        clip_max: int = 25, 
+        error_weights: Optional[List[float]] = [1, 5, 10]
     ) -> None:
         super(UnifiedMetric, self).__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -95,7 +98,7 @@ class XCOMETMetric(UnifiedMetric):
             final_activation=self.hparams.final_activation,
         )
         assert error_labels == ["minor", "major", "critical"]
-        self.hparams.input_segments = ["mt", "src", "ref"]
+        self.hparams.input_segments = ["mt", "src", "ref", "errors"]
         self.word_level = True
         self.encoder.labelset = self.label_encoder
         self.hidden2tag = nn.Linear(self.encoder.output_units, self.num_classes)
@@ -114,6 +117,9 @@ class XCOMETMetric(UnifiedMetric):
         # precision and recall we can set it to another value.
         self.decoding_threshold = None
 
+        self.rescale_score = rescale_score
+        self.clip_max = clip_max
+        self.error_weights = error_weights
         self.init_losses()
         self.save_hyperparameters()
 
@@ -136,25 +142,33 @@ class XCOMETMetric(UnifiedMetric):
             Prediction: Model Prediction
         """
 
+        if self.rescale_score:
+            max_score = 1
+        else:
+            max_score = self.clip_max
+                
         def _compute_mqm_from_spans(error_spans):
             scores = []
             for sentence_spans in error_spans:
                 sentence_score = 0
                 for annotation in sentence_spans:
                     if annotation["severity"] == "minor":
-                        sentence_score += 1
+                        sentence_score += self.error_weights[0]
                     elif annotation["severity"] == "major":
-                        sentence_score += 5
+                        sentence_score += self.error_weights[1]
                     elif annotation["severity"] == "critical":
-                        sentence_score += 25
+                        sentence_score += self.error_weights[2]
 
-                if sentence_score > 25:
-                    sentence_score = 25
+                if sentence_score > self.clip_max:
+                    sentence_score = self.clip_max
 
                 scores.append(sentence_score)
 
             # Rescale between 0 and 1
-            #scores = (torch.tensor(scores) * -1 + 25) / 25
+            if self.rescale_score:
+                scores = (torch.tensor(scores) * -1 + self.clip_max) / self.clip_max
+            else:
+                scores = torch.tensor(scores)
             return scores
 
         # XCOMET is suposed to be used with a reference thus 3 different inputs.
@@ -163,7 +177,7 @@ class XCOMETMetric(UnifiedMetric):
             # Regression scores are weighted with self.score_weights
             regression_scores = torch.stack(
                 [
-                    torch.where(pred.score > 1.0, 1.0, pred.score) * w
+                    torch.where(pred.score > max_score, max_score, pred.score) * w
                     for pred, w in zip(predictions, self.score_weights[:3])
                 ],
                 dim=0,
@@ -196,12 +210,13 @@ class XCOMETMetric(UnifiedMetric):
                     error_spans=error_spans,
                 ),
             )
+            
 
         # XCOMET if reference is not available we fall back to QE model.
         else:
             model_output = self.forward(**batch[0])
             regression_score = torch.where(
-                model_output.score > 1.0, 1.0, model_output.score
+                model_output.score > max_score, max_score, model_output.score
             )
             mt_mask = batch[0]["label_ids"] != -1
             mt_length = mt_mask.sum(dim=1)

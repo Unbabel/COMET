@@ -152,6 +152,7 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
                 )
             return label
 
+        #print(aligned_labels)
         return list(map(get_label_id, aligned_labels))
 
     def subword_tokenize(

@@ -22,6 +22,7 @@ Unified Metric
     
     Inspired on [UniTE](https://arxiv.org/pdf/2204.13346.pdf)
 """
+import ast 
 from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -267,6 +268,9 @@ class UnifiedMetric(CometModel):
                 relative_step=False,
                 scale_parameter=False,
             )
+        elif self.hparams.optimizer == 'CPUAdam':
+            from deepspeed.ops.adam import DeepSpeedCPUAdam
+            optimizer = DeepSpeedCPUAdam(params, lr=self.hparams.learning_rate)
         else:
             optimizer = torch.optim.AdamW(params, lr=self.hparams.learning_rate)
 
@@ -292,9 +296,12 @@ class UnifiedMetric(CometModel):
         df = pd.read_csv(path)
         # Deep copy input segments
         columns = self.hparams.input_segments[:]
-        # Make sure everything except score is str type
+        # Make sure everything except score/annotations is str type
         for col in columns:
-            df[col] = df[col].astype(str)
+            if col != 'errors':
+                df[col] = df[col].astype(str)
+            else:
+                df[col] = df[col].apply(ast.literal_eval)
         columns.append("score")
         df["score"] = df["score"].astype("float16")
         df = df[columns]
@@ -313,11 +320,14 @@ class UnifiedMetric(CometModel):
         # Deep copy input segments
         columns = self.hparams.input_segments[:]
         # If system in columns we will use this to calculate system-level accuracy
-        if "system" in df.columns:
-            columns.append("system")
-        # Make sure everything except score is str type
+        #if "system" in df.columns:
+        #    columns.append("system")
+        # Make sure everything except score/annotations is str type
         for col in columns:
-            df[col] = df[col].astype(str)
+            if col != 'errors':
+                df[col] = df[col].astype(str)
+            else:
+                df[col] = df[col].apply(ast.literal_eval)
         columns.append("score")
         df["score"] = df["score"].astype("float16")
         df = df[columns]
@@ -382,9 +392,9 @@ class UnifiedMetric(CometModel):
             Union[Tuple[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]: Model input
                 and targets.
         """
-        inputs = {k: [d[k] for d in sample] for k in sample[0]}
+        inputs = {k: [d[k] for d in sample] for k in sample[0]}        
         input_sequences = [
-            self.encoder.prepare_sample(inputs["mt"], self.word_level, inputs["errors"]),
+            self.encoder.prepare_sample(inputs["mt"], self.word_level, inputs.get("errors", None)),
         ]
 
         src_input, ref_input = False, False
@@ -495,6 +505,10 @@ class UnifiedMetric(CometModel):
             predictions = prediction.logits.reshape(-1, self.num_classes)
             targets = target.labels.reshape(-1).type(torch.LongTensor).cuda()
             word_loss = self.wordloss(predictions, targets)
+            #if np.random.random() <= 0.01:
+            #    print('\n'.join([f"p {x[0]}, t {x[1]}" for x in zip(prediction.score[:5], target.score[:5]) ]))
+                #print("WORD ERRORS\n")
+                #print('\n'.join([f"p {x[0]}, t {x[1]}" for x in zip(predictions[:5], targets[:5]) ] ))
             return sentence_loss * (1 - self.hparams.loss_lambda) + word_loss * (
                 self.hparams.loss_lambda
             )
