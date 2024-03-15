@@ -69,7 +69,8 @@ class XCOMETMetric(UnifiedMetric):
         load_pretrained_weights: bool = True,
         rescale_score: bool = False, 
         clip_max: int = 25, 
-        error_weights: Optional[List[float]] = [1, 5, 10]
+        error_weights: Optional[List[float]] = [1, 5, 10], 
+        rescale_factor: int = 75
     ) -> None:
         super(UnifiedMetric, self).__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -120,6 +121,7 @@ class XCOMETMetric(UnifiedMetric):
         self.rescale_score = rescale_score
         self.clip_max = clip_max
         self.error_weights = error_weights
+        self.rescale_factor = rescale_factor
         self.init_losses()
         self.save_hyperparameters()
 
@@ -200,6 +202,9 @@ class XCOMETMetric(UnifiedMetric):
                 regression_scores
                 + mqm_scores.to(regression_scores.device) * self.score_weights[3]
             )
+            if self.rescale_score:
+                final_scores = self.rescale_factor - final_scores * self.rescale_factor
+                
             batch_prediction = Prediction(
                 scores=final_scores,
                 metadata=Prediction(
@@ -232,6 +237,9 @@ class XCOMETMetric(UnifiedMetric):
                 regression_score * sum(self.score_weights[:3])
                 + mqm_scores.to(regression_score.device) * self.score_weights[3]
             )
+            if self.rescale_score:
+                final_scores = self.rescale_factor - final_scores * self.rescale_factor
+
             batch_prediction = Prediction(
                 scores=final_scores,
                 metadata=Prediction(
