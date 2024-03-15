@@ -118,7 +118,7 @@ class UnifiedMetric(CometModel):
         input_segments: List[str] = ["mt", "src", "ref"],
         word_level_training: bool = False,
         loss_lambda: float = 0.65,
-        error_labels: List[str] = ["minor", "major"],
+        error_labels: List[str] = ["any"],
         cross_entropy_weights: Optional[List[float]] = None,
         load_pretrained_weights: bool = True,
     ) -> None:
