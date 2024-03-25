@@ -67,9 +67,9 @@ class XCOMETMetric(UnifiedMetric):
         loss_lambda: float = 0.055,
         cross_entropy_weights: Optional[List[float]] = [0.08, 0.486, 0.505, 0.533],
         load_pretrained_weights: bool = True,
-        rescale_score: bool = False, 
-        clip_max: int = 25, 
-        error_weights: Optional[List[float]] = [1, 5, 10], 
+        rescale_score: bool = True, 
+        clip_max: int = 50, 
+        error_weights: Optional[List[float]] = [1, 5, 25], 
         rescale_factor: int = 75
     ) -> None:
         super(UnifiedMetric, self).__init__(
@@ -204,7 +204,7 @@ class XCOMETMetric(UnifiedMetric):
             )
             if self.rescale_score:
                 final_scores = self.rescale_factor - final_scores * self.rescale_factor
-                
+
             batch_prediction = Prediction(
                 scores=final_scores,
                 metadata=Prediction(
