@@ -25,6 +25,10 @@ TEST_SAMPLES = [
     {"lp": "it-en", "src": "Nel suo uso popolare, il termine safari fa riferimento a viaggi svolti via terra, in particolare nella savana, per vedere la bellissima fauna selvatica africana.", "mt": "In its popular usage, the term safari refers to trips made by land, particularly in the savannah, to see beautiful African wildlife.", "ref": "The term safari in popular use refers to overland travel to view the stunning African wildlife, particularly on savanna.", "annotations": [], "score": 1.0}
 ]
 
+CONTEXT_TEST_SAMPLES = [
+    {"lp": "it-en", "context_src": "",  "src": "Le isole dell'Africa orientale sono situate nell'Oceano Indiano, al largo della costa est dell'Africa.", "context_mt": "",  "mt": "The East African islands are located in the Indian Ocean, off the east coast of Africa.", "context_ref": "",  "ref": "The East African Islands are in the Indian Ocean off the eastern coast of Africa.", "annotations": [], "score": 1.1697086095809937},
+]
+
 class TestUnifiedMetricPredict(unittest.TestCase):
    
     model = load_from_checkpoint(download_model("Unbabel/test-model-whimsical-whisper", saving_directory=DATA_PATH))
@@ -48,6 +52,17 @@ class TestUnifiedMetricPredict(unittest.TestCase):
         # Assert for almost equal Arrays or Numbers
         np.testing.assert_almost_equal(expected_scores, np.array(model_output.scores), decimal=5)
         np.testing.assert_almost_equal(model_output.system_score, expected_scores.mean(), 5)
+
+    def test_context_predict(self):
+        self.model.enable_context()
+        assert self.model.use_context == True
+        for sample in CONTEXT_TEST_SAMPLES:
+            for key in ["src", "mt", "ref"]:
+                sample[key] = " {} ".format(self.model.encoder.tokenizer.sep_token).join([sample[f"context_{key}"], sample[key]])
+        
+        model_output = self.model.predict(CONTEXT_TEST_SAMPLES, batch_size=12, gpus=self.gpus)
+    
+        np.testing.assert_almost_equal([sample['score'] for sample in CONTEXT_TEST_SAMPLES], np.array(model_output.scores), decimal=5)
 
     def test_length_batching(self):
         output_without_length_batching = self.model.predict(TEST_SAMPLES, batch_size=1, gpus=self.gpus, length_batching=False)

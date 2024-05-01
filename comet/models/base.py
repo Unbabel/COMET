@@ -143,6 +143,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.nr_frozen_epochs = self.hparams.nr_frozen_epochs
         self.mc_dropout = False  # Flag used to control usage of MC Dropout
         self.caching = False  # Flag used to control Embedding Caching
+        self.use_context = False
 
         # If not defined here, metrics will not live in the same device as our model.
         self.init_metrics()
@@ -154,6 +155,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             value (int): number of runs per sample.
         """
         self.mc_dropout = value
+
+    def enable_context(self):
+        """Function that extends COMET to use preceding context as described in
+        https://statmt.org/wmt22/pdf/2022.wmt-1.6.pdf."""
+        self.use_context = True
 
     @abc.abstractmethod
     def read_training_data(self) -> List[dict]:
@@ -343,6 +349,8 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 embeddings,
                 attention_mask,
                 self.encoder.tokenizer.pad_token_id,
+                self.encoder.tokenizer.sep_token_id, 
+                self.use_context,
             )
 
         elif self.hparams.pool == "cls":
