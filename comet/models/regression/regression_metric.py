@@ -215,6 +215,10 @@ class RegressionMetric(CometModel):
 
         return model_inputs, targets
 
+    def enable_context(self):
+        if self.pool == "avg":
+            self.use_context = True
+
     def estimate(
         self,
         src_sentemb: torch.Tensor,

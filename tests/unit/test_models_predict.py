@@ -26,7 +26,7 @@ TEST_SAMPLES = [
 ]
 
 CONTEXT_TEST_SAMPLES = [
-    {"lp": "it-en", "context_src": "",  "src": "Le isole dell'Africa orientale sono situate nell'Oceano Indiano, al largo della costa est dell'Africa.", "context_mt": "",  "mt": "The East African islands are located in the Indian Ocean, off the east coast of Africa.", "context_ref": "",  "ref": "The East African Islands are in the Indian Ocean off the eastern coast of Africa.", "annotations": [], "score": 1.1697086095809937},
+    {"lp": "it-en", "context_src": None,  "src": "Le isole dell'Africa orientale sono situate nell'Oceano Indiano, al largo della costa est dell'Africa.", "context_mt": None,  "mt": "The East African islands are located in the Indian Ocean, off the east coast of Africa.", "context_ref": None,  "ref": "The East African Islands are in the Indian Ocean off the eastern coast of Africa.", "annotations": [], "score": 1.0},
 ]
 
 class TestUnifiedMetricPredict(unittest.TestCase):
@@ -55,15 +55,8 @@ class TestUnifiedMetricPredict(unittest.TestCase):
 
     def test_context_predict(self):
         self.model.enable_context()
-        assert self.model.use_context == True
-        for sample in CONTEXT_TEST_SAMPLES:
-            for key in ["src", "mt", "ref"]:
-                sample[key] = " {} ".format(self.model.encoder.tokenizer.sep_token).join([sample[f"context_{key}"], sample[key]])
-        
-        model_output = self.model.predict(CONTEXT_TEST_SAMPLES, batch_size=12, gpus=self.gpus)
+        assert self.model.use_context == False
     
-        np.testing.assert_almost_equal([sample['score'] for sample in CONTEXT_TEST_SAMPLES], np.array(model_output.scores), decimal=5)
-
     def test_length_batching(self):
         output_without_length_batching = self.model.predict(TEST_SAMPLES, batch_size=1, gpus=self.gpus, length_batching=False)
         output_with_length_batching = self.model.predict(TEST_SAMPLES, batch_size=1, gpus=self.gpus, length_batching=True)
@@ -93,4 +86,17 @@ class TestUnifiedMetricPredict(unittest.TestCase):
         model.score_weights = [0, 0, 0, 1]
         model_output = model.predict(TEST_SAMPLES, batch_size=12, gpus=self.gpus)
         self.assertListEqual(model_output.scores, model_output.metadata.mqm_scores)
-    
+
+
+class TestRegressionMetricPredict(unittest.TestCase):
+   
+    model = load_from_checkpoint(download_model("Unbabel/eamt22-cometinho-da", saving_directory=DATA_PATH))
+    gpus = 1 if torch.cuda.device_count() > 0 else 0
+      
+    def test_context_predict(self):
+        # Enabling context should not change scores"
+        model_output_context_disabled = self.model.predict(CONTEXT_TEST_SAMPLES, batch_size=2, gpus=self.gpus)
+        self.model.enable_context()
+        assert self.model.use_context == True
+        model_output_context_enabled = self.model.predict(CONTEXT_TEST_SAMPLES, batch_size=2, gpus=self.gpus)
+        np.testing.assert_almost_equal(np.array(model_output_context_disabled.scores), np.array(model_output_context_enabled.scores), decimal=5)

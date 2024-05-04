@@ -144,6 +144,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self.mc_dropout = False  # Flag used to control usage of MC Dropout
         self.caching = False  # Flag used to control Embedding Caching
         self.use_context = False
+        self.pool = pool
 
         # If not defined here, metrics will not live in the same device as our model.
         self.init_metrics()
@@ -159,7 +160,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     def enable_context(self):
         """Function that extends COMET to use preceding context as described in
         https://statmt.org/wmt22/pdf/2022.wmt-1.6.pdf."""
-        self.use_context = True
+        logger.warning("Context can only be enabled for RegressionMetric with Average Pooling.")
 
     @abc.abstractmethod
     def read_training_data(self) -> List[dict]:

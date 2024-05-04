@@ -126,6 +126,10 @@ class ReferencelessRegression(RegressionMetric):
 
     def requires_references(self) -> bool:
         return False
+    
+    def enable_context(self):
+        if self.pool == "avg":
+            self.use_context = True
 
     def prepare_sample(
         self, sample: List[Dict[str, Union[str, float]]], stage: str = "train"
