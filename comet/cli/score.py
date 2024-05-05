@@ -30,6 +30,7 @@ optional arguments:
   --batch_size BATCH_SIZE
                         (type: int, default: 16)
   --gpus GPUS           (type: int, default: 1)
+  --enable-context      Enables contextual extension of COMET. (default: False)
   --quiet               Sets all loggers to ERROR level. (default: False)
   --only_system         Prints only the final system score. (default: False)
   --to_json TO_JSON     Exports results to a json file. (type: str, default: "")
@@ -74,6 +75,9 @@ def score_command() -> None:
     parser.add_argument("--gpus", type=int, default=1)
     parser.add_argument(
         "--quiet", action="store_true", help="Sets all loggers to ERROR level."
+    )
+    parser.add_argument(
+        "--enable-context", action="store_true", help="Enables contextual extension of COMET on inputs preprocessed with context information."
     )
     parser.add_argument(
         "--only_system", action="store_true", help="Prints only the final system score."
@@ -158,6 +162,9 @@ def score_command() -> None:
 
     model = load_from_checkpoint(model_path)
     model.eval()
+
+    if cfg.enable_context:
+        model.enable_context()
 
     if model.requires_references() and (cfg.references is None):
         parser.error(

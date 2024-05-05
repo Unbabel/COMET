@@ -25,6 +25,10 @@ TEST_SAMPLES = [
     {"lp": "it-en", "src": "Nel suo uso popolare, il termine safari fa riferimento a viaggi svolti via terra, in particolare nella savana, per vedere la bellissima fauna selvatica africana.", "mt": "In its popular usage, the term safari refers to trips made by land, particularly in the savannah, to see beautiful African wildlife.", "ref": "The term safari in popular use refers to overland travel to view the stunning African wildlife, particularly on savanna.", "annotations": [], "score": 1.0}
 ]
 
+CONTEXT_TEST_SAMPLES = [
+    {"lp": "it-en", "context_src": None,  "src": "Le isole dell'Africa orientale sono situate nell'Oceano Indiano, al largo della costa est dell'Africa.", "context_mt": None,  "mt": "The East African islands are located in the Indian Ocean, off the east coast of Africa.", "context_ref": None,  "ref": "The East African Islands are in the Indian Ocean off the eastern coast of Africa.", "annotations": [], "score": 1.0},
+]
+
 class TestUnifiedMetricPredict(unittest.TestCase):
    
     model = load_from_checkpoint(download_model("Unbabel/test-model-whimsical-whisper", saving_directory=DATA_PATH))
@@ -49,6 +53,10 @@ class TestUnifiedMetricPredict(unittest.TestCase):
         np.testing.assert_almost_equal(expected_scores, np.array(model_output.scores), decimal=5)
         np.testing.assert_almost_equal(model_output.system_score, expected_scores.mean(), 5)
 
+    def test_context_predict(self):
+        self.model.enable_context()
+        assert self.model.use_context == False
+    
     def test_length_batching(self):
         output_without_length_batching = self.model.predict(TEST_SAMPLES, batch_size=1, gpus=self.gpus, length_batching=False)
         output_with_length_batching = self.model.predict(TEST_SAMPLES, batch_size=1, gpus=self.gpus, length_batching=True)
@@ -78,4 +86,17 @@ class TestUnifiedMetricPredict(unittest.TestCase):
         model.score_weights = [0, 0, 0, 1]
         model_output = model.predict(TEST_SAMPLES, batch_size=12, gpus=self.gpus)
         self.assertListEqual(model_output.scores, model_output.metadata.mqm_scores)
-    
+
+
+class TestRegressionMetricPredict(unittest.TestCase):
+   
+    model = load_from_checkpoint(download_model("Unbabel/eamt22-cometinho-da", saving_directory=DATA_PATH))
+    gpus = 1 if torch.cuda.device_count() > 0 else 0
+      
+    def test_context_predict(self):
+        # Enabling context should not change scores"
+        model_output_context_disabled = self.model.predict(CONTEXT_TEST_SAMPLES, batch_size=2, gpus=self.gpus)
+        self.model.enable_context()
+        assert self.model.use_context == True
+        model_output_context_enabled = self.model.predict(CONTEXT_TEST_SAMPLES, batch_size=2, gpus=self.gpus)
+        np.testing.assert_almost_equal(np.array(model_output_context_disabled.scores), np.array(model_output_context_enabled.scores), decimal=5)
