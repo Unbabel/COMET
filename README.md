@@ -85,10 +85,14 @@ echo -e "Des tartes faites avec des pommes comme celles-ci. [SEP] Elles ont l’
 echo -e "Des tartes faites avec des pommes comme celles-ci. [SEP] Ils ont l’air delicieux.\nIls ont l’air delicieux." >> hyp2.txt
 ```
 
+```bash
+comet-score -s src.txt -t hyp1.txt hyp2.txt --model Unbabel/wmt20-comet-qe-da --enable-context
+```
+
 If you are only interested in a system-level score use the following command:
 
 ```bash
-comet-score -s src.txt -t hyp1.txt hyp2.txt --model Unbabel/wmt20-comet-qe-da --enable-context
+comet-score -s src.txt -t hyp1.txt -r ref.txt --quiet --only_system
 ```
 
 ### Reference-free evaluation:
