@@ -12,6 +12,7 @@
 1) [AfriCOMET](https://arxiv.org/pdf/2311.09828.pdf) released, a new model to embrace under-resourced African Languages.
 2) We released our new eXplainable COMET models ([XCOMET-XL](https://huggingface.co/Unbabel/XCOMET-XL) and [-XXL](https://huggingface.co/Unbabel/XCOMET-XXL)) which along with quality scores detects which errors in the translation are minor, major or critical according to MQM typology
 3) We release [CometKiwi -XL (3.5B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl) and [-XXL (10.7B)](https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xxl) QE models. These models were the best performing QE models on the WMT23 QE shared task.
+4) We now support [DocCOMET](https://statmt.org/wmt22/pdf/2022.wmt-1.6.pdf), a document-level extension of COMET which can utilize contextual information. Using context improves accuracy on discourse phenomena tasks as well as referenceless evaluation of [chat translation quality](https://arxiv.org/pdf/2403.08314).
 
 Please check all available models [here](https://github.com/Unbabel/COMET/blob/master/MODELS.md)
  
@@ -75,6 +76,19 @@ WMT test sets via [SacreBLEU](https://github.com/mjpost/sacrebleu):
 
 ```bash
 comet-score -d wmt22:en-de -t PATH/TO/TRANSLATIONS
+```
+
+Scoring with context:
+```bash
+echo -e "Pies made from apples like these. </s> Oh, they do look delicious.\nOh, they do look delicious." >> src.txt
+echo -e "Des tartes faites avec des pommes comme celles-ci. </s> Elles ont l’air delicieux.\nElles ont l’air delicieux" >> hyp1.txt
+echo -e "Des tartes faites avec des pommes comme celles-ci. </s> Ils ont l’air delicieux.\nIls ont l’air delicieux." >> hyp2.txt
+```
+
+where `</s>` is the separator token of the specific tokenizer (here: `xlm-roberta-large`) that the underlying model uses. 
+
+```bash
+comet-score -s src.txt -t hyp1.txt hyp2.txt --model Unbabel/wmt20-comet-qe-da --enable-context
 ```
 
 If you are only interested in a system-level score use the following command:

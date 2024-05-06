@@ -160,7 +160,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     def enable_context(self):
         """Function that extends COMET to use preceding context as described in
         https://statmt.org/wmt22/pdf/2022.wmt-1.6.pdf."""
-        logger.warning("Context can only be enabled for RegressionMetric with Average Pooling.")
+        logger.warning("Context should only be enabled for RegressionMetric with Average Pooling.")
 
     @abc.abstractmethod
     def read_training_data(self) -> List[dict]:
