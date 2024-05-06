@@ -103,7 +103,7 @@ comet-score -s src.txt -t hyp1.txt -r ref.txt --quiet --only_system
 comet-score -s src.txt -t hyp1.txt --model Unbabel/wmt22-cometkiwi-da
 ```
 
-**Note:** To use the `Unbabel/wmt22-cometkiwi-da-xl` you first have to acknowledge its license on [Hugging Face Hub](https://huggingface.co/Unbabel/Unbabel/wmt23-cometkiwi-da-xl).
+**Note:** To use the `Unbabel/wmt23-cometkiwi-da-xl` you first have to acknowledge its license on [Hugging Face Hub](https://huggingface.co/Unbabel/Unbabel/wmt23-cometkiwi-da-xl).
 
 ### Comparing multiple systems:
 
