@@ -80,10 +80,12 @@ comet-score -d wmt22:en-de -t PATH/TO/TRANSLATIONS
 
 Scoring with context:
 ```bash
-echo -e "Pies made from apples like these. [SEP] Oh, they do look delicious.\nOh, they do look delicious." >> src.txt
-echo -e "Des tartes faites avec des pommes comme celles-ci. [SEP] Elles ont l’air delicieux.\nElles ont l’air delicieux" >> hyp1.txt
-echo -e "Des tartes faites avec des pommes comme celles-ci. [SEP] Ils ont l’air delicieux.\nIls ont l’air delicieux." >> hyp2.txt
+echo -e "Pies made from apples like these. </s> Oh, they do look delicious.\nOh, they do look delicious." >> src.txt
+echo -e "Des tartes faites avec des pommes comme celles-ci. </s> Elles ont l’air delicieux.\nElles ont l’air delicieux" >> hyp1.txt
+echo -e "Des tartes faites avec des pommes comme celles-ci. </s> Ils ont l’air delicieux.\nIls ont l’air delicieux." >> hyp2.txt
 ```
+
+where `</s>` is the separator token of the specific tokenizer (here: `xlm-roberta-large`) that the underlying model uses. 
 
 ```bash
 comet-score -s src.txt -t hyp1.txt hyp2.txt --model Unbabel/wmt20-comet-qe-da --enable-context
