@@ -42,6 +42,27 @@ For development, you can run the CLI tools directly, e.g.,
 PYTHONPATH=. ./comet/cli/score.py
 ```
 
+# Table of Contents
+
+1. [News](#news)
+2. [Quick Installation](#quick-installation)
+3. [Scoring MT outputs](#scoring-mt-outputs)
+    1. [CLI Usage](#cli-usage)
+        1. [Basic scoring command](#basic-scoring-command)
+        2. [Reference-free evaluation](#reference-free-evaluation)
+        3. [Comparing multiple systems](#comparing-multiple-systems)
+        4. [Minimum Bayes Risk Decoding](#minimum-bayes-risk-decoding)
+4. [COMET Models](#comet-models)
+    1. [Interpreting Scores](#interpreting-scores)
+    2. [Languages Covered](#languages-covered)
+    3. [COMET for African Languages](#comet-for-african-languages)
+    4. [Scoring within Python](#scoring-within-python)
+    5. [Explaining Translation Errors](#explaining-translation-errors)
+9. [Train your own Metric](#train-your-own-metric)
+10. [Unittest](#unittest)
+11. [Publications](#publications)
+
+
 # Scoring MT outputs:
 
 ## CLI Usage:
@@ -55,7 +76,7 @@ echo -e "Can it be delivered within 10 to 15 minutes?\nCan you send it for 10 to
 echo -e "Can it be delivered between 10 to 15 minutes?\nCan it be delivered between 10 to 15 minutes?" >> ref.txt
 ```
 
-Basic scoring command:
+### Basic scoring command:
 ```bash
 comet-score -s src.txt -t hyp1.txt -r ref.txt
 ```
@@ -200,13 +221,56 @@ data = [
 ]
 # Call predict method:
 model_output = model.predict(data, batch_size=8, gpus=1)
-print(model_output)
-print(model_output.scores) # sentence-level scores
-print(model_output.system_score) # system-level score
-
-# Not all COMET models return metadata with detected errors.
-print(model_output.metadata.error_spans) # detected error spans
 ```
+
+As output, we get the following information:
+```python
+# Sentence-level scores (list)
+>>> model_output.scores
+[0.9822099208831787, 0.9599897861480713]
+
+# System-level score (float)
+>>> model_output.system_score
+0.971099853515625
+
+# Detected error spans (list of list of dicts)
+>>> model_output.metadata.error_spans
+[
+  [{'confidence': 0.4160953164100647,
+   'end': 21,
+   'severity': 'minor',
+   'start': 13,
+   'text': 'my food'}],
+  [{'confidence': 0.40004390478134155,
+   'end': 19,
+   'severity': 'minor',
+   'start': 3,
+   'text': 'you send it for'}]
+]
+```
+
+However, note that not all COMET models return metadata with detected error spans.
+
+
+## Explaining translation errors:
+
+Check [this notebook](https://gist.github.com/mtreviso/b618b499bc6de0414a3e11157e91cf02) for a minimal example on how you can combine xCOMET with [xTower](https://huggingface.co/sardinelab/xTower13B) to generate a natural language explanation for each error span. 
+
+For the Portuguese-English example above, we would call xTower with the following **prompt**:
+> You are provided with a Source, Translation, Translation quality analysis, and Translation quality score (weak, moderate, good, excellent, best). The Translation quality analysis contains a translation with marked error spans with different levels of severity (minor or major). Given this information, generate an explanation for each error and a fully correct translation. <br><br>
+> Portuguese source: Pode ser entregue dentro de 10 a 15 minutos? <br>
+> English translation: Can you send it for 10 to 15 minutes? <br>
+> Translation quality analysis: Can `<error1 severity='minor'>`you send it for`</error1>` 10 to 15 minutes? <br>
+> Translation quality score: excellent
+
+
+And get this as output:
+> Explanation for error1: The phrase "Can you send it for 10 to 15 minutes?" is a mistranslation of the original Portuguese sentence. The correct interpretation should focus on the delivery time rather than the duration of sending. The original sentence is asking about the delivery time, not the duration of sending. <br>
+> Translation correction: Can it be delivered within 10 to 15 minutes?
+
+
+For more information, check [xTower documentation](https://huggingface.co/sardinelab/xTower13B).
+
 
 # Train your own Metric: 
 
