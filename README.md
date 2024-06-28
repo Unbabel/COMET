@@ -44,23 +44,21 @@ PYTHONPATH=. ./comet/cli/score.py
 
 # Table of Contents
 
-1. [News](#news)
-2. [Quick Installation](#quick-installation)
-3. [Scoring MT outputs](#scoring-mt-outputs)
+1. [Scoring MT outputs](#scoring-mt-outputs)
     1. [CLI Usage](#cli-usage)
         1. [Basic scoring command](#basic-scoring-command)
         2. [Reference-free evaluation](#reference-free-evaluation)
         3. [Comparing multiple systems](#comparing-multiple-systems)
         4. [Minimum Bayes Risk Decoding](#minimum-bayes-risk-decoding)
-4. [COMET Models](#comet-models)
+2. [COMET Models](#comet-models)
     1. [Interpreting Scores](#interpreting-scores)
     2. [Languages Covered](#languages-covered)
     3. [COMET for African Languages](#comet-for-african-languages)
     4. [Scoring within Python](#scoring-within-python)
     5. [Explaining Translation Errors](#explaining-translation-errors)
-9. [Train your own Metric](#train-your-own-metric)
-10. [Unittest](#unittest)
-11. [Publications](#publications)
+3. [Train your own Metric](#train-your-own-metric)
+4. [Unittest](#unittest)
+5. [Publications](#publications)
 
 
 # Scoring MT outputs:
