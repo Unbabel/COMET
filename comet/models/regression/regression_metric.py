@@ -68,6 +68,7 @@ class RegressionMetric(CometModel):
         hidden_sizes (List[int]): Hidden sizes for the Feed Forward regression.
         activations (str): Feed Forward activation function.
         final_activation (str): Feed Forward final activation.
+        local_files_only (bool): Whether or not to only look at local files.
     """
 
     def __init__(
@@ -93,7 +94,8 @@ class RegressionMetric(CometModel):
         hidden_sizes: List[int] = [3072, 1024],
         activations: str = "Tanh",
         final_activation: Optional[str] = None,
-        load_pretrained_weights: bool = True
+        load_pretrained_weights: bool = True,
+        local_files_only: bool = False,
     ) -> None:
         super().__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -115,7 +117,8 @@ class RegressionMetric(CometModel):
             train_data=train_data,
             validation_data=validation_data,
             class_identifier="regression_metric",
-            load_pretrained_weights=load_pretrained_weights
+            load_pretrained_weights=load_pretrained_weights,
+            local_files_only=local_files_only,
         )
         self.save_hyperparameters()
         self.estimator = FeedForward(

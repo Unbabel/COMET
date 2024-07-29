@@ -67,6 +67,7 @@ class XCOMETMetric(UnifiedMetric):
         loss_lambda: float = 0.055,
         cross_entropy_weights: Optional[List[float]] = [0.08, 0.486, 0.505, 0.533],
         load_pretrained_weights: bool = True,
+        local_files_only: bool = False,
     ) -> None:
         super(UnifiedMetric, self).__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -86,6 +87,7 @@ class XCOMETMetric(UnifiedMetric):
             validation_data=validation_data,
             class_identifier="xcomet_metric",
             load_pretrained_weights=load_pretrained_weights,
+            local_files_only=local_files_only,
         )
         self.estimator = FeedForward(
             in_dim=self.encoder.output_units,

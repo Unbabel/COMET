@@ -89,6 +89,7 @@ class UnifiedMetric(CometModel):
             error_labels + weight for the default 'O' label. Defaults to None.
         load_pretrained_weights (Bool): If set to False it avoids loading the weights
             of the pretrained model (e.g. XLM-R) before it loads the COMET checkpoint
+        local_files_only (bool): Whether or not to only look at local files.
     """
 
     def __init__(
@@ -120,6 +121,7 @@ class UnifiedMetric(CometModel):
         error_labels: List[str] = ["minor", "major"],
         cross_entropy_weights: Optional[List[float]] = None,
         load_pretrained_weights: bool = True,
+        local_files_only: bool = False,
     ) -> None:
         super().__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -139,6 +141,7 @@ class UnifiedMetric(CometModel):
             validation_data=validation_data,
             class_identifier="unified_metric",
             load_pretrained_weights=load_pretrained_weights,
+            local_files_only=local_files_only,
         )
         self.save_hyperparameters()
         self.estimator = FeedForward(

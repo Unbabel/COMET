@@ -59,7 +59,10 @@ def download_model(
 
 
 def load_from_checkpoint(
-    checkpoint_path: str, reload_hparams: bool = False, strict: bool = False
+    checkpoint_path: str,
+    reload_hparams: bool = False,
+    strict: bool = False,
+    local_files_only: bool = False,
 ) -> CometModel:
     """Loads models from a checkpoint path.
 
@@ -70,6 +73,10 @@ def load_from_checkpoint(
             to True all hparams will be reloaded.
         strict (bool): Strictly enforce that the keys in checkpoint_path match the
             keys returned by this module's state dict. Defaults to False
+        local_files_only (bool): Whether or not to only look at local files.
+            Make sure `pretrained_model` in checkpoint `hparams.yaml` is
+            downloaded beforehand. (e.g. `xlm-roberta-large` for
+            `Unbabel/wmt22-cometkiwi-da`)
     Return:
         COMET model.
     """
@@ -91,6 +98,7 @@ def load_from_checkpoint(
             hparams_file=hparams_file if reload_hparams else None,
             map_location=torch.device("cpu"),
             strict=strict,
+            local_files_only=local_files_only,
         )
         return model
     else:
