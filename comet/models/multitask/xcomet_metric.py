@@ -68,6 +68,7 @@ class XCOMETMetric(UnifiedMetric):
         cross_entropy_weights: Optional[List[float]] = [0.08, 0.486, 0.505, 0.533],
         load_pretrained_weights: bool = True,
         rescale_score: bool = True, 
+        rescale_mqm: bool = True, 
         clip_max: int = 50, 
         error_weights: Optional[List[float]] = [1, 5, 25], 
         rescale_factor: int = 75
@@ -122,6 +123,7 @@ class XCOMETMetric(UnifiedMetric):
         self.clip_max = clip_max
         self.error_weights = error_weights
         self.rescale_factor = rescale_factor
+        self.rescale_mqm = rescale_mqm
         self.init_losses()
         self.save_hyperparameters()
 
@@ -167,7 +169,7 @@ class XCOMETMetric(UnifiedMetric):
                 scores.append(sentence_score)
 
             # Rescale between 0 and 1
-            if self.rescale_score:
+            if self.rescale_mqm:
                 scores = (torch.tensor(scores) * -1 + self.clip_max) / self.clip_max
             else:
                 scores = torch.tensor(scores)
