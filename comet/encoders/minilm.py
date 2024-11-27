@@ -30,25 +30,36 @@ class MiniLMEncoder(XLMREncoder):
         pretrained_model (str): Pretrained model from hugging face.
         load_pretrained_weights (bool): If set to True loads the pretrained weights
             from Hugging Face
+        local_files_only (bool): Whether or not to only look at local files.
     """
 
     def __init__(
-        self, pretrained_model: str, load_pretrained_weights: bool = True
+        self,
+        pretrained_model: str,
+        load_pretrained_weights: bool = True,
+        local_files_only: bool = False,
     ) -> None:
         super(Encoder, self).__init__()
         self.tokenizer = XLMRobertaTokenizerFast.from_pretrained(
-            "xlm-roberta-base", use_fast=True
+            "xlm-roberta-base", use_fast=True, local_files_only=local_files_only
         )
         if load_pretrained_weights:
             self.model = BertModel.from_pretrained(pretrained_model)
         else:
-            self.model = BertModel(BertConfig.from_pretrained(pretrained_model))
+            self.model = BertModel(
+                BertConfig.from_pretrained(
+                    pretrained_model, local_files_only=local_files_only
+                )
+            )
 
         self.model.encoder.output_hidden_states = True
 
     @classmethod
     def from_pretrained(
-        cls, pretrained_model: str, load_pretrained_weights: bool = True
+        cls,
+        pretrained_model: str,
+        load_pretrained_weights: bool = True,
+        local_files_only: bool = False,
     ) -> Encoder:
         """Function that loads a pretrained encoder from Hugging Face.
 
@@ -56,8 +67,11 @@ class MiniLMEncoder(XLMREncoder):
             pretrained_model (str):Name of the pretrain model to be loaded.
             load_pretrained_weights (bool): If set to True loads the pretrained weights
                 from Hugging Face
+            local_files_only (bool): Whether or not to only look at local files.
 
         Returns:
             Encoder: XLMREncoder object.
         """
-        return MiniLMEncoder(pretrained_model, load_pretrained_weights)
+        return MiniLMEncoder(
+            pretrained_model, load_pretrained_weights, local_files_only
+        )

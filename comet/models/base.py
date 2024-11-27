@@ -89,6 +89,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             Validation results are averaged across validation set. Defaults to None.
         load_pretrained_weights (Bool): If set to False it avoids loading the weights
             of the pretrained model (e.g. XLM-R) before it loads the COMET checkpoint
+        local_files_only (bool): Whether or not to only look at local files.
     """
 
     def __init__(
@@ -113,11 +114,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         validation_data: Optional[List[str]] = None,
         class_identifier: Optional[str] = None,
         load_pretrained_weights: bool = True,
+        local_files_only: bool = False,
     ) -> None:
         super().__init__()
         self.save_hyperparameters()
         self.encoder = str2encoder[self.hparams.encoder_model].from_pretrained(
-            self.hparams.pretrained_model, load_pretrained_weights
+            self.hparams.pretrained_model, load_pretrained_weights, local_files_only
         )
 
         self.epoch_nr = 0

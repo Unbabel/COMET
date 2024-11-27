@@ -68,6 +68,7 @@ class RankingMetric(CometModel):
             loaded consecutively for each epoch. Defaults to None.
         validation_data (Optional[List[str]]): List of paths to validation data.
             Validation results are averaged across validation set. Defaults to None.
+        local_files_only (bool): Whether or not to only look at local files.
     """
 
     def __init__(
@@ -90,7 +91,8 @@ class RankingMetric(CometModel):
         batch_size: int = 8,
         train_data: Optional[List[str]] = None,
         validation_data: Optional[List[str]] = None,
-        load_pretrained_weights: bool = True
+        load_pretrained_weights: bool = True,
+        local_files_only: bool = False,
     ) -> None:
         super().__init__(
             nr_frozen_epochs=nr_frozen_epochs,
@@ -111,7 +113,8 @@ class RankingMetric(CometModel):
             train_data=train_data,
             validation_data=validation_data,
             class_identifier="ranking_metric",
-            load_pretrained_weights=load_pretrained_weights
+            load_pretrained_weights=load_pretrained_weights,
+            local_files_only=local_files_only,
         )
         self.save_hyperparameters()
 
