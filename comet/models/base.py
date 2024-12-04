@@ -622,6 +622,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             sampler=sampler,
             collate_fn=self.prepare_for_inference,
             num_workers=num_workers,
+            multiprocessing_context="fork" if torch.backends.mps.is_available() else None,
         )
         if gpus > 1:
             pred_writer = CustomWriter()
