@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "unbabel-comet"
-version = "2.2.3"
+version = "2.2.4"
 description = "High-quality Machine Translation Evaluation"
 authors = ["Ricardo Rei, Craig Stewart, Catarina Farinha, Alon Lavie"]
 license = "Apache-2.0"
@@ -37,7 +37,7 @@ comet-mbr = 'comet.cli.mbr:mbr_command'
 
 [tool.poetry.dependencies]
 python = "^3.8.0"
-sentencepiece = "^0.1.96"
+sentencepiece = "^0.2.0"
 pandas = ">=1.4.1"
 transformers = "^4.17"
 pytorch-lightning = "^2.0.0"
