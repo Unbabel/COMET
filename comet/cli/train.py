@@ -142,7 +142,7 @@ def initialize_model(configs):
         )
         if configs.load_from_checkpoint is not None:
             logger.info(f"Loading weights from {configs.load_from_checkpoint}.")
-            model = ReferencelessRegression.load_from_checkpoint(
+            model = RankingMetric.load_from_checkpoint(
                 checkpoint_path=configs.load_from_checkpoint,
                 strict=configs.strict_load,
                 **namespace_to_dict(configs.ranking_metric.init_args),
