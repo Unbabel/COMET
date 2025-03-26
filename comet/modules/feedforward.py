@@ -69,4 +69,14 @@ class FeedForward(nn.Module):
             raise Exception(f"{activation} is not a valid activation function!")
 
     def forward(self, in_features: torch.Tensor) -> torch.Tensor:
+        # When casting models to float 16 self.ff(in_features) was giving some problems reported
+        # in here: https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl/discussions/3
+
+        # Check the dtype of self.ff parameters
+        ff_dtypes = {param.dtype for param in self.ff.parameters()}
+        
+        # If all parameters are float16 and in_features is not, convert it
+        if ff_dtypes == {torch.float16} and in_features.dtype != torch.float16:
+            in_features = in_features.to(torch.float16)
+        
         return self.ff(in_features)
