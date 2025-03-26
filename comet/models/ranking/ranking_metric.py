@@ -89,8 +89,8 @@ class RankingMetric(CometModel):
         loss: str = "triplet-margin",
         dropout: float = 0.1,
         batch_size: int = 8,
-        train_data: Optional[List[str]] = None,
-        validation_data: Optional[List[str]] = None,
+        train_data: List[str] = [],
+        validation_data: List[str] = [],
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
     ) -> None:
