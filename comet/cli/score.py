@@ -162,7 +162,8 @@ def score_command() -> None:
 
     model = load_from_checkpoint(model_path)
     model.eval()
-
+    model.half()
+    
     if cfg.enable_context:
         model.enable_context()
 

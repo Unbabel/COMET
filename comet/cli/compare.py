@@ -250,6 +250,7 @@ def score(cfg: Namespace, systems: List[Dict[str, List[str]]]) -> np.ndarray:
     """
     model = load_from_checkpoint(cfg.model_path)
     model.eval()
+    model.half()
 
     if not cfg.disable_cache:
         model.set_embedding_cache()
@@ -429,6 +430,7 @@ def compare_command() -> None:
 
     model = load_from_checkpoint(cfg.model_path)
     model.eval()
+    model.half()
 
     if model.requires_references() and (cfg.references is None):
         parser.error(

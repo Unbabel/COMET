@@ -268,6 +268,8 @@ def mbr_command() -> None:
     model = load_from_checkpoint(model_path)
     model.eval()
     model.cuda()
+    model.half()
+    
     if not isinstance(model, RegressionMetric):
         raise Exception(
             "Invalid model ({}). MBR command only works with Reference-based Regression models!".format(
