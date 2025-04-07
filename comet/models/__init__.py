@@ -91,15 +91,33 @@ def load_from_checkpoint(
     if hparams_file.is_file():
         with open(hparams_file) as yaml_file:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)
+
         model_class = str2model[hparams["class_identifier"]]
-        model = model_class.load_from_checkpoint(
-            checkpoint_path,
-            load_pretrained_weights=False,
-            hparams_file=hparams_file if reload_hparams else None,
-            map_location=torch.device("cpu"),
-            strict=strict,
-            local_files_only=local_files_only,
-        )
+        
+        # Check comet version and hparams for layer_transformation
+        # This is a workaround for the bug reported in version 2.2.4
+        # issue number #244
+        try:
+            import pkg_resources
+            comet_version = pkg_resources.get_distribution("unbabel-comet").version
+            use_softmax = (pkg_resources.parse_version(comet_version) >= pkg_resources.parse_version("2.2.4") and 
+                          hparams.get("layer_transformation") == "sparsemax")
+        except:
+            use_softmax = False
+
+        # Add the override parameter only if needed
+        kwargs = {
+            "checkpoint_path": checkpoint_path,
+            "load_pretrained_weights": False,
+            "hparams_file": hparams_file if reload_hparams else None,
+            "map_location": torch.device("cpu"),
+            "strict": strict,
+            "local_files_only": local_files_only,
+        }
+        if use_softmax:
+            kwargs["layer_transformation"] = "softmax"
+        
+        model = model_class.load_from_checkpoint(**kwargs)
         return model
     else:
         raise Exception(f"hparams.yaml file is missing from {parent_folder}!")
