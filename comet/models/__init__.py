@@ -101,7 +101,7 @@ def load_from_checkpoint(
             import pkg_resources
             comet_version = pkg_resources.get_distribution("unbabel-comet").version
             use_softmax = (pkg_resources.parse_version(comet_version) >= pkg_resources.parse_version("2.2.4") and 
-                          hparams.get("layer_transformation") == "sparsemax")
+                          hparams.get("layer_transformation") == "sparsemax_patch")
         except:
             use_softmax = False
 
