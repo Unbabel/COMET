@@ -48,8 +48,16 @@ class LayerwiseAttention(torch.nn.Module):
 
         self.transform_fn = torch.softmax
         if layer_transformation == "sparsemax":
+            # Import warnings module
+            import warnings
+            # Display warning message
+            warnings.warn(
+                "WARNING - sparsemax is DEPRECATED in favor of softmax. "
+                "Please use softmax instead. ",
+                DeprecationWarning,
+                stacklevel=2
+            )
             from entmax import sparsemax
-
             self.transform_fn = sparsemax
 
         if layer_weights is None:
