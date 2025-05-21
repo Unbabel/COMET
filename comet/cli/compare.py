@@ -436,7 +436,7 @@ def compare_command() -> None:
         parser.error(
             "{} requires -r/--references or -d/--sacrebleu_dataset.".format(cfg.model)
         )
-
+    references = cfg.references if cfg.references is not None else None
     if not cfg.disable_cache:
         model.set_embedding_cache()
 
