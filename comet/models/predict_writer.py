@@ -97,14 +97,14 @@ class CustomWriter(BasePredictionWriter):
         files = sorted(os.listdir(self.output_dir))
         pred = flatten_predictions(
             [
-                flatten_predictions(torch.load(os.path.join(self.output_dir, f)))
+                flatten_predictions(torch.load(os.path.join(self.output_dir, f), weights_only=False))
                 for f in files
                 if "pred" in f
             ]
         )
         indices = flatten(
             [
-                flatten(torch.load(os.path.join(self.output_dir, f))[0])
+                flatten(torch.load(os.path.join(self.output_dir, f), weights_only=False)[0])
                 for f in files
                 if "batch_indices" in f
             ]
