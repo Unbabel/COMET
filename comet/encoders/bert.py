@@ -168,15 +168,24 @@ class BERTEncoder(Encoder):
             Dict[str, torch.Tensor]: dictionary with 'sentemb', 'wordemb', 'all_layers'
                 and 'attention_mask'.
         """
-        last_hidden_states, pooler_output, all_layers = self.model(
+        output = self.model(
             input_ids=input_ids,
             token_type_ids=token_type_ids,
             attention_mask=attention_mask,
             output_hidden_states=True,
             return_dict=False,
         )
+        # Handle both transformers 4.x (3 values) and 5.x (2 values when add_pooling_layer=False)
+        if len(output) == 2:
+            last_hidden_states, all_layers = output
+            # Use CLS token as sentence embedding when no pooler output
+            sentemb = last_hidden_states[:, 0, :]
+        else:
+            last_hidden_states, pooler_output, all_layers = output
+            # Use pooler output if available, otherwise use CLS token
+            sentemb = pooler_output if pooler_output is not None else last_hidden_states[:, 0, :]
         return {
-            "sentemb": pooler_output,
+            "sentemb": sentemb,
             "wordemb": last_hidden_states,
             "all_layers": all_layers,
             "attention_mask": attention_mask,

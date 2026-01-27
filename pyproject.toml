@@ -39,7 +39,7 @@ comet-mbr = 'comet.cli.mbr:mbr_command'
 python = "^3.8.0"
 sentencepiece = "^0.2.0"
 pandas = ">=1.4.1"
-transformers = "^4.17"
+transformers = ">=4.17"
 pytorch-lightning = "^2.0.0"
 jsonargparse = "3.13.1"
 torch = ">=1.6.0"
@@ -48,7 +48,7 @@ torchmetrics = "^0.10.2"
 sacrebleu = "^2.0.0"
 scipy = "^1.5.4"
 entmax = "^1.1"
-huggingface-hub = ">=0.19.3,<1.0"
+huggingface-hub = ">=0.19.3"
 protobuf = "^4.24.4"
 
 [tool.poetry.dev-dependencies]
