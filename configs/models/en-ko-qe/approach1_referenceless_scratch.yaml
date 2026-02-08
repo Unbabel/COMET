@@ -1,0 +1,100 @@
+# ============================================================
+# 접근법 1: ReferencelessRegression - 처음부터 학습 (From Scratch)
+# ============================================================
+# XLM-RoBERTa-large 인코더로 reference-free QE 모델을 처음부터 학습합니다.
+# 인코더 위에 feed-forward 회귀 head를 새로 학습합니다.
+#
+# 아키텍처:
+#   - 인코더: XLM-RoBERTa-large (frozen -> unfreeze)
+#   - 입력: src + mt (각각 별도 인코딩)
+#   - 특징: [mt_emb, src_emb, mt*src, |mt-src|] (4 * 1024 = 4096 dim)
+#   - Head: 4096 -> 2048 -> 1024 -> 1
+#
+# 필요 GPU: 1-2x A100 (80GB) 또는 2-4x V100 (32GB)
+# 예상 VRAM: ~20-30GB (batch_size=16, fp32)
+#
+# 실행:
+#   comet-train --cfg configs/models/en-ko-qe/approach1_referenceless_scratch.yaml
+# ============================================================
+
+referenceless_regression_metric:
+  class_path: comet.models.ReferencelessRegression
+  init_args:
+    # --- 인코더 설정 ---
+    encoder_model: XLM-RoBERTa
+    pretrained_model: xlm-roberta-large       # 560M params
+
+    # --- 프리징 전략 ---
+    nr_frozen_epochs: 0.3                      # 첫 에폭의 30%는 인코더 동결
+    keep_embeddings_frozen: True               # 임베딩 레이어는 항상 동결 (메모리 절약)
+
+    # --- 옵티마이저 ---
+    optimizer: AdamW
+    encoder_learning_rate: 1.0e-06             # 인코더 학습률 (매우 작게)
+    learning_rate: 1.5e-05                     # Head 학습률
+    layerwise_decay: 0.95                      # 하위 레이어일수록 학습률 감소
+    warmup_steps: 0
+
+    # --- 레이어 설정 ---
+    pool: avg                                  # 평균 풀링
+    layer: mix                                 # 모든 레이어 가중합
+    layer_transformation: sparsemax            # 희소 어텐션 (일부 레이어만 활성)
+    layer_norm: False
+
+    # --- 손실 함수 ---
+    loss: mse                                  # Mean Squared Error
+
+    # --- 회귀 Head ---
+    hidden_sizes:
+      - 2048
+      - 1024
+    activations: Tanh
+    dropout: 0.1
+
+    # --- 데이터 ---
+    batch_size: 16
+    train_data:
+      - data/en-ko-qe/referenceless_train.csv
+    validation_data:
+      - data/en-ko-qe/referenceless_val.csv
+
+# --- 트레이너 설정 ---
+trainer:
+  class_path: pytorch_lightning.trainer.trainer.Trainer
+  init_args:
+    accelerator: gpu
+    devices: 1                                 # GPU 수 (환경에 맞게 조정)
+    # strategy: ddp                            # multi-GPU시 주석 해제
+    accumulate_grad_batches: 4                 # 유효 배치: 16 * 4 = 64
+    max_epochs: 5
+    min_epochs: 1
+    gradient_clip_val: 1.0
+    gradient_clip_algorithm: norm
+    check_val_every_n_epoch: 1
+    log_every_n_steps: 100
+    enable_progress_bar: true
+    enable_model_summary: true
+    num_sanity_val_steps: 3
+    deterministic: false
+
+# --- 얼리 스토핑 ---
+early_stopping:
+  class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
+  init_args:
+    monitor: val_kendall                       # Kendall tau 상관계수 모니터링
+    min_delta: 0.0
+    patience: 2                                # 2 에폭 동안 개선 없으면 중단
+    mode: max
+    verbose: False
+
+# --- 모델 체크포인트 ---
+model_checkpoint:
+  class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+  init_args:
+    filename: '{epoch}-{step}-{val_kendall:.4f}'
+    monitor: val_kendall
+    save_top_k: 3
+    mode: max
+    save_weights_only: True
+    every_n_epochs: 1
+    verbose: True
