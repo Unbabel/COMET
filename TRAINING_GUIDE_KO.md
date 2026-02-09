@@ -128,10 +128,89 @@ score = feedforward(cls_embedding)     # 1024 dim 입력
 - 장점: 도메인에 처음부터 맞출 수 있음
 - 단점: 많은 데이터와 긴 학습 시간 필요
 
-#### Fine-tuning (추천)
-- 이미 QE 학습이 된 COMETKiwi 등에서 시작
-- 장점: 적은 에폭으로 높은 성능, 기존 QE 지식 활용
-- 단점: 원본 모델의 bias 상속 가능
+#### Full Fine-tuning
+- COMETKiwi 전체 파라미터를 학습
+- 장점: 도메인에 깊이 적응 가능, 대용량 데이터에 적합
+- 단점: **소규모 데이터에서 과적합/분포 붕괴 위험** (MTQE 논문에서 확인됨)
+
+#### Parameter-Efficient Fine-tuning (PEFT)
+- LoRA, BitFit, FTHead 등으로 일부 파라미터만 학습
+- 장점: 과적합 방지, VRAM 절약, 안정적 학습
+- 단점: 표현력이 제한될 수 있음
+
+### 2.5 실제 사례 분석: COMETKiwi Fine-tuning 성공/실패 사례
+
+#### (A) ComeTH (wasanx/ComeTH) - EN-TH Fine-tuning 성공 사례
+
+[ComeTH](https://huggingface.co/wasanx/ComeTH)는 COMETKiwi(`wmt22-cometkiwi-da`)를
+영어-태국어 번역 품질 평가에 맞게 fine-tuning한 모델입니다.
+
+| 항목 | 내용 |
+|------|------|
+| **베이스 모델** | `Unbabel/wmt22-cometkiwi-da` (UnifiedMetric) |
+| **인코더** | `microsoft/infoxlm-large` |
+| **학습 데이터** | Human MQM 어노테이션 + Claude 3.5 Sonnet 증강 데이터 |
+| **에폭** | 5 |
+| **Gradient Accumulation** | 8 |
+| **결과** | Baseline Spearman 0.4570 → **+4.9% 향상** |
+
+**핵심 인사이트:**
+- COMETKiwi를 특정 언어쌍에 fine-tuning하면 유의미한 성능 향상이 가능함을 입증
+- **LLM 증강 데이터** (Claude 3.5 Sonnet이 생성한 품질 판단)가 성능을 추가로 향상
+- LLM 증강 모델이 직접 LLM 평가보다도 높은 상관계수 달성 (비용 효율적)
+- 우리의 접근법 3과 **동일한 전략** (COMETKiwi + UnifiedMetric + fine-tuning)
+
+#### (B) MTQE.en-he (arXiv:2602.06546) - Full Fine-tuning 위험성 발견
+
+2026년 2월 발표된 이 논문은 **소규모 데이터에서 COMETKiwi full fine-tuning의 위험성**을
+실증적으로 보여줍니다. 300개 EN-HE 샘플에서 실험:
+
+| Fine-tuning 방법 | 학습 파라미터 비율 | 결과 |
+|------------------|-------------------|------|
+| **Full Fine-tuning** | 100% | **성능 악화** (2~3pp 하락, 분포 붕괴) |
+| **LoRA** | ~1% | +2~3pp 향상 (Pearson/Spearman) |
+| **BitFit** (bias만) | ~0.2% | +2~3pp 향상 |
+| **FTHead** (head만) | ~2% | +2~3pp 향상 (LoRA보다 약간 낮음) |
+
+> **경고**: 소규모 데이터에서 Full fine-tuning은 COMETKiwi에서 **overfitting과
+> score distribution collapse**를 유발합니다. 모델이 특정 점수 범위로만 예측하게 됩니다.
+
+**단, 이 논문의 조건과 우리 상황은 매우 다릅니다:**
+
+| 조건 | MTQE.en-he | **우리 프로젝트** |
+|------|-----------|-----------------|
+| 학습 데이터 크기 | **300 샘플** | **~960만 샘플** (32,000배) |
+| 검증 데이터 | 100 샘플 | ~50만 샘플 |
+| 도메인 | 일반 WMT | 특허 (특정 도메인) |
+| 언어쌍 | EN-HE | EN-KO |
+
+**우리의 대용량 데이터(960만 행)에서는 full fine-tuning이 성공할 가능성이 높습니다.**
+소규모 데이터에서의 과적합/분포 붕괴 문제는 대규모 데이터에서는 자연스럽게 완화됩니다.
+하지만 **안전한 대안**으로 LoRA/BitFit/FTHead도 함께 제공합니다.
+
+#### (C) 기타 참고 사례
+
+| 프로젝트 | 전략 | 핵심 교훈 |
+|----------|------|-----------|
+| **AfriCOMET** (아프리카 13개 언어) | 언어 특화 인코더(AfroXLM-R) 사용 | 언어 계열 전용 인코더가 효과적 |
+| **IndicCOMET** (인도 5개 언어, 7000 MQM) | COMET-MQM 체크포인트에서 시작 | 더 강한 체크포인트 = 더 좋은 결과 |
+| **Cometoid** (WMT 2023, 지식 증류) | 교사 모델로 합성 점수 생성 | Reference-free가 reference-based 능가 가능 |
+| **도메인 적응 연구** (ACL 2024) | 도메인 간 전이 분석 | fine-tuned 모델은 학습 도메인 밖에서 성능 저하 가능 |
+
+### 2.6 우리 데이터에 대한 전략적 판단
+
+**결론: 접근법 3 (COMETKiwi Full Fine-tuning)은 성공 가능성이 높습니다.**
+
+근거:
+1. **ComeTH가 동일 전략으로 성공** → COMETKiwi fine-tuning 자체는 검증된 방법
+2. **960만 행의 대규모 데이터** → MTQE 논문의 과적합 문제(300샘플)와는 상황이 완전히 다름
+3. **특허 도메인 특화** → 도메인 적응이 성능 향상에 기여할 것
+
+**추천 실행 순서 (수정됨):**
+1. 먼저 **접근법 5 (FTHead)** → 가장 안전하고 빠르게 baseline 확보
+2. 그 다음 **접근법 3 (Full Fine-tuning)** → 대용량 데이터의 장점 활용
+3. 접근법 3에서 과적합 징후 시 **접근법 6 (LoRA)** → 중간 지점
+4. 성능 비교 후 최적 방법 선택
 
 ---
 
@@ -168,6 +247,9 @@ pip install unbabel-comet
 
 # 4. 추가 패키지 (평가 스크립트용)
 pip install scipy scikit-learn
+
+# 5. LoRA Fine-tuning용 (접근법 5, 6에서 사용)
+pip install peft>=0.6.0
 
 # 5. 설치 확인
 comet-score --help
@@ -272,23 +354,52 @@ mqm_scores  : MQM 점수
 
 ## 5. 학습 접근법 비교
 
-총 **4가지 접근법**을 준비했습니다. 상황에 맞게 선택하세요.
+총 **6가지 접근법**을 준비했습니다. 상황에 맞게 선택하세요.
 
 ### 접근법 비교표
 
-| # | 접근법 | 아키텍처 | 시작점 | 설정 파일 | 난이도 |
-|---|--------|---------|--------|-----------|--------|
-| 1 | ReferencelessRegression Scratch | ReferencelessRegression | XLM-R encoder | `approach1_referenceless_scratch.yaml` | ★☆☆ |
-| 2 | UnifiedMetric QE Scratch | UnifiedMetric | InfoXLM encoder | `approach2_unified_qe_scratch.yaml` | ★★☆ |
-| **3** | **COMETKiwi Fine-tuning** | **UnifiedMetric** | **COMETKiwi 체크포인트** | **`approach3_finetune_cometkiwi.yaml`** | **★★☆** |
-| 4 | QE Model Fine-tuning | ReferencelessRegression | wmt21-qe 체크포인트 | `approach4_referenceless_finetune_qe.yaml` | ★★☆ |
+| # | 접근법 | 아키텍처 | 시작점 | 학습 파라미터 | 난이도 | 위험도 |
+|---|--------|---------|--------|-------------|--------|--------|
+| 1 | ReferencelessRegression Scratch | ReferencelessRegression | XLM-R | 100% | ★☆☆ | 낮음 |
+| 2 | UnifiedMetric QE Scratch | UnifiedMetric | InfoXLM | 100% | ★★☆ | 낮음 |
+| **3** | **COMETKiwi Full Fine-tuning** | **UnifiedMetric** | **COMETKiwi** | **100%** | **★★☆** | **중간** |
+| 4 | ReferencelessRegression Fine-tuning | ReferencelessRegression | wmt21-qe | 100% | ★★☆ | 중간 |
+| **5** | **COMETKiwi FTHead (Head만)** | **UnifiedMetric** | **COMETKiwi** | **~2%** | **★☆☆** | **낮음** |
+| **6** | **COMETKiwi LoRA** | **UnifiedMetric** | **COMETKiwi** | **~1%** | **★★☆** | **낮음** |
 
-### 추천 순서
+### ComeTH와 우리 접근법 비교
 
-1. **먼저 미니 테스트** → 파이프라인 동작 확인
-2. **접근법 3 (COMETKiwi Fine-tuning)** → 가장 높은 성능 기대
-3. **접근법 1 (From Scratch)** → 비교 기준선
-4. 성능 비교 후 최적 접근법 선택
+| 항목 | ComeTH (EN-TH) | **우리 프로젝트 (EN-KO)** |
+|------|----------------|--------------------------|
+| 베이스 모델 | wmt22-cometkiwi-da | wmt22-cometkiwi-da |
+| 방법 | Full Fine-tuning | Full FT + LoRA + FTHead (비교) |
+| 데이터 규모 | 소~중규모 (MQM) | **~960만 행** (초대규모) |
+| 데이터 증강 | Claude 3.5 Sonnet | MQM 점수 기반 |
+| 에폭 | 5 | 3~5 |
+| Grad Accum | 8 | 4~8 |
+| 성과 | Spearman +4.9% | 측정 예정 |
+
+### 추천 실행 순서
+
+```
+STEP 0: 미니 테스트 (파이프라인 확인)
+  │
+  ▼
+STEP 5: 접근법 5 - FTHead (가장 안전, 빠른 baseline)
+  │
+  ├── 성능 양호 → STEP 3으로
+  └── 성능 부족 → STEP 6으로
+  │
+STEP 3: 접근법 3 - Full Fine-tuning (대용량 데이터 활용)
+  │
+  ├── 과적합 없음 → 최적 모델 후보
+  └── 과적합 발생 → STEP 6으로
+  │
+STEP 6: 접근법 6 - LoRA (과적합 방지 + 성능 균형)
+  │
+  ▼
+최적 모델 선택 (val_kendall 기준)
+```
 
 ---
 
@@ -376,6 +487,78 @@ python scripts/download_checkpoint.py --model wmt21-comet-qe-da --legacy
 CHECKPOINT_PATH="다운로드된_체크포인트_경로"
 bash scripts/run_training.sh ft-qe --checkpoint $CHECKPOINT_PATH
 ```
+
+### STEP 5: 접근법 5 - COMETKiwi FTHead (Head만 학습, 가장 안전)
+
+인코더를 완전히 동결하고 estimator head와 layerwise_attention만 학습합니다.
+MTQE 논문에서 검증된 안전한 방법으로, 가장 먼저 시도하기를 추천합니다.
+
+```bash
+# 5-1. COMETKiwi 체크포인트 다운로드 (STEP 3에서 이미 했다면 생략)
+python scripts/download_checkpoint.py --model Unbabel/wmt22-cometkiwi-da
+CHECKPOINT_PATH="다운로드된_경로"
+
+# 5-2. FTHead Fine-tuning 실행
+python scripts/finetune_lora.py \
+    --base_model $CHECKPOINT_PATH \
+    --train_data data/en-ko-qe/unified_qe_train.csv \
+    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --output_dir outputs/cometkiwi-fthead-en-ko \
+    --mode fthead \
+    --learning_rate 1e-4 \
+    --batch_size 16 \
+    --epochs 5
+
+# 대용량 데이터 시 샘플링하여 빠른 실험
+python scripts/finetune_lora.py \
+    --base_model $CHECKPOINT_PATH \
+    --train_data data/en-ko-qe/unified_qe_train.csv \
+    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --output_dir outputs/cometkiwi-fthead-en-ko-1M \
+    --mode fthead \
+    --max_train_rows 1000000 \
+    --epochs 3
+```
+
+### STEP 6: 접근법 6 - COMETKiwi LoRA (Parameter-Efficient)
+
+LoRA 어댑터를 인코더에 적용하여 ~1%의 파라미터만 학습합니다.
+Full fine-tuning의 과적합 위험 없이 인코더도 일부 적응시킬 수 있습니다.
+
+```bash
+# 추가 설치 필요
+pip install peft>=0.6.0
+
+# 6-1. LoRA Fine-tuning
+python scripts/finetune_lora.py \
+    --base_model $CHECKPOINT_PATH \
+    --train_data data/en-ko-qe/unified_qe_train.csv \
+    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --output_dir outputs/cometkiwi-lora-en-ko \
+    --mode lora \
+    --lora_rank 16 \
+    --lora_alpha 32 \
+    --learning_rate 1e-4 \
+    --batch_size 16 \
+    --epochs 3
+
+# 6-2. BitFit (bias만 학습, 최소한의 변경)
+python scripts/finetune_lora.py \
+    --base_model $CHECKPOINT_PATH \
+    --train_data data/en-ko-qe/unified_qe_train.csv \
+    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --output_dir outputs/cometkiwi-bitfit-en-ko \
+    --mode bitfit \
+    --learning_rate 1e-4 \
+    --epochs 5
+```
+
+**LoRA 하이퍼파라미터 가이드:**
+| 파라미터 | 설명 | 권장값 |
+|---------|------|--------|
+| `lora_rank` | 저랭크 차원 (클수록 표현력 증가) | 8, 16, 32 |
+| `lora_alpha` | 스케일링 팩터 (보통 rank의 2배) | 16, 32, 64 |
+| `learning_rate` | PEFT는 더 높은 LR 사용 가능 | 1e-4 ~ 5e-4 |
 
 ### 학습 중 모니터링
 
@@ -662,17 +845,37 @@ comet-train --cfg your_config.yaml
   - https://arxiv.org/abs/2310.10482
 - **UniTE**: Wan et al., "UniTE: Unified Translation Evaluation" (ACL 2022)
   - https://arxiv.org/abs/2204.13346
+- **MTQE.en-he** (COMETKiwi LoRA/BitFit Fine-tuning): "Machine Translation Quality Estimation for English-Hebrew" (2026)
+  - https://arxiv.org/abs/2602.06546
+  - Full fine-tuning의 위험성과 PEFT 방법의 우수성을 실증
+- **AfriCOMET** (아프리카 언어 COMET): "AfriCOMET: COMET for African Languages" (2023)
+  - https://arxiv.org/abs/2311.09828
+- **Pitfalls in Using COMET**: Zouhar et al., "Pitfalls and Outlooks in Using COMET" (WMT 2024)
+  - https://arxiv.org/abs/2408.15366
+  - Fine-tuned 메트릭의 도메인 편향과 score 분포 문제 분석
+- **COMET for Low-Resource MT Evaluation** (LREC 2024)
+  - https://aclanthology.org/2024.lrec-main.315/
+- **Cometoid** (지식 증류 기반 QE): "Cometoid: Knowledge Distillation from COMET" (WMT 2023)
+  - https://aclanthology.org/2023.wmt-1.62/
+- **BitFit**: Ben Zaken et al., "BitFit: Simple Parameter-efficient Fine-tuning" (ACL 2022)
+  - https://aclanthology.org/2022.acl-short.1/
+- **LoRA**: Hu et al., "LoRA: Low-Rank Adaptation of Large Language Models" (ICLR 2022)
+  - https://arxiv.org/abs/2106.09685
 
 ### 10.3 블로그 및 한국어 자료
 
 - **COMET 신경망 기반 번역 품질 평가 지표 (한국어)**: https://velog.io/@judy_choi/NMT-COMET-%EC%8B%A0%EA%B2%BD%EB%A7%9D-%EA%B8%B0%EB%B0%98-%EB%B2%88%EC%97%AD-%ED%92%88%EC%A7%88-%ED%8F%89%EA%B0%80-%EC%A7%80%ED%91%9C
 
-### 10.4 HuggingFace 모델
+### 10.4 HuggingFace 모델 및 Fine-tuning 사례
 
 - **wmt22-cometkiwi-da**: https://huggingface.co/Unbabel/wmt22-cometkiwi-da
 - **wmt22-comet-da**: https://huggingface.co/Unbabel/wmt22-comet-da
 - **XCOMET-XL**: https://huggingface.co/Unbabel/XCOMET-XL
 - **wmt23-cometkiwi-da-xl**: https://huggingface.co/Unbabel/wmt23-cometkiwi-da-xl
+- **ComeTH (EN-TH fine-tuned)**: https://huggingface.co/wasanx/ComeTH
+  - COMETKiwi fine-tuning 성공 사례 (Spearman +4.9%)
+- **ComeTH 데이터셋**: https://huggingface.co/datasets/wasanx/cometh_finetune
+- **ComeTH 모델 컬렉션**: https://huggingface.co/collections/wasanx/cometh-model-682c410d3ba4cfbca8a07c9d
 
 ### 10.5 주요 소스 코드 경로
 
@@ -689,6 +892,8 @@ comet-train --cfg your_config.yaml
 | `scripts/prepare_data.py` | 데이터 전처리 스크립트 |
 | `scripts/evaluate_model.py` | 모델 평가 스크립트 |
 | `scripts/run_training.sh` | 학습 실행 스크립트 |
+| `scripts/finetune_lora.py` | LoRA/BitFit/FTHead Fine-tuning 스크립트 |
+| `scripts/download_checkpoint.py` | 체크포인트 다운로드 |
 
 ---
 
@@ -699,7 +904,7 @@ comet-train --cfg your_config.yaml
 ```bash
 # 1. 환경 설정
 cd /path/to/COMET
-pip install unbabel-comet scipy
+pip install unbabel-comet scipy peft
 
 # 2. 데이터 준비
 python scripts/prepare_data.py \
@@ -712,23 +917,40 @@ comet-train --cfg configs/models/en-ko-qe/approach_mini_test.yaml
 
 # 4. COMETKiwi 체크포인트 다운로드
 python scripts/download_checkpoint.py --model Unbabel/wmt22-cometkiwi-da
+CKPT="체크포인트_경로"
 
-# 5. Fine-tuning 실행 (추천)
+# 5. [안전한 방법] FTHead Fine-tuning (Head만, 가장 먼저 시도!)
+python scripts/finetune_lora.py \
+    --base_model $CKPT \
+    --train_data data/en-ko-qe/unified_qe_train.csv \
+    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --output_dir outputs/cometkiwi-fthead \
+    --mode fthead --epochs 5
+
+# 6. [대용량 데이터 활용] Full Fine-tuning (ComeTH와 동일 전략)
 comet-train \
     --cfg configs/models/en-ko-qe/approach3_finetune_cometkiwi.yaml \
-    --load_from_checkpoint /path/to/cometkiwi/model.ckpt \
+    --load_from_checkpoint $CKPT \
     --seed_everything 12
 
-# 6. 평가
+# 7. [과적합 방지] LoRA Fine-tuning (과적합 시 대안)
+python scripts/finetune_lora.py \
+    --base_model $CKPT \
+    --train_data data/en-ko-qe/unified_qe_train.csv \
+    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --output_dir outputs/cometkiwi-lora \
+    --mode lora --lora_rank 16 --epochs 3
+
+# 8. 평가 (각 모델 비교)
 python scripts/evaluate_model.py \
-    --checkpoint lightning_logs/version_0/checkpoints/best.ckpt \
+    --checkpoint outputs/cometkiwi-fthead/best_model.ckpt \
     --test_data data/en-ko-qe/unified_qe_val.csv \
     --model_type unified
 
-# 7. 실제 사용
+# 9. 실제 사용
 python -c "
 from comet import load_from_checkpoint
-model = load_from_checkpoint('lightning_logs/version_0/checkpoints/best.ckpt')
+model = load_from_checkpoint('outputs/cometkiwi-fthead/best_model.ckpt')
 data = [{'src': 'The method of claim 1', 'mt': '청구항 1의 방법'}]
 print(model.predict(data, batch_size=1, gpus=1).scores)
 "
