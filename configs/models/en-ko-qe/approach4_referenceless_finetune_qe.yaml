@@ -55,9 +55,9 @@ referenceless_regression_metric:
     # --- 데이터 ---
     batch_size: 16
     train_data:
-      - data/en-ko-qe/referenceless_train.csv
+      - data/en-ko-qe/train.csv
     validation_data:
-      - data/en-ko-qe/referenceless_val.csv
+      - data/en-ko-qe/val.csv
 
 # --- 트레이너 설정 ---
 trainer:

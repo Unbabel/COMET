@@ -26,25 +26,25 @@ COMET 학습 데이터 점수 분포 분석 및 리밸런싱 스크립트
 사용법:
     # 분포 분석만
     python scripts/analyze_and_rebalance.py \
-        --input data/en-ko-qe/referenceless_train.csv \
+        --input data/en-ko-qe/train.csv \
         --analyze_only
 
     # 균등 리밸런싱 (기본: 구간별 최소 샘플 수에 맞춤)
     python scripts/analyze_and_rebalance.py \
-        --input data/en-ko-qe/referenceless_train.csv \
-        --output data/en-ko-qe/referenceless_train_balanced.csv \
+        --input data/en-ko-qe/train.csv \
+        --output data/en-ko-qe/train_balanced.csv \
         --strategy equal
 
     # 역빈도 가중치 CSV 생성 (학습 시 가중치 적용)
     python scripts/analyze_and_rebalance.py \
-        --input data/en-ko-qe/referenceless_train.csv \
-        --output data/en-ko-qe/referenceless_train_weighted.csv \
+        --input data/en-ko-qe/train.csv \
+        --output data/en-ko-qe/train_weighted.csv \
         --strategy weighted
 
     # 소프트 리밸런싱 (과소 구간 오버샘플 + 과다 구간 언더샘플)
     python scripts/analyze_and_rebalance.py \
-        --input data/en-ko-qe/referenceless_train.csv \
-        --output data/en-ko-qe/referenceless_train_soft.csv \
+        --input data/en-ko-qe/train.csv \
+        --output data/en-ko-qe/train_soft.csv \
         --strategy soft \
         --target_total 3000000
 """

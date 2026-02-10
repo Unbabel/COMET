@@ -10,13 +10,12 @@
     # 기본 평가 (CSV 파일)
     python scripts/evaluate_model.py \
         --checkpoint lightning_logs/version_X/checkpoints/best.ckpt \
-        --test_data data/en-ko-qe/referenceless_val.csv \
-        --model_type referenceless
+        --test_data data/en-ko-qe/val.csv
 
     # UnifiedMetric 평가
     python scripts/evaluate_model.py \
         --checkpoint lightning_logs/version_X/checkpoints/best.ckpt \
-        --test_data data/en-ko-qe/unified_qe_val.csv \
+        --test_data data/en-ko-qe/val.csv \
         --model_type unified
 
     # 개별 문장 평가

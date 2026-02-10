@@ -21,8 +21,8 @@ Full fine-tuning 대비 장점:
     # LoRA Fine-tuning
     python scripts/finetune_lora.py \
         --base_model Unbabel/wmt22-cometkiwi-da \
-        --train_data data/en-ko-qe/unified_qe_train.csv \
-        --val_data data/en-ko-qe/unified_qe_val.csv \
+        --train_data data/en-ko-qe/train.csv \
+        --val_data data/en-ko-qe/val.csv \
         --output_dir outputs/cometkiwi-lora-en-ko \
         --lora_rank 16 \
         --epochs 3
@@ -30,8 +30,8 @@ Full fine-tuning 대비 장점:
     # Head-only Fine-tuning (FTHead)
     python scripts/finetune_lora.py \
         --base_model Unbabel/wmt22-cometkiwi-da \
-        --train_data data/en-ko-qe/unified_qe_train.csv \
-        --val_data data/en-ko-qe/unified_qe_val.csv \
+        --train_data data/en-ko-qe/train.csv \
+        --val_data data/en-ko-qe/val.csv \
         --output_dir outputs/cometkiwi-fthead-en-ko \
         --mode fthead \
         --epochs 5
@@ -39,8 +39,8 @@ Full fine-tuning 대비 장점:
     # BitFit (bias terms only)
     python scripts/finetune_lora.py \
         --base_model Unbabel/wmt22-cometkiwi-da \
-        --train_data data/en-ko-qe/unified_qe_train.csv \
-        --val_data data/en-ko-qe/unified_qe_val.csv \
+        --train_data data/en-ko-qe/train.csv \
+        --val_data data/en-ko-qe/val.csv \
         --output_dir outputs/cometkiwi-bitfit-en-ko \
         --mode bitfit \
         --epochs 5

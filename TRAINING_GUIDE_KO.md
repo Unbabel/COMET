@@ -322,14 +322,14 @@ python scripts/prepare_data.py \
 
 ```
 data/en-ko-qe/
-├── referenceless_train.csv       # ReferencelessRegression용 학습 (src, mt, score)
-├── referenceless_val.csv         # ReferencelessRegression용 검증
-├── unified_qe_train.csv          # UnifiedMetric QE용 학습
-├── unified_qe_val.csv            # UnifiedMetric QE용 검증
-├── pairwise_expanded_train.csv   # Pairwise→Pointwise 변환 데이터
-├── mini_train.csv                # 파이프라인 테스트용 (1000 rows)
-└── mini_val.csv                  # 파이프라인 테스트용 (200 rows)
+├── train.csv           # 학습 데이터 (src, mt, score) - 모든 접근법에서 공통 사용
+├── val.csv             # 검증 데이터 (src, mt, score)
+├── mini_train.csv      # 파이프라인 테스트용 (1000 rows)
+└── mini_val.csv        # 파이프라인 테스트용 (200 rows)
 ```
+
+> **참고**: `--include_pairwise` 사용 시 pairwise 데이터가 pointwise로 변환되어
+> train.csv/val.csv에 자동 합쳐집니다. 별도 파일이 생성되지 않습니다.
 
 ### 4.4 데이터 포맷 상세 설명
 
@@ -389,21 +389,21 @@ Zouhar et al. (WMT 2024) "Pitfalls in Using COMET" 논문에서 실험으로 증
 ```bash
 # 1. 먼저 현재 분포 분석
 python scripts/analyze_and_rebalance.py \
-    --input data/en-ko-qe/referenceless_train.csv \
+    --input data/en-ko-qe/train.csv \
     --analyze_only
 
 # 2-A. 소프트 리밸런싱 (권장, 균형과 데이터 보존 타협)
 python scripts/analyze_and_rebalance.py \
-    --input data/en-ko-qe/referenceless_train.csv \
-    --output data/en-ko-qe/referenceless_train_balanced.csv \
+    --input data/en-ko-qe/train.csv \
+    --output data/en-ko-qe/train_balanced.csv \
     --strategy soft \
     --target_total 3000000 \
     --smoothing 0.5
 
 # 2-B. 완전 균등 리밸런싱 (가장 공격적)
 python scripts/analyze_and_rebalance.py \
-    --input data/en-ko-qe/referenceless_train.csv \
-    --output data/en-ko-qe/referenceless_train_equal.csv \
+    --input data/en-ko-qe/train.csv \
+    --output data/en-ko-qe/train_equal.csv \
     --strategy equal
 ```
 
@@ -435,7 +435,7 @@ python scripts/analyze_and_rebalance.py \
 
 ```yaml
 train_data:
-  - data/en-ko-qe/referenceless_train_balanced.csv   # 리밸런싱 데이터
+  - data/en-ko-qe/train_balanced.csv   # 리밸런싱 데이터
 ```
 
 #### 주의사항
@@ -595,8 +595,8 @@ CHECKPOINT_PATH="다운로드된_경로"
 # 5-2. FTHead Fine-tuning 실행
 python scripts/finetune_lora.py \
     --base_model $CHECKPOINT_PATH \
-    --train_data data/en-ko-qe/unified_qe_train.csv \
-    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --train_data data/en-ko-qe/train.csv \
+    --val_data data/en-ko-qe/val.csv \
     --output_dir outputs/cometkiwi-fthead-en-ko \
     --mode fthead \
     --learning_rate 1e-4 \
@@ -606,8 +606,8 @@ python scripts/finetune_lora.py \
 # 대용량 데이터 시 샘플링하여 빠른 실험
 python scripts/finetune_lora.py \
     --base_model $CHECKPOINT_PATH \
-    --train_data data/en-ko-qe/unified_qe_train.csv \
-    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --train_data data/en-ko-qe/train.csv \
+    --val_data data/en-ko-qe/val.csv \
     --output_dir outputs/cometkiwi-fthead-en-ko-1M \
     --mode fthead \
     --max_train_rows 1000000 \
@@ -626,8 +626,8 @@ pip install peft>=0.6.0
 # 6-1. LoRA Fine-tuning
 python scripts/finetune_lora.py \
     --base_model $CHECKPOINT_PATH \
-    --train_data data/en-ko-qe/unified_qe_train.csv \
-    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --train_data data/en-ko-qe/train.csv \
+    --val_data data/en-ko-qe/val.csv \
     --output_dir outputs/cometkiwi-lora-en-ko \
     --mode lora \
     --lora_rank 16 \
@@ -639,8 +639,8 @@ python scripts/finetune_lora.py \
 # 6-2. BitFit (bias만 학습, 최소한의 변경)
 python scripts/finetune_lora.py \
     --base_model $CHECKPOINT_PATH \
-    --train_data data/en-ko-qe/unified_qe_train.csv \
-    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --train_data data/en-ko-qe/train.csv \
+    --val_data data/en-ko-qe/val.csv \
     --output_dir outputs/cometkiwi-bitfit-en-ko \
     --mode bitfit \
     --learning_rate 1e-4 \
@@ -697,13 +697,13 @@ lightning_logs/
 # ReferencelessRegression 모델 평가
 python scripts/evaluate_model.py \
     --checkpoint lightning_logs/version_X/checkpoints/best.ckpt \
-    --test_data data/en-ko-qe/referenceless_val.csv \
+    --test_data data/en-ko-qe/val.csv \
     --model_type referenceless
 
 # UnifiedMetric 모델 평가
 python scripts/evaluate_model.py \
     --checkpoint lightning_logs/version_X/checkpoints/best.ckpt \
-    --test_data data/en-ko-qe/unified_qe_val.csv \
+    --test_data data/en-ko-qe/val.csv \
     --model_type unified
 ```
 
@@ -1016,8 +1016,8 @@ CKPT="체크포인트_경로"
 # 5. [안전한 방법] FTHead Fine-tuning (Head만, 가장 먼저 시도!)
 python scripts/finetune_lora.py \
     --base_model $CKPT \
-    --train_data data/en-ko-qe/unified_qe_train.csv \
-    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --train_data data/en-ko-qe/train.csv \
+    --val_data data/en-ko-qe/val.csv \
     --output_dir outputs/cometkiwi-fthead \
     --mode fthead --epochs 5
 
@@ -1030,15 +1030,15 @@ comet-train \
 # 7. [과적합 방지] LoRA Fine-tuning (과적합 시 대안)
 python scripts/finetune_lora.py \
     --base_model $CKPT \
-    --train_data data/en-ko-qe/unified_qe_train.csv \
-    --val_data data/en-ko-qe/unified_qe_val.csv \
+    --train_data data/en-ko-qe/train.csv \
+    --val_data data/en-ko-qe/val.csv \
     --output_dir outputs/cometkiwi-lora \
     --mode lora --lora_rank 16 --epochs 3
 
 # 8. 평가 (각 모델 비교)
 python scripts/evaluate_model.py \
     --checkpoint outputs/cometkiwi-fthead/best_model.ckpt \
-    --test_data data/en-ko-qe/unified_qe_val.csv \
+    --test_data data/en-ko-qe/val.csv \
     --model_type unified
 
 # 9. 실제 사용
