@@ -195,8 +195,14 @@ def _move_inputs_to_device(batch_input, device):
         return {k: v.to(device) for k, v in batch_input.items()}
 
 
-def train_epoch(model, dataloader, optimizer, device, epoch, writer=None, global_step=0, log_interval=100):
-    """1 에폭 학습"""
+def train_epoch(model, dataloader, optimizer, device, epoch,
+                writer=None, global_step=0, log_interval=100,
+                val_loader=None, eval_fn=None, eval_interval=0):
+    """1 에폭 학습
+
+    Args:
+        eval_interval: N step마다 중간 validation 실행 (0=비활성)
+    """
     model.train()
     total_loss = 0
     num_batches = 0
@@ -222,21 +228,40 @@ def train_epoch(model, dataloader, optimizer, device, epoch, writer=None, global
 
         loss.backward()
 
-        # Gradient clipping
-        torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+        # Gradient norm (clipping 전)
+        grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
 
         total_loss += loss.item()
         num_batches += 1
         global_step += 1
 
-        # TensorBoard: step별 loss
+        # TensorBoard: step별 로깅
         if writer is not None:
             writer.add_scalar("train/step_loss", loss.item(), global_step)
+            writer.add_scalar("train/grad_norm", grad_norm.item(), global_step)
+            writer.add_scalar("train/lr", optimizer.param_groups[0]["lr"], global_step)
 
         if (batch_idx + 1) % log_interval == 0:
             avg_loss = total_loss / num_batches
-            logger.info(f"  Epoch {epoch} [{batch_idx+1}/{len(dataloader)}] loss={avg_loss:.6f}")
+            logger.info(f"  Epoch {epoch} [{batch_idx+1}/{len(dataloader)}] "
+                        f"loss={avg_loss:.6f} grad_norm={grad_norm:.4f}")
+
+        # 에폭 중간 validation
+        if eval_interval > 0 and val_loader is not None and eval_fn is not None:
+            if (batch_idx + 1) % eval_interval == 0:
+                logger.info(f"  [Mid-epoch validation at step {global_step}]")
+                mid_metrics = eval_fn(model, val_loader, device)
+                logger.info(f"    Pearson={mid_metrics['pearson']:.4f} "
+                            f"Spearman={mid_metrics['spearman']:.4f} "
+                            f"Kendall={mid_metrics['kendall']:.4f} "
+                            f"MSE={mid_metrics['mse']:.6f}")
+                if writer is not None:
+                    writer.add_scalar("val_mid/pearson", mid_metrics["pearson"], global_step)
+                    writer.add_scalar("val_mid/spearman", mid_metrics["spearman"], global_step)
+                    writer.add_scalar("val_mid/kendall", mid_metrics["kendall"], global_step)
+                    writer.add_scalar("val_mid/mse", mid_metrics["mse"], global_step)
+                model.train()  # evaluate에서 eval()로 전환되므로 복구
 
     return total_loss / max(num_batches, 1), global_step
 
@@ -276,6 +301,8 @@ def evaluate(model, dataloader, device):
         "spearman": spearman_r,
         "kendall": kendall_tau,
         "mse": mse,
+        "preds": preds,
+        "targets": targets,
     }
 
 
@@ -298,6 +325,8 @@ def main():
     parser.add_argument("--epochs", type=int, default=3, help="Number of epochs")
     parser.add_argument("--max_train_rows", type=int, default=0,
                         help="Max training rows (0=all)")
+    parser.add_argument("--eval_interval", type=int, default=0,
+                        help="에폭 중간 validation 간격 (step 단위, 0=에폭 끝에만 평가)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
 
     args = parser.parse_args()
@@ -378,6 +407,8 @@ def main():
     logger.info(f"Training samples: {len(train_dataset)}")
     logger.info(f"Validation samples: {len(val_dataset)}")
     logger.info(f"Epochs: {args.epochs}, LR: {args.learning_rate}")
+    if args.eval_interval > 0:
+        logger.info(f"Mid-epoch validation every {args.eval_interval} steps")
 
     # ========================================
     # 5. TensorBoard 초기화
@@ -411,6 +442,8 @@ def main():
         train_loss, global_step = train_epoch(
             model, train_loader, optimizer, device, epoch + 1,
             writer=writer, global_step=global_step,
+            val_loader=val_loader, eval_fn=evaluate,
+            eval_interval=args.eval_interval,
         )
         logger.info(f"  Train loss: {train_loss:.6f}")
 
@@ -426,6 +459,12 @@ def main():
         writer.add_scalar("val/spearman", metrics["spearman"], epoch + 1)
         writer.add_scalar("val/kendall", metrics["kendall"], epoch + 1)
         writer.add_scalar("val/mse", metrics["mse"], epoch + 1)
+
+        # TensorBoard: 예측값 분포 히스토그램 (score collapse 감지용)
+        writer.add_histogram("val/pred_distribution", metrics["preds"], epoch + 1)
+        writer.add_histogram("val/target_distribution", metrics["targets"], epoch + 1)
+        writer.add_scalar("val/pred_std", float(np.std(metrics["preds"])), epoch + 1)
+        writer.add_scalar("val/pred_mean", float(np.mean(metrics["preds"])), epoch + 1)
 
         # 체크포인트 저장
         if metrics["kendall"] > best_kendall:
