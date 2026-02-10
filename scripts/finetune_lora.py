@@ -295,15 +295,62 @@ def evaluate(model, dataloader, device):
     spearman_r, _ = stats.spearmanr(targets, preds)
     kendall_tau, _ = stats.kendalltau(targets, preds)
     mse = np.mean((targets - preds) ** 2)
+    mae = np.mean(np.abs(targets - preds))
 
     return {
         "pearson": pearson_r,
         "spearman": spearman_r,
         "kendall": kendall_tau,
         "mse": mse,
+        "mae": mae,
         "preds": preds,
         "targets": targets,
     }
+
+
+def log_epoch_metrics(writer, metrics, train_loss, epoch):
+    """에폭별 TensorBoard 로깅 (전체 항목)"""
+    preds = metrics["preds"]
+    targets = metrics["targets"]
+
+    # --- 1. 기본 성능 지표 ---
+    writer.add_scalar("train/epoch_loss", train_loss, epoch)
+    writer.add_scalar("val/pearson", metrics["pearson"], epoch)
+    writer.add_scalar("val/spearman", metrics["spearman"], epoch)
+    writer.add_scalar("val/kendall", metrics["kendall"], epoch)
+    writer.add_scalar("val/mse", metrics["mse"], epoch)
+    writer.add_scalar("val/mae", metrics["mae"], epoch)
+
+    # --- 2. 분포 collapse 감지 ---
+    # 예측값 분포가 좁아지면 모델이 특정 점수 범위로만 예측 (collapse)
+    pred_std = float(np.std(preds))
+    target_std = float(np.std(targets))
+    writer.add_scalar("collapse/pred_std", pred_std, epoch)
+    writer.add_scalar("collapse/target_std", target_std, epoch)
+    writer.add_scalar("collapse/std_ratio", pred_std / (target_std + 1e-8), epoch)
+    writer.add_scalar("collapse/pred_range",
+                      float(np.max(preds) - np.min(preds)), epoch)
+    writer.add_scalar("collapse/pred_iqr",
+                      float(np.percentile(preds, 75) - np.percentile(preds, 25)), epoch)
+
+    # --- 3. 점수 편향 감지 ---
+    # 예측 평균이 정답 평균에서 크게 벗어나면 고점/저점 편향
+    writer.add_scalar("bias/pred_mean", float(np.mean(preds)), epoch)
+    writer.add_scalar("bias/target_mean", float(np.mean(targets)), epoch)
+    writer.add_scalar("bias/mean_diff",
+                      float(np.mean(preds) - np.mean(targets)), epoch)
+    writer.add_scalar("bias/pred_skewness",
+                      float(pd.Series(preds).skew()), epoch)
+
+    # --- 4. 예측 분포 히스토그램 ---
+    writer.add_histogram("distribution/predictions", preds, epoch)
+    writer.add_histogram("distribution/targets", targets, epoch)
+    writer.add_histogram("distribution/errors", preds - targets, epoch)
+
+    # --- 5. 분위수 추적 ---
+    writer.add_scalar("quantile/pred_q25", float(np.percentile(preds, 25)), epoch)
+    writer.add_scalar("quantile/pred_q50", float(np.percentile(preds, 50)), epoch)
+    writer.add_scalar("quantile/pred_q75", float(np.percentile(preds, 75)), epoch)
 
 
 def main():
@@ -452,19 +499,10 @@ def main():
         logger.info(f"  Val Spearman: {metrics['spearman']:.4f}")
         logger.info(f"  Val Kendall:  {metrics['kendall']:.4f}")
         logger.info(f"  Val MSE:      {metrics['mse']:.6f}")
+        logger.info(f"  Val MAE:      {metrics['mae']:.6f}")
 
-        # TensorBoard: 에폭별 metrics 기록
-        writer.add_scalar("train/epoch_loss", train_loss, epoch + 1)
-        writer.add_scalar("val/pearson", metrics["pearson"], epoch + 1)
-        writer.add_scalar("val/spearman", metrics["spearman"], epoch + 1)
-        writer.add_scalar("val/kendall", metrics["kendall"], epoch + 1)
-        writer.add_scalar("val/mse", metrics["mse"], epoch + 1)
-
-        # TensorBoard: 예측값 분포 히스토그램 (score collapse 감지용)
-        writer.add_histogram("val/pred_distribution", metrics["preds"], epoch + 1)
-        writer.add_histogram("val/target_distribution", metrics["targets"], epoch + 1)
-        writer.add_scalar("val/pred_std", float(np.std(metrics["preds"])), epoch + 1)
-        writer.add_scalar("val/pred_mean", float(np.mean(metrics["preds"])), epoch + 1)
+        # TensorBoard: 전체 에폭별 로깅
+        log_epoch_metrics(writer, metrics, train_loss, epoch + 1)
 
         # 체크포인트 저장
         if metrics["kendall"] > best_kendall:
