@@ -182,6 +182,18 @@ def apply_lora(model, rank: int = 16, alpha: int = 32, target_modules: list = No
     return model
 
 
+def _move_inputs_to_device(batch_input, device):
+    """batch_input을 device로 이동. tuple of dicts 또는 단일 dict 모두 처리."""
+    if isinstance(batch_input, (tuple, list)):
+        # UnifiedMetric: tuple of dicts (각 forward pass 입력)
+        return tuple(
+            {k: v.to(device) for k, v in inp.items()} for inp in batch_input
+        )
+    else:
+        # ReferencelessRegression: 단일 dict
+        return {k: v.to(device) for k, v in batch_input.items()}
+
+
 def train_epoch(model, dataloader, optimizer, device, epoch, log_interval=100):
     """1 에폭 학습"""
     model.train()
@@ -190,12 +202,23 @@ def train_epoch(model, dataloader, optimizer, device, epoch, log_interval=100):
 
     for batch_idx, batch in enumerate(dataloader):
         model_inputs, targets = batch
-        model_inputs = {k: v.to(device) for k, v in model_inputs.items()}
+        model_inputs = _move_inputs_to_device(model_inputs, device)
         targets_score = targets["score"].to(device)
 
         optimizer.zero_grad()
-        prediction = model(**model_inputs)
-        loss = torch.nn.MSELoss()(prediction.score, targets_score)
+
+        # UnifiedMetric은 tuple of dicts (여러 forward pass),
+        # ReferencelessRegression은 단일 dict
+        if isinstance(model_inputs, (tuple, list)):
+            # UnifiedMetric 방식: 각 input sequence에 대해 forward pass
+            loss = torch.tensor(0.0, device=device)
+            for input_seq in model_inputs:
+                prediction = model(**input_seq)
+                loss = loss + torch.nn.MSELoss()(prediction.score, targets_score)
+        else:
+            prediction = model(**model_inputs)
+            loss = torch.nn.MSELoss()(prediction.score, targets_score)
+
         loss.backward()
 
         # Gradient clipping
@@ -221,9 +244,16 @@ def evaluate(model, dataloader, device):
     with torch.no_grad():
         for batch in dataloader:
             model_inputs, targets = batch
-            model_inputs = {k: v.to(device) for k, v in model_inputs.items()}
+            model_inputs = _move_inputs_to_device(model_inputs, device)
 
-            prediction = model(**model_inputs)
+            # UnifiedMetric: 여러 forward pass의 마지막 prediction 사용
+            if isinstance(model_inputs, (tuple, list)):
+                prediction = None
+                for input_seq in model_inputs:
+                    prediction = model(**input_seq)
+            else:
+                prediction = model(**model_inputs)
+
             all_preds.extend(prediction.score.cpu().tolist())
             all_targets.extend(targets["score"].tolist())
 
