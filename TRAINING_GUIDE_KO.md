@@ -614,6 +614,28 @@ python scripts/finetune_lora.py \
     --epochs 3
 ```
 
+#### 백그라운드 실행 (SSH 연결 끊겨도 학습 유지)
+
+```bash
+# 백그라운드 실행
+nohup env python scripts/finetune_lora.py \
+    --base_model $CHECKPOINT_PATH \
+    --train_data data/en-ko-qe/train.csv \
+    --val_data data/en-ko-qe/val.csv \
+    --output_dir outputs/cometkiwi-fthead-en-ko \
+    --mode fthead \
+    --learning_rate 1e-4 \
+    --batch_size 16 \
+    --epochs 5 > train.nohup.out 2>&1 &
+
+# 실시간 로그 확인
+tail -f train.nohup.out
+
+# 강제 종료가 필요한 경우
+ps -ef | grep finetune_lora.py
+kill -TERM <PID>
+```
+
 ### STEP 6: 접근법 6 - COMETKiwi LoRA (Parameter-Efficient)
 
 LoRA 어댑터를 인코더에 적용하여 ~1%의 파라미터만 학습합니다.
@@ -647,6 +669,30 @@ python scripts/finetune_lora.py \
     --epochs 5
 ```
 
+#### 백그라운드 실행 (SSH 연결 끊겨도 학습 유지)
+
+```bash
+# 백그라운드 실행 (LoRA 예시)
+nohup env python scripts/finetune_lora.py \
+    --base_model $CHECKPOINT_PATH \
+    --train_data data/en-ko-qe/train.csv \
+    --val_data data/en-ko-qe/val.csv \
+    --output_dir outputs/cometkiwi-lora-en-ko \
+    --mode lora \
+    --lora_rank 16 \
+    --lora_alpha 32 \
+    --learning_rate 1e-4 \
+    --batch_size 16 \
+    --epochs 3 > train.nohup.out 2>&1 &
+
+# 실시간 로그 확인
+tail -f train.nohup.out
+
+# 강제 종료가 필요한 경우
+ps -ef | grep finetune_lora.py
+kill -TERM <PID>
+```
+
 **LoRA 하이퍼파라미터 가이드:**
 | 파라미터 | 설명 | 권장값 |
 |---------|------|--------|
@@ -663,6 +709,29 @@ python scripts/finetune_lora.py \
 tensorboard --logdir lightning_logs/
 
 # 웹 브라우저에서 http://localhost:6006 접속
+```
+
+#### TensorBoard 백그라운드 실행
+
+여러 프로젝트의 로그를 동시에 모니터링하려면 `--logdir_spec`으로 이름을 지정하여 백그라운드로 실행합니다:
+
+```bash
+# 백그라운드 실행 (xCOMET-lite + COMET 동시 모니터링)
+nohup env tensorboard \
+    --logdir_spec=xcomet-lite:/home/wengine/Python_workspace/comet_quantization/xCOMET-lite/runs,comet:/home/wengine/Python_workspace/COMET/outputs \
+    --bind_all > /dev/null 2>&1 &
+
+# 웹 브라우저에서 http://<서버IP>:6006 접속
+```
+
+#### TensorBoard 강제 종료
+
+```bash
+# 방법 1: kill 명령
+kill -TERM $(pgrep -f tensorboard)
+
+# 방법 2: pkill 명령
+pkill tensorboard
 ```
 
 주요 모니터링 지표:
