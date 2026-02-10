@@ -350,6 +350,100 @@ mqm_scores  : MQM 점수
 
 `score` 컬럼이 0~1 범위인 것은 COMET 학습에 이상적입니다 (정규화 불필요).
 
+### 4.5 점수 분포 분석과 리밸런싱 (매우 중요!)
+
+> **핵심**: COMET은 학습 데이터의 점수 분포에 **매우 민감**합니다.
+> "COMET is highly susceptible to the distribution of scores in the training data"
+> — Falcao et al. (LREC 2024), Zouhar et al. (WMT 2024)
+
+#### 현재 데이터의 점수 분포 문제
+
+```
+0.0-0.3:   344,930 (  3.5%)  ██▌             ← 심각하게 부족!
+0.3-0.5: 1,363,461 ( 14.2%) ██████████
+0.5-0.7: 2,197,215 ( 22.8%) ████████████████
+0.7-1.0: 5,717,209 ( 59.4%) ████████████████████████████████████  ← 과다!
+```
+
+**문제점:**
+1. **고품질 편향**: 0.7~1.0 구간이 60%를 차지 → 모델이 항상 높은 점수를 예측하는 경향
+2. **저품질 식별 불가**: 0.0~0.3 구간이 3.5%뿐 → 나쁜 번역을 낮은 점수로 평가하지 못함
+3. **평균 회귀**: MSE 손실은 본질적으로 학습 데이터 평균으로 수렴하는 경향
+4. **예측 범위 압축**: 출력이 0.5~0.8 좁은 범위에 몰리는 "score distribution collapse"
+
+#### 이 문제가 발생하는 이유
+
+이것은 WMT DA 학습 데이터에서도 동일하게 발생하는 알려진 문제입니다.
+Zouhar et al. (WMT 2024) "Pitfalls in Using COMET" 논문에서 실험으로 증명:
+
+| 실험 | 결과 |
+|------|------|
+| 전체 데이터로 학습 | 기준선 |
+| 상위 75% 점수만 사용 | 점수가 체계적으로 **높아짐** |
+| 하위 75% 점수만 사용 | 점수가 체계적으로 **낮아짐** |
+
+→ 학습 데이터의 점수 분포가 모델 출력을 직접적으로 편향시킵니다.
+
+#### 해결 방법: 리밸런싱
+
+```bash
+# 1. 먼저 현재 분포 분석
+python scripts/analyze_and_rebalance.py \
+    --input data/en-ko-qe/referenceless_train.csv \
+    --analyze_only
+
+# 2-A. 소프트 리밸런싱 (권장, 균형과 데이터 보존 타협)
+python scripts/analyze_and_rebalance.py \
+    --input data/en-ko-qe/referenceless_train.csv \
+    --output data/en-ko-qe/referenceless_train_balanced.csv \
+    --strategy soft \
+    --target_total 3000000 \
+    --smoothing 0.5
+
+# 2-B. 완전 균등 리밸런싱 (가장 공격적)
+python scripts/analyze_and_rebalance.py \
+    --input data/en-ko-qe/referenceless_train.csv \
+    --output data/en-ko-qe/referenceless_train_equal.csv \
+    --strategy equal
+```
+
+#### 리밸런싱 전략 비교
+
+| 전략 | 설명 | 장점 | 단점 |
+|------|------|------|------|
+| **soft (권장)** | 과소 구간 오버샘플 + 과다 구간 언더샘플 | 균형과 데이터 보존 타협 | 완벽히 균등하지 않음 |
+| equal | 모든 구간 동일 샘플 수 | 완벽히 균등 | 데이터 손실 큼 (최소 구간에 맞춤) |
+| weighted | sample_weight 컬럼 추가 | 원본 보존 | 커스텀 loss 코드 필요 |
+
+#### 소프트 리밸런싱 적용 시 예상 변화
+
+`--smoothing 0.5` (제곱근 역빈도) 적용 시:
+
+```
+            원본                →        리밸런싱 후
+0.0-0.3:   3.5% (34만)         →        ~12% (36만, 오버샘플)
+0.3-0.5:  14.2% (136만)        →        ~18% (54만, 유사)
+0.5-0.7:  22.8% (220만)        →        ~25% (75만, 언더샘플)
+0.7-1.0:  59.4% (572만)        →        ~45% (135만, 언더샘플)
+```
+
+→ 저품질 구간이 보강되어 모델이 좋고 나쁜 번역을 더 잘 구별할 수 있게 됩니다.
+
+#### 학습 시 적용
+
+리밸런싱된 데이터를 사용하려면 config에서 train_data 경로를 변경:
+
+```yaml
+train_data:
+  - data/en-ko-qe/referenceless_train_balanced.csv   # 리밸런싱 데이터
+```
+
+#### 주의사항
+
+1. **검증 데이터는 리밸런싱하지 마세요** — 실제 분포를 반영해야 정확한 평가 가능
+2. **오버샘플링된 데이터에서 과적합 주의** — 같은 샘플이 반복되므로 에폭 수를 줄이기
+3. **단계적 실험** — 먼저 원본으로 학습 → 리밸런싱으로 학습 → 결과 비교
+
 ---
 
 ## 5. 학습 접근법 비교
