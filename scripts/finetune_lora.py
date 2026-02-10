@@ -59,6 +59,7 @@ import pandas as pd
 import torch
 from scipy import stats
 from torch.utils.data import DataLoader, Dataset, RandomSampler
+from torch.utils.tensorboard import SummaryWriter
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +195,7 @@ def _move_inputs_to_device(batch_input, device):
         return {k: v.to(device) for k, v in batch_input.items()}
 
 
-def train_epoch(model, dataloader, optimizer, device, epoch, log_interval=100):
+def train_epoch(model, dataloader, optimizer, device, epoch, writer=None, global_step=0, log_interval=100):
     """1 에폭 학습"""
     model.train()
     total_loss = 0
@@ -227,12 +228,17 @@ def train_epoch(model, dataloader, optimizer, device, epoch, log_interval=100):
 
         total_loss += loss.item()
         num_batches += 1
+        global_step += 1
+
+        # TensorBoard: step별 loss
+        if writer is not None:
+            writer.add_scalar("train/step_loss", loss.item(), global_step)
 
         if (batch_idx + 1) % log_interval == 0:
             avg_loss = total_loss / num_batches
             logger.info(f"  Epoch {epoch} [{batch_idx+1}/{len(dataloader)}] loss={avg_loss:.6f}")
 
-    return total_loss / max(num_batches, 1)
+    return total_loss / max(num_batches, 1), global_step
 
 
 def evaluate(model, dataloader, device):
@@ -374,17 +380,38 @@ def main():
     logger.info(f"Epochs: {args.epochs}, LR: {args.learning_rate}")
 
     # ========================================
-    # 5. 학습 루프
+    # 5. TensorBoard 초기화
+    # ========================================
+    tb_log_dir = os.path.join(args.output_dir, "tensorboard")
+    writer = SummaryWriter(log_dir=tb_log_dir)
+    logger.info(f"TensorBoard log dir: {tb_log_dir}")
+    logger.info(f"  -> tensorboard --logdir {tb_log_dir}")
+
+    # 하이퍼파라미터 기록
+    writer.add_text("hparams", (
+        f"mode={args.mode}, base_model={args.base_model}, "
+        f"lr={args.learning_rate}, batch_size={args.batch_size}, "
+        f"epochs={args.epochs}, lora_rank={args.lora_rank}, lora_alpha={args.lora_alpha}, "
+        f"train_samples={len(train_dataset)}, val_samples={len(val_dataset)}, "
+        f"trainable_params={sum(p.numel() for p in trainable_params):,}"
+    ))
+
+    # ========================================
+    # 6. 학습 루프
     # ========================================
     best_kendall = -1
     best_epoch = -1
+    global_step = 0
 
     for epoch in range(args.epochs):
         logger.info(f"\n{'='*60}")
         logger.info(f"Epoch {epoch + 1}/{args.epochs}")
         logger.info(f"{'='*60}")
 
-        train_loss = train_epoch(model, train_loader, optimizer, device, epoch + 1)
+        train_loss, global_step = train_epoch(
+            model, train_loader, optimizer, device, epoch + 1,
+            writer=writer, global_step=global_step,
+        )
         logger.info(f"  Train loss: {train_loss:.6f}")
 
         metrics = evaluate(model, val_loader, device)
@@ -392,6 +419,13 @@ def main():
         logger.info(f"  Val Spearman: {metrics['spearman']:.4f}")
         logger.info(f"  Val Kendall:  {metrics['kendall']:.4f}")
         logger.info(f"  Val MSE:      {metrics['mse']:.6f}")
+
+        # TensorBoard: 에폭별 metrics 기록
+        writer.add_scalar("train/epoch_loss", train_loss, epoch + 1)
+        writer.add_scalar("val/pearson", metrics["pearson"], epoch + 1)
+        writer.add_scalar("val/spearman", metrics["spearman"], epoch + 1)
+        writer.add_scalar("val/kendall", metrics["kendall"], epoch + 1)
+        writer.add_scalar("val/mse", metrics["mse"], epoch + 1)
 
         # 체크포인트 저장
         if metrics["kendall"] > best_kendall:
@@ -412,6 +446,11 @@ def main():
             "state_dict": model.state_dict(),
             "hyper_parameters": dict(model.hparams),
         }, epoch_path)
+
+    # TensorBoard 종료
+    writer.flush()
+    writer.close()
+    logger.info(f"\nTensorBoard logs saved to: {tb_log_dir}")
 
     logger.info(f"\n{'='*60}")
     logger.info(f"Training complete!")
