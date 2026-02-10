@@ -1,0 +1,73 @@
+# ============================================================
+# 미니 테스트: 파이프라인 동작 확인용 설정
+# ============================================================
+# 소규모 데이터와 빠른 설정으로 학습 파이프라인이 정상 동작하는지
+# 확인합니다. 실제 학습 전 반드시 이것부터 실행하세요.
+#
+# 실행:
+#   comet-train --cfg configs/models/en-ko-qe/approach_mini_test.yaml
+# ============================================================
+
+referenceless_regression_metric:
+  class_path: comet.models.ReferencelessRegression
+  init_args:
+    encoder_model: XLM-RoBERTa
+    pretrained_model: xlm-roberta-large
+    nr_frozen_epochs: 0.3
+    keep_embeddings_frozen: True
+    optimizer: AdamW
+    encoder_learning_rate: 1.0e-06
+    learning_rate: 1.5e-05
+    layerwise_decay: 0.95
+    pool: avg
+    layer: mix
+    layer_transformation: sparsemax
+    layer_norm: False
+    loss: mse
+    hidden_sizes:
+      - 2048
+      - 1024
+    activations: Tanh
+    dropout: 0.1
+    batch_size: 4                              # 작은 배치로 VRAM 절약
+    train_data:
+      - data/en-ko-qe/mini_train.csv
+    validation_data:
+      - data/en-ko-qe/mini_val.csv
+
+trainer:
+  class_path: pytorch_lightning.trainer.trainer.Trainer
+  init_args:
+    accelerator: gpu
+    devices: 1
+    accumulate_grad_batches: 1
+    max_epochs: 1                              # 1 에폭만
+    min_epochs: 1
+    gradient_clip_val: 1.0
+    gradient_clip_algorithm: norm
+    check_val_every_n_epoch: 1
+    log_every_n_steps: 10
+    enable_progress_bar: true
+    enable_model_summary: true
+    num_sanity_val_steps: 1
+    fast_dev_run: False
+    limit_train_batches: 20                    # 20 배치만 학습
+    limit_val_batches: 5                       # 5 배치만 검증
+    deterministic: false
+
+early_stopping:
+  class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
+  init_args:
+    monitor: val_kendall
+    min_delta: 0.0
+    patience: 2
+    mode: max
+
+model_checkpoint:
+  class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+  init_args:
+    filename: 'mini-test-{epoch}-{val_kendall:.4f}'
+    monitor: val_kendall
+    save_top_k: 1
+    mode: max
+    save_weights_only: True
