@@ -1,0 +1,114 @@
+# ============================================================
+# 접근법 3: COMETKiwi 기반 Fine-tuning (추천)
+# ============================================================
+# 사전학습된 COMETKiwi (wmt22-cometkiwi-da) 체크포인트를 로드하고
+# 한국어-영어 특허 도메인 데이터로 추가 학습합니다.
+#
+# 이 접근법의 장점:
+#   - 이미 QE에 최적화된 가중치에서 시작
+#   - WMT 학습 데이터의 다국어 지식 활용
+#   - 적은 에폭으로도 도메인 적응 가능
+#   - 가장 높은 성능 기대
+#
+# 주의사항:
+#   - 체크포인트 경로를 실제 경로로 수정 필요
+#   - nr_frozen_epochs를 높여서 catastrophic forgetting 방지
+#   - learning_rate를 낮게 설정
+#
+# 필요 GPU: 1-2x A100 (80GB) 또는 2-4x V100 (32GB)
+#
+# 실행 (2단계):
+#   1. 먼저 체크포인트 다운로드:
+#      python scripts/download_checkpoint.py --model Unbabel/wmt22-cometkiwi-da
+#
+#   2. 학습 실행:
+#      comet-train --cfg configs/models/en-ko-qe/approach3_finetune_cometkiwi.yaml \
+#          --load_from_checkpoint checkpoints/wmt22-cometkiwi-da/checkpoints/model.ckpt
+# ============================================================
+
+unified_metric:
+  class_path: comet.models.UnifiedMetric
+  init_args:
+    # --- 인코더 설정 (COMETKiwi 원본과 동일) ---
+    encoder_model: XLM-RoBERTa
+    pretrained_model: microsoft/infoxlm-large
+
+    # --- 프리징 전략 (Fine-tuning용으로 조정) ---
+    nr_frozen_epochs: 0.5                      # 더 오래 동결 (forgetting 방지)
+    keep_embeddings_frozen: True
+
+    # --- 옵티마이저 (Fine-tuning용으로 학습률 감소) ---
+    optimizer: AdamW
+    encoder_learning_rate: 5.0e-07             # 인코더: 원본의 절반
+    learning_rate: 1.0e-05                     # Head: 원본보다 낮게
+    layerwise_decay: 0.95
+    warmup_steps: 100                          # 워밍업 추가 (안정성)
+
+    # --- 레이어 설정 ---
+    sent_layer: mix
+    layer_transformation: sparsemax
+    layer_norm: True
+    word_layer: 24
+
+    # --- 손실 함수 ---
+    loss: mse
+
+    # --- 회귀 Head ---
+    hidden_sizes:
+      - 3072
+      - 1024
+    activations: Tanh
+    dropout: 0.1
+
+    # --- QE 설정 ---
+    input_segments:
+      - mt
+      - src
+    word_level_training: False
+
+    # --- 데이터 ---
+    batch_size: 16
+    train_data:
+      - data/en-ko-qe/train.csv
+    validation_data:
+      - data/en-ko-qe/val.csv
+
+# --- 트레이너 설정 (Fine-tuning) ---
+trainer:
+  class_path: pytorch_lightning.trainer.trainer.Trainer
+  init_args:
+    accelerator: gpu
+    devices: 1
+    accumulate_grad_batches: 4
+    max_epochs: 3                              # Fine-tuning이므로 적은 에폭
+    min_epochs: 1
+    gradient_clip_val: 1.0
+    gradient_clip_algorithm: norm
+    check_val_every_n_epoch: 1
+    log_every_n_steps: 100
+    enable_progress_bar: true
+    enable_model_summary: true
+    num_sanity_val_steps: 3
+    deterministic: false
+
+# --- 얼리 스토핑 ---
+early_stopping:
+  class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
+  init_args:
+    monitor: val_kendall
+    min_delta: 0.0
+    patience: 2
+    mode: max
+    verbose: False
+
+# --- 모델 체크포인트 ---
+model_checkpoint:
+  class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+  init_args:
+    filename: 'cometkiwi-ft-{epoch}-{step}-{val_kendall:.4f}'
+    monitor: val_kendall
+    save_top_k: 3
+    mode: max
+    save_weights_only: True
+    every_n_epochs: 1
+    verbose: True

@@ -1,0 +1,100 @@
+# ============================================================
+# 접근법 4: ReferencelessRegression - 기존 QE 모델 Fine-tuning
+# ============================================================
+# 사전학습된 wmt21-comet-qe-da 체크포인트를 로드하고
+# ReferencelessRegression 구조로 추가 학습합니다.
+#
+# 접근법 3(COMETKiwi)과의 차이:
+#   - 더 단순한 아키텍처 (src/mt 별도 인코딩)
+#   - 더 가벼운 모델
+#   - wmt20/21 QE 모델 계열 활용
+#
+# 실행:
+#   1. 체크포인트 다운로드 (wmt21-comet-qe-da):
+#      python scripts/download_checkpoint.py --model wmt21-comet-qe-da --legacy
+#
+#   2. 학습:
+#      comet-train --cfg configs/models/en-ko-qe/approach4_referenceless_finetune_qe.yaml \
+#          --load_from_checkpoint checkpoints/wmt21-comet-qe-da/checkpoints/model.ckpt
+# ============================================================
+
+referenceless_regression_metric:
+  class_path: comet.models.ReferencelessRegression
+  init_args:
+    # --- 인코더 설정 ---
+    encoder_model: XLM-RoBERTa
+    pretrained_model: xlm-roberta-large
+
+    # --- 프리징 전략 ---
+    nr_frozen_epochs: 0.5                      # Fine-tuning: 더 오래 동결
+    keep_embeddings_frozen: True
+
+    # --- 옵티마이저 ---
+    optimizer: AdamW
+    encoder_learning_rate: 5.0e-07
+    learning_rate: 1.0e-05
+    layerwise_decay: 0.95
+    warmup_steps: 100
+
+    # --- 레이어 설정 ---
+    pool: avg
+    layer: mix
+    layer_transformation: sparsemax
+    layer_norm: False
+
+    # --- 손실 함수 ---
+    loss: mse
+
+    # --- 회귀 Head ---
+    hidden_sizes:
+      - 2048
+      - 1024
+    activations: Tanh
+    dropout: 0.1
+
+    # --- 데이터 ---
+    batch_size: 16
+    train_data:
+      - data/en-ko-qe/train.csv
+    validation_data:
+      - data/en-ko-qe/val.csv
+
+# --- 트레이너 설정 ---
+trainer:
+  class_path: pytorch_lightning.trainer.trainer.Trainer
+  init_args:
+    accelerator: gpu
+    devices: 1
+    accumulate_grad_batches: 4
+    max_epochs: 3
+    min_epochs: 1
+    gradient_clip_val: 1.0
+    gradient_clip_algorithm: norm
+    check_val_every_n_epoch: 1
+    log_every_n_steps: 100
+    enable_progress_bar: true
+    enable_model_summary: true
+    num_sanity_val_steps: 3
+    deterministic: false
+
+# --- 얼리 스토핑 ---
+early_stopping:
+  class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
+  init_args:
+    monitor: val_kendall
+    min_delta: 0.0
+    patience: 2
+    mode: max
+    verbose: False
+
+# --- 모델 체크포인트 ---
+model_checkpoint:
+  class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+  init_args:
+    filename: 'referenceless-ft-{epoch}-{step}-{val_kendall:.4f}'
+    monitor: val_kendall
+    save_top_k: 3
+    mode: max
+    save_weights_only: True
+    every_n_epochs: 1
+    verbose: True

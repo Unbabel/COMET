@@ -1,0 +1,109 @@
+# ============================================================
+# 접근법 2: UnifiedMetric QE 모드 - 처음부터 학습 (From Scratch)
+# ============================================================
+# COMETKiwi와 동일한 UnifiedMetric 아키텍처를 사용하되
+# input_segments: [mt, src]로 설정하여 reference-free 모드로 학습합니다.
+#
+# 아키텍처:
+#   - 인코더: InfoXLM-large (XLM-R 계열, COMETKiwi에서 사용)
+#   - 입력: [mt SEP src] (하나의 시퀀스로 연결)
+#   - 특징: CLS 토큰 임베딩 (1024 dim)
+#   - Head: 1024 -> 3072 -> 1024 -> 1
+#
+# ReferencelessRegression과의 차이:
+#   - src/mt를 하나의 시퀀스로 연결 (cross-attention 효과)
+#   - CLS 토큰 사용 (평균 풀링 대신)
+#   - COMETKiwi와 동일 구조 (fine-tuning으로 전환 용이)
+#
+# 필요 GPU: 1-2x A100 (80GB) 또는 2-4x V100 (32GB)
+#
+# 실행:
+#   comet-train --cfg configs/models/en-ko-qe/approach2_unified_qe_scratch.yaml
+# ============================================================
+
+unified_metric:
+  class_path: comet.models.UnifiedMetric
+  init_args:
+    # --- 인코더 설정 ---
+    encoder_model: XLM-RoBERTa
+    pretrained_model: microsoft/infoxlm-large  # COMETKiwi와 동일 인코더
+
+    # --- 프리징 전략 ---
+    nr_frozen_epochs: 0.3
+    keep_embeddings_frozen: True
+
+    # --- 옵티마이저 ---
+    optimizer: AdamW
+    encoder_learning_rate: 1.0e-06
+    learning_rate: 1.5e-05
+    layerwise_decay: 0.95
+    warmup_steps: 0
+
+    # --- 레이어 설정 ---
+    sent_layer: mix                            # 문장 레벨: 모든 레이어 가중합
+    layer_transformation: sparsemax
+    layer_norm: True
+    word_layer: 24                             # 단어 레벨 (미사용이지만 설정 필요)
+
+    # --- 손실 함수 ---
+    loss: mse
+
+    # --- 회귀 Head ---
+    hidden_sizes:
+      - 3072
+      - 1024
+    activations: Tanh
+    dropout: 0.1
+
+    # --- QE 설정 (핵심!) ---
+    input_segments:                            # reference-free: mt + src만 사용
+      - mt
+      - src
+    word_level_training: False                 # 단어 레벨 학습 비활성
+
+    # --- 데이터 ---
+    batch_size: 16
+    train_data:
+      - data/en-ko-qe/train.csv
+    validation_data:
+      - data/en-ko-qe/val.csv
+
+# --- 트레이너 설정 ---
+trainer:
+  class_path: pytorch_lightning.trainer.trainer.Trainer
+  init_args:
+    accelerator: gpu
+    devices: 1
+    accumulate_grad_batches: 4
+    max_epochs: 5
+    min_epochs: 1
+    gradient_clip_val: 1.0
+    gradient_clip_algorithm: norm
+    check_val_every_n_epoch: 1
+    log_every_n_steps: 100
+    enable_progress_bar: true
+    enable_model_summary: true
+    num_sanity_val_steps: 3
+    deterministic: false
+
+# --- 얼리 스토핑 ---
+early_stopping:
+  class_path: pytorch_lightning.callbacks.early_stopping.EarlyStopping
+  init_args:
+    monitor: val_kendall
+    min_delta: 0.0
+    patience: 2
+    mode: max
+    verbose: False
+
+# --- 모델 체크포인트 ---
+model_checkpoint:
+  class_path: pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint
+  init_args:
+    filename: '{epoch}-{step}-{val_kendall:.4f}'
+    monitor: val_kendall
+    save_top_k: 3
+    mode: max
+    save_weights_only: True
+    every_n_epochs: 1
+    verbose: True
