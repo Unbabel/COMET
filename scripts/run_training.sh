@@ -118,12 +118,9 @@ echo "[CHECK] Verifying data files..."
 if [ "$APPROACH" == "mini" ]; then
     TRAIN_FILE="data/en-ko-qe/mini_train.csv"
     VAL_FILE="data/en-ko-qe/mini_val.csv"
-elif [ "$APPROACH" == "scratch1" ] || [ "$APPROACH" == "ft-qe" ]; then
-    TRAIN_FILE="data/en-ko-qe/referenceless_train.csv"
-    VAL_FILE="data/en-ko-qe/referenceless_val.csv"
 else
-    TRAIN_FILE="data/en-ko-qe/unified_qe_train.csv"
-    VAL_FILE="data/en-ko-qe/unified_qe_val.csv"
+    TRAIN_FILE="data/en-ko-qe/train.csv"
+    VAL_FILE="data/en-ko-qe/val.csv"
 fi
 
 if [ ! -f "$TRAIN_FILE" ]; then
