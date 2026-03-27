@@ -36,19 +36,19 @@ comet-compare = 'comet.cli.compare:compare_command'
 comet-mbr = 'comet.cli.mbr:mbr_command'
 
 [tool.poetry.dependencies]
-python = "^3.8.0"
+python = "^3.10.0"
 sentencepiece = "^0.2.0"
 pandas = ">=1.4.1,<4.0.0"
 pytorch-lightning = "^2.0.0"
 jsonargparse = ">=3.13.1"
 torch = ">=1.6.0"
 numpy = ">=1.20.0,<3.0"
-torchmetrics = "^0.10.2"
+torchmetrics = ">=0.10.2"
 sacrebleu = "^2.0.0"
 scipy = "^1.5.4"
 entmax = "^1.1"
 huggingface-hub = ">=0.19.3,<2.0"
-transformers = ">=4.17"
+transformers = ">=4.17,<6.0"
 
 [tool.poetry.group.dev.dependencies]
 sphinx-markdown-tables = "0.0.15"
