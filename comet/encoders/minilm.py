@@ -18,15 +18,14 @@ MiniLM Encoder
     Pretrained MiniLM encoder from Microsoft. This encoder uses a BERT
     architecture with an XLMR tokenizer.
 """
-
 import importlib_metadata
 import packaging.version as packaging_version
 from transformers import BertConfig, BertModel
 
 transformers_version = importlib_metadata.distribution('transformers').version
-if packaging_version.Version(transformers_version) >= packaging_version.Version(
-    'v5.0.0rc0'
-):
+if packaging_version.Version(
+    transformers_version
+) >= packaging_version.Version('v5.0.0rc0'):
     from transformers import XLMRobertaTokenizer as XLMRobertaTokenizer
 else:
     from transformers import XLMRobertaTokenizerFast as XLMRobertaTokenizer

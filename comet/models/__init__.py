@@ -101,11 +101,10 @@ def load_from_checkpoint(
         # This is a workaround for the bug reported in version 2.2.4
         # issue number #244
         try:
-            from importlib import metadata
-
+            import importlib_metadata
             import packaging.version as parse_version
 
-            comet_version = metadata.distribution('unbabel-comet').version
+            comet_version = importlib_metadata.distribution('unbabel-comet').version
             use_softmax = (
                 parse_version.parse(comet_version)
                 >= parse_version.parse('2.2.4')
