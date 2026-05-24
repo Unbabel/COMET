@@ -29,10 +29,8 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 from torch import nn
-from transformers.optimization import (
-    Adafactor,
-    get_constant_schedule_with_warmup,
-)
+from transformers.optimization import (Adafactor,
+                                       get_constant_schedule_with_warmup)
 
 from comet.models.base import CometModel
 from comet.models.metrics import WMTKendall

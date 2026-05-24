@@ -29,12 +29,8 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pytorch_lightning as ptl
 import torch
-from torch.utils.data import (
-    DataLoader,
-    RandomSampler,
-    SequentialSampler,
-    Subset,
-)
+from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
+                              Subset)
 
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
@@ -43,13 +39,8 @@ from .lru_cache import tensor_lru_cache
 from .pooling_utils import average_pooling, max_pooling
 from .predict_pbar import PredictProgressBar
 from .predict_writer import CustomWriter
-from .utils import (
-    OrderedSampler,
-    Prediction,
-    Target,
-    flatten_metadata,
-    restore_list_order,
-)
+from .utils import (OrderedSampler, Prediction, Target, flatten_metadata,
+                    restore_list_order)
 
 if 'COMET_EMBEDDINGS_CACHE' in os.environ:
     CACHE_SIZE = int(os.environ['COMET_EMBEDDINGS_CACHE'])
