@@ -112,7 +112,7 @@ class XLMREncoder(BERTEncoder):
             return_dict=False,
         )
 
-        if len(output) == 2:
+        if len(output) < 3:
             last_hidden_states, all_layers = output
         else:
             last_hidden_states, _, all_layers = output

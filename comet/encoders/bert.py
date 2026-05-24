@@ -58,14 +58,14 @@ class BERTEncoder(Encoder):
         )
         if load_pretrained_weights:
             self.model = BertModel.from_pretrained(
-                pretrained_model, add_pooling_layer=True
+                pretrained_model, add_pooling_layer=False
             )
         else:
             self.model = BertModel(
                 BertConfig.from_pretrained(
                     pretrained_model, local_files_only=local_files_only
                 ),
-                add_pooling_layer=True,
+                add_pooling_layer=False,
             )
         self.model.encoder.output_hidden_states = True
 
@@ -189,7 +189,11 @@ class BERTEncoder(Encoder):
             return_dict=False,
         )
 
-        last_hidden_states, pooler_output, all_layers = output
+        if len(output) < 3:
+            last_hidden_states, all_layers = output
+            pooler_output = None
+        else:
+            last_hidden_states, pooler_output, all_layers = output
 
         return {
             'sentemb': pooler_output,
