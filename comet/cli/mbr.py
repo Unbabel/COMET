@@ -44,6 +44,7 @@ optional arguments:
   -o OUTPUT, --output OUTPUT
                         Best candidates after running MBR decoding. (required, type: str)
 """
+
 import os
 from typing import List, Tuple
 
@@ -55,7 +56,7 @@ from tqdm import tqdm
 
 from comet.models import RegressionMetric, download_model, load_from_checkpoint
 
-torch.set_float32_matmul_precision("high")
+torch.set_float32_matmul_precision('high')
 
 
 def build_embeddings(
@@ -88,8 +89,8 @@ def build_embeddings(
     src_embeddings = []
     with torch.no_grad():
         for batch in src_inputs:
-            input_ids = batch["input_ids"].to(model.device)
-            attention_mask = batch["attention_mask"].to(model.device)
+            input_ids = batch['input_ids'].to(model.device)
+            attention_mask = batch['attention_mask'].to(model.device)
             src_embeddings.append(
                 model.get_sentence_embedding(input_ids, attention_mask)
             )
@@ -97,9 +98,11 @@ def build_embeddings(
 
     mt_embeddings = []
     with torch.no_grad():
-        for batch in tqdm(mt_inputs, desc="Encoding sentences...", dynamic_ncols=True):
-            input_ids = batch["input_ids"].to(model.device)
-            attention_mask = batch["attention_mask"].to(model.device)
+        for batch in tqdm(
+            mt_inputs, desc='Encoding sentences...', dynamic_ncols=True
+        ):
+            input_ids = batch['input_ids'].to(model.device)
+            attention_mask = batch['attention_mask'].to(model.device)
             mt_embeddings.append(
                 model.get_sentence_embedding(input_ids, attention_mask)
             )
@@ -109,7 +112,9 @@ def build_embeddings(
 
 
 def mbr_decoding(
-    src_embeddings: torch.Tensor, mt_embeddings: torch.Tensor, model: RegressionMetric
+    src_embeddings: torch.Tensor,
+    mt_embeddings: torch.Tensor,
+    model: RegressionMetric,
 ) -> torch.Tensor:
     """Performs MBR Decoding for each translation for a given source.
 
@@ -128,7 +133,9 @@ def mbr_decoding(
     with torch.no_grad():
         # Loop over all source sentences
         for i in tqdm(
-            range(mbr_matrix.shape[0]), desc="MBR Scores...", dynamic_ncols=True
+            range(mbr_matrix.shape[0]),
+            desc='MBR Scores...',
+            dynamic_ncols=True,
         ):
             source = src_embeddings[i, :].repeat(num_samples, 1)
             # Loop over all hypothesis
@@ -136,7 +143,9 @@ def mbr_decoding(
                 translation = mt_embeddings[i, j, :].repeat(num_samples, 1)
                 # Score current hypothesis against all others
                 pseudo_refs = mt_embeddings[i, :]
-                scores = model.estimate(source, translation, pseudo_refs)["score"]
+                scores = model.estimate(source, translation, pseudo_refs)[
+                    'score'
+                ]
                 scores = torch.cat([scores[0:j], scores[j + 1 :]])
                 mbr_matrix[i, j] = scores.mean()
 
@@ -173,10 +182,12 @@ def rerank_top_k(
     data = []
     for i in range(len(sources)):
         for j in range(num_samples):
-            data.append({"src": sources[i], "mt": translations[i][j]})
+            data.append({'src': sources[i], 'mt': translations[i][j]})
 
     model_output = qe_model.predict(data, batch_size=batch_size, gpus=gpus)
-    seg_scores = np.array(model_output.scores).reshape(len(sources), num_samples)
+    seg_scores = np.array(model_output.scores).reshape(
+        len(sources), num_samples
+    )
     topk_indices = np.argsort(seg_scores, axis=1)
     topk_translations = []
     for i in range(len(sources)):
@@ -188,62 +199,64 @@ def rerank_top_k(
 
 
 def mbr_command() -> None:
-    parser = ArgumentParser(description="Command for Minimum Bayes Risk Decoding.")
-    parser.add_argument("-s", "--sources", type=Path_fr, required=True)
-    parser.add_argument("-t", "--translations", type=Path_fr, required=True)
-    parser.add_argument("--num_samples", type=int, required=True)
-    parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--gpus", type=int, default=1)
+    parser = ArgumentParser(
+        description='Command for Minimum Bayes Risk Decoding.'
+    )
+    parser.add_argument('-s', '--sources', type=Path_fr, required=True)
+    parser.add_argument('-t', '--translations', type=Path_fr, required=True)
+    parser.add_argument('--num_samples', type=int, required=True)
+    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--gpus', type=int, default=1)
     parser.add_argument(
-        "--rerank_top_k",
+        '--rerank_top_k',
         type=int,
         default=0,
         help=(
-            "Chooses the topK candidates according to --qe_model before applying MBR."
-            + " Disabled by default."
+            'Chooses the topK candidates according to --qe_model before applying MBR.'
+            + ' Disabled by default.'
         ),
     )
     parser.add_argument(
-        "--qe_model",
+        '--qe_model',
         type=str,
         required=False,
-        default="Unbabel/wmt22-cometkiwi-da",
-        help="Reference Free model used for reranking before MBR.",
+        default='Unbabel/wmt22-cometkiwi-da',
+        help='Reference Free model used for reranking before MBR.',
     )
     parser.add_argument(
-        "--model",
+        '--model',
         type=str,
         required=False,
-        default="Unbabel/wmt22-comet-da",
-        help="COMET model to be used.",
+        default='Unbabel/wmt22-comet-da',
+        help='COMET model to be used.',
     )
     parser.add_argument(
-        "--model_storage_path",
+        '--model_storage_path',
         help=(
-            "Path to the directory where models will be stored. "
-            + "By default its saved in ~/.cache/torch/unbabel_comet/"
+            'Path to the directory where models will be stored. '
+            + 'By default its saved in ~/.cache/torch/unbabel_comet/'
         ),
         default=None,
     )
     parser.add_argument(
-        "-o",
-        "--output",
+        '-o',
+        '--output',
         type=str,
         required=True,
-        help="Best candidates after running MBR decoding.",
+        help='Best candidates after running MBR decoding.',
     )
     cfg = parser.parse_args()
 
-    with open(cfg.sources(), encoding="utf-8") as fp:
+    with open(cfg.sources(), encoding='utf-8') as fp:
         sources = [line.strip() for line in fp.readlines()]
 
-    with open(cfg.translations(), encoding="utf-8") as fp:
+    with open(cfg.translations(), encoding='utf-8') as fp:
         translations = [line.strip() for line in fp.readlines()]
 
     num_samples = cfg.num_samples
     # Running QE reranking before MBR!
     if cfg.rerank_top_k > 0:
-        if cfg.qe_model.endswith(".ckpt") and os.path.exists(cfg.qe_model):
+        if cfg.qe_model.endswith('.ckpt') and os.path.exists(cfg.qe_model):
             qe_model_path = cfg.qe_model
         else:
             qe_model_path = download_model(
@@ -251,11 +264,11 @@ def mbr_command() -> None:
             )
         assert (
             cfg.rerank_top_k < cfg.num_samples
-        ), "--rerank_top_k needs to be smaller than number of candidates provided!"
+        ), '--rerank_top_k needs to be smaller than number of candidates provided!'
         model = load_from_checkpoint(qe_model_path)
         assert (
             not model.requires_references()
-        ), "--qe_model expects a Reference Free model!"
+        ), '--qe_model expects a Reference Free model!'
 
         translations = rerank_top_k(
             sources,
@@ -268,10 +281,12 @@ def mbr_command() -> None:
         )
         num_samples = cfg.rerank_top_k
 
-    if cfg.model.endswith(".ckpt") and os.path.exists(cfg.model):
+    if cfg.model.endswith('.ckpt') and os.path.exists(cfg.model):
         model_path = cfg.model
     else:
-        model_path = download_model(cfg.model, saving_directory=cfg.model_storage_path)
+        model_path = download_model(
+            cfg.model, saving_directory=cfg.model_storage_path
+        )
 
     model = load_from_checkpoint(model_path)
     model.eval()
@@ -280,7 +295,7 @@ def mbr_command() -> None:
 
     if not isinstance(model, RegressionMetric):
         raise Exception(
-            "Invalid model ({}). MBR command only works with Reference-based Regression models!".format(
+            'Invalid model ({}). MBR command only works with Reference-based Regression models!'.format(
                 model.__class__.__name__
             )
         )
@@ -301,10 +316,10 @@ def mbr_command() -> None:
         best_cand_idx = torch.argmax(mbr_matrix[i, :])
         best_candidates.append(samples[best_cand_idx])
 
-    with open(cfg.output, "w", encoding="utf-8") as fp:
+    with open(cfg.output, 'w', encoding='utf-8') as fp:
         for sample in best_candidates:
-            fp.write(sample + "\n")
+            fp.write(sample + '\n')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     mbr_command()

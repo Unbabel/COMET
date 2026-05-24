@@ -17,12 +17,15 @@ XLM-RoBERTa-XL Encoder
 ==============
     Pretrained XLM-RoBERTa-XL  encoder from Hugging Face.
 """
+
 import importlib_metadata
 import packaging.version as packaging_version
 from transformers import XLMRobertaXLConfig, XLMRobertaXLModel
 
-transformers_version = importlib_metadata.distribution("transformers").version
-if packaging_version.Version(transformers_version) >= packaging_version.Version("v5.0.0rc0"):
+transformers_version = importlib_metadata.distribution('transformers').version
+if packaging_version.Version(transformers_version) >= packaging_version.Version(
+    'v5.0.0rc0'
+):
     from transformers import XLMRobertaTokenizer as XLMRobertaTokenizer
 else:
     from transformers import XLMRobertaTokenizerFast as XLMRobertaTokenizer

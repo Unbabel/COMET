@@ -19,6 +19,7 @@ ReferencelessRegression
     Referenceless Regression Metric that learns to predict a quality assessment by
     looking at source and translation.
 """
+
 from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
@@ -72,24 +73,24 @@ class ReferencelessRegression(RegressionMetric):
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
         keep_embeddings_frozen: bool = True,
-        optimizer: str = "AdamW",
+        optimizer: str = 'AdamW',
         warmup_steps: int = 0,
         encoder_learning_rate: float = 1e-06,
         learning_rate: float = 1.5e-05,
         layerwise_decay: float = 0.95,
-        encoder_model: str = "XLM-RoBERTa",
-        pretrained_model: str = "xlm-roberta-large",
-        pool: str = "avg",
-        layer: Union[str, int] = "mix",
-        layer_transformation: str = "softmax",
+        encoder_model: str = 'XLM-RoBERTa',
+        pretrained_model: str = 'xlm-roberta-large',
+        pool: str = 'avg',
+        layer: Union[str, int] = 'mix',
+        layer_transformation: str = 'softmax',
         layer_norm: bool = True,
-        loss: str = "mse",
+        loss: str = 'mse',
         dropout: float = 0.1,
         batch_size: int = 4,
         train_data: List[str] = [],
         validation_data: List[str] = [],
         hidden_sizes: List[int] = [2048, 1024],
-        activations: str = "Tanh",
+        activations: str = 'Tanh',
         final_activation: Optional[str] = None,
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
@@ -113,7 +114,7 @@ class ReferencelessRegression(RegressionMetric):
             batch_size=batch_size,
             train_data=train_data,
             validation_data=validation_data,
-            class_identifier="referenceless_regression_metric",
+            class_identifier='referenceless_regression_metric',
             load_pretrained_weights=load_pretrained_weights,
             local_files_only=local_files_only,
         )
@@ -131,13 +132,14 @@ class ReferencelessRegression(RegressionMetric):
         return False
 
     def enable_context(self):
-        if self.pool == "avg":
+        if self.pool == 'avg':
             self.use_context = True
 
     def prepare_sample(
-        self, sample: List[Dict[str, Union[str, float]]], stage: str = "train"
+        self, sample: List[Dict[str, Union[str, float]]], stage: str = 'train'
     ) -> Union[
-        Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]], Dict[str, torch.Tensor]
+        Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]],
+        Dict[str, torch.Tensor],
     ]:
         """This method will be called by dataloaders to prepared data to input to the
         model.
@@ -150,22 +152,26 @@ class ReferencelessRegression(RegressionMetric):
         Returns:
             Model inputs and depending on the 'stage' training labels/targets.
         """
-        inputs = {k: [str(dic[k]) for dic in sample] for k in sample[0] if k != "score"}
-        src_inputs = self.encoder.prepare_sample(inputs["src"])
-        mt_inputs = self.encoder.prepare_sample(inputs["mt"])
+        inputs = {
+            k: [str(dic[k]) for dic in sample]
+            for k in sample[0]
+            if k != 'score'
+        }
+        src_inputs = self.encoder.prepare_sample(inputs['src'])
+        mt_inputs = self.encoder.prepare_sample(inputs['mt'])
 
-        src_inputs = {"src_" + k: v for k, v in src_inputs.items()}
-        mt_inputs = {"mt_" + k: v for k, v in mt_inputs.items()}
+        src_inputs = {'src_' + k: v for k, v in src_inputs.items()}
+        mt_inputs = {'mt_' + k: v for k, v in mt_inputs.items()}
         model_inputs = {**src_inputs, **mt_inputs}
 
-        if stage == "predict":
+        if stage == 'predict':
             return model_inputs
 
-        scores = [float(s["score"]) for s in sample]
+        scores = [float(s['score']) for s in sample]
         targets = Target(score=torch.tensor(scores, dtype=torch.float))
 
-        if "system" in inputs:
-            targets["system"] = inputs["system"]
+        if 'system' in inputs:
+            targets['system'] = inputs['system']
 
         return model_inputs, targets
 
@@ -175,7 +181,7 @@ class ReferencelessRegression(RegressionMetric):
         src_attention_mask: torch.tensor,
         mt_input_ids: torch.tensor,
         mt_attention_mask: torch.tensor,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, torch.Tensor]:
         """ReferencelessRegression model forward method.
 
@@ -188,8 +194,12 @@ class ReferencelessRegression(RegressionMetric):
         Return:
             Prediction object with translation scores.
         """
-        src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
-        mt_sentemb = self.get_sentence_embedding(mt_input_ids, mt_attention_mask)
+        src_sentemb = self.get_sentence_embedding(
+            src_input_ids, src_attention_mask
+        )
+        mt_sentemb = self.get_sentence_embedding(
+            mt_input_ids, mt_attention_mask
+        )
 
         diff_src = torch.abs(mt_sentemb - src_sentemb)
         prod_src = mt_sentemb * src_sentemb
@@ -207,11 +217,11 @@ class ReferencelessRegression(RegressionMetric):
             List[dict]: List with input samples in the form of a dict
         """
         df = pd.read_csv(path)
-        df = df[["src", "mt", "score"]]
-        df["src"] = df["src"].astype(str)
-        df["mt"] = df["mt"].astype(str)
-        df["score"] = df["score"].astype("float16")
-        return df.to_dict("records")
+        df = df[['src', 'mt', 'score']]
+        df['src'] = df['src'].astype(str)
+        df['mt'] = df['mt'].astype(str)
+        df['score'] = df['score'].astype('float16')
+        return df.to_dict('records')
 
     def read_validation_data(self, path: str) -> List[dict]:
         """Method that reads the validation data (a csv file) and returns a list of
@@ -221,14 +231,14 @@ class ReferencelessRegression(RegressionMetric):
             List[dict]: List with input samples in the form of a dict
         """
         df = pd.read_csv(path)
-        columns = ["src", "mt", "score"]
+        columns = ['src', 'mt', 'score']
         # If system in columns we will use this to calculate system-level accuracy
-        if "system" in df.columns:
-            columns.append("system")
-            df["system"] = df["system"].astype(str)
+        if 'system' in df.columns:
+            columns.append('system')
+            df['system'] = df['system'].astype(str)
 
         df = df[columns]
-        df["score"] = df["score"].astype("float16")
-        df["src"] = df["src"].astype(str)
-        df["mt"] = df["mt"].astype(str)
-        return df.to_dict("records")
+        df['score'] = df['score'].astype('float16')
+        df['src'] = df['src'].astype(str)
+        df['mt'] = df['mt'].astype(str)
+        return df.to_dict('records')

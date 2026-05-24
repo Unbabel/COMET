@@ -19,13 +19,16 @@ RegressionMetric
     Regression Metric that learns to predict a quality assessment by looking
     at source, translation and reference.
 """
+
 from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
 from torch import nn
-from transformers.optimization import (Adafactor,
-                                       get_constant_schedule_with_warmup)
+from transformers.optimization import (
+    Adafactor,
+    get_constant_schedule_with_warmup,
+)
 
 from comet.models.base import CometModel
 from comet.models.metrics import RegressionMetrics
@@ -76,24 +79,24 @@ class RegressionMetric(CometModel):
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
         keep_embeddings_frozen: bool = True,
-        optimizer: str = "AdamW",
+        optimizer: str = 'AdamW',
         warmup_steps: int = 0,
         encoder_learning_rate: float = 1e-06,
         learning_rate: float = 1.5e-05,
         layerwise_decay: float = 0.95,
-        encoder_model: str = "XLM-RoBERTa",
-        pretrained_model: str = "xlm-roberta-large",
-        pool: str = "avg",
-        layer: Union[str, int] = "mix",
-        layer_transformation: str = "softmax",
+        encoder_model: str = 'XLM-RoBERTa',
+        pretrained_model: str = 'xlm-roberta-large',
+        pool: str = 'avg',
+        layer: Union[str, int] = 'mix',
+        layer_transformation: str = 'softmax',
         layer_norm: bool = True,
-        loss: str = "mse",
+        loss: str = 'mse',
         dropout: float = 0.1,
         batch_size: int = 4,
         train_data: List[str] = [],
         validation_data: List[str] = [],
         hidden_sizes: List[int] = [3072, 1024],
-        activations: str = "Tanh",
+        activations: str = 'Tanh',
         final_activation: Optional[str] = None,
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
@@ -117,7 +120,7 @@ class RegressionMetric(CometModel):
             batch_size=batch_size,
             train_data=train_data,
             validation_data=validation_data,
-            class_identifier="regression_metric",
+            class_identifier='regression_metric',
             load_pretrained_weights=load_pretrained_weights,
             local_files_only=local_files_only,
         )
@@ -133,7 +136,7 @@ class RegressionMetric(CometModel):
 
     def init_metrics(self):
         """Initializes train/validation metrics."""
-        self.train_metrics = RegressionMetrics(prefix="train")
+        self.train_metrics = RegressionMetrics(prefix='train')
         self.val_metrics = nn.ModuleList(
             [RegressionMetrics(prefix=d) for d in self.hparams.validation_data]
         )
@@ -143,26 +146,33 @@ class RegressionMetric(CometModel):
 
     def configure_optimizers(
         self,
-    ) -> Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
+    ) -> Tuple[
+        List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]
+    ]:
         """Pytorch Lightning method to configure optimizers and schedulers."""
         layer_parameters = self.encoder.layerwise_lr(
             self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
         )
         top_layers_parameters = [
-            {"params": self.estimator.parameters(), "lr": self.hparams.learning_rate}
+            {
+                'params': self.estimator.parameters(),
+                'lr': self.hparams.learning_rate,
+            }
         ]
         if self.layerwise_attention:
             layerwise_attn_params = [
                 {
-                    "params": self.layerwise_attention.parameters(),
-                    "lr": self.hparams.learning_rate,
+                    'params': self.layerwise_attention.parameters(),
+                    'lr': self.hparams.learning_rate,
                 }
             ]
-            params = layer_parameters + top_layers_parameters + layerwise_attn_params
+            params = (
+                layer_parameters + top_layers_parameters + layerwise_attn_params
+            )
         else:
             params = layer_parameters + top_layers_parameters
 
-        if self.hparams.optimizer == "Adafactor":
+        if self.hparams.optimizer == 'Adafactor':
             optimizer = Adafactor(
                 params,
                 lr=self.hparams.learning_rate,
@@ -183,9 +193,10 @@ class RegressionMetric(CometModel):
         return [optimizer], [scheduler]
 
     def prepare_sample(
-        self, sample: List[Dict[str, Union[str, float]]], stage: str = "train"
+        self, sample: List[Dict[str, Union[str, float]]], stage: str = 'train'
     ) -> Union[
-        Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]], Dict[str, torch.Tensor]
+        Tuple[Dict[str, torch.Tensor], Dict[str, torch.Tensor]],
+        Dict[str, torch.Tensor],
     ]:
         """This method will be called by dataloaders to prepared data to input to the
         model.
@@ -198,29 +209,33 @@ class RegressionMetric(CometModel):
         Returns:
             Model inputs and depending on the 'stage' training labels/targets.
         """
-        inputs = {k: [str(dic[k]) for dic in sample] for k in sample[0] if k != "score"}
-        src_inputs = self.encoder.prepare_sample(inputs["src"])
-        mt_inputs = self.encoder.prepare_sample(inputs["mt"])
-        ref_inputs = self.encoder.prepare_sample(inputs["ref"])
+        inputs = {
+            k: [str(dic[k]) for dic in sample]
+            for k in sample[0]
+            if k != 'score'
+        }
+        src_inputs = self.encoder.prepare_sample(inputs['src'])
+        mt_inputs = self.encoder.prepare_sample(inputs['mt'])
+        ref_inputs = self.encoder.prepare_sample(inputs['ref'])
 
-        src_inputs = {"src_" + k: v for k, v in src_inputs.items()}
-        mt_inputs = {"mt_" + k: v for k, v in mt_inputs.items()}
-        ref_inputs = {"ref_" + k: v for k, v in ref_inputs.items()}
+        src_inputs = {'src_' + k: v for k, v in src_inputs.items()}
+        mt_inputs = {'mt_' + k: v for k, v in mt_inputs.items()}
+        ref_inputs = {'ref_' + k: v for k, v in ref_inputs.items()}
         model_inputs = {**src_inputs, **mt_inputs, **ref_inputs}
 
-        if stage == "predict":
+        if stage == 'predict':
             return model_inputs
 
-        scores = [float(s["score"]) for s in sample]
+        scores = [float(s['score']) for s in sample]
         targets = Target(score=torch.tensor(scores, dtype=torch.float))
 
-        if "system" in inputs:
-            targets["system"] = inputs["system"]
+        if 'system' in inputs:
+            targets['system'] = inputs['system']
 
         return model_inputs, targets
 
     def enable_context(self):
-        if self.pool == "avg":
+        if self.pool == 'avg':
             self.use_context = True
 
     def estimate(
@@ -260,7 +275,7 @@ class RegressionMetric(CometModel):
         mt_attention_mask: torch.tensor,
         ref_input_ids: torch.tensor,
         ref_attention_mask: torch.tensor,
-        **kwargs
+        **kwargs,
     ) -> Prediction:
         """Regression model forward method.
 
@@ -275,9 +290,15 @@ class RegressionMetric(CometModel):
         Return:
             Prediction object with translation scores.
         """
-        src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
-        ref_sentemb = self.get_sentence_embedding(ref_input_ids, ref_attention_mask)
-        mt_sentemb = self.get_sentence_embedding(mt_input_ids, mt_attention_mask)
+        src_sentemb = self.get_sentence_embedding(
+            src_input_ids, src_attention_mask
+        )
+        ref_sentemb = self.get_sentence_embedding(
+            ref_input_ids, ref_attention_mask
+        )
+        mt_sentemb = self.get_sentence_embedding(
+            mt_input_ids, mt_attention_mask
+        )
         return self.estimate(src_sentemb, mt_sentemb, ref_sentemb)
 
     def read_training_data(self, path: str) -> List[dict]:
@@ -288,12 +309,12 @@ class RegressionMetric(CometModel):
             List[dict]: List with input samples in the form of a dict
         """
         df = pd.read_csv(path)
-        df = df[["src", "mt", "ref", "score"]]
-        df["src"] = df["src"].astype(str)
-        df["mt"] = df["mt"].astype(str)
-        df["ref"] = df["ref"].astype(str)
-        df["score"] = df["score"].astype("float16")
-        return df.to_dict("records")
+        df = df[['src', 'mt', 'ref', 'score']]
+        df['src'] = df['src'].astype(str)
+        df['mt'] = df['mt'].astype(str)
+        df['ref'] = df['ref'].astype(str)
+        df['score'] = df['score'].astype('float16')
+        return df.to_dict('records')
 
     def read_validation_data(self, path: str) -> List[dict]:
         """Method that reads the validation data (a csv file) and returns a list of
@@ -303,15 +324,15 @@ class RegressionMetric(CometModel):
             List[dict]: List with input samples in the form of a dict
         """
         df = pd.read_csv(path)
-        columns = ["src", "mt", "ref", "score"]
+        columns = ['src', 'mt', 'ref', 'score']
         # If system in columns we will use this to calculate system-level accuracy
-        if "system" in df.columns:
-            columns.append("system")
-            df["system"] = df["system"].astype(str)
+        if 'system' in df.columns:
+            columns.append('system')
+            df['system'] = df['system'].astype(str)
 
         df = df[columns]
-        df["score"] = df["score"].astype("float16")
-        df["src"] = df["src"].astype(str)
-        df["mt"] = df["mt"].astype(str)
-        df["ref"] = df["ref"].astype(str)
-        return df.to_dict("records")
+        df['score'] = df['score'].astype('float16')
+        df['src'] = df['src'].astype(str)
+        df['mt'] = df['mt'].astype(str)
+        df['ref'] = df['ref'].astype(str)
+        return df.to_dict('records')

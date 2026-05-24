@@ -17,6 +17,7 @@ XLM-RoBERTa Encoder
 ==============
     Pretrained XLM-RoBERTa  encoder from Hugging Face.
 """
+
 from typing import Dict
 
 import importlib_metadata
@@ -24,8 +25,10 @@ import packaging.version as packaging_version
 import torch
 from transformers import XLMRobertaConfig, XLMRobertaModel
 
-transformers_version = importlib_metadata.distribution("transformers").version
-if packaging_version.parse(transformers_version) >= packaging_version.parse("v5.0.0rc0"):
+transformers_version = importlib_metadata.distribution('transformers').version
+if packaging_version.parse(transformers_version) >= packaging_version.parse(
+    'v5.0.0rc0'
+):
     from transformers import XLMRobertaTokenizer as XLMRobertaTokenizer
 else:
     from transformers import XLMRobertaTokenizerFast as XLMRobertaTokenizer
@@ -95,7 +98,9 @@ class XLMREncoder(BERTEncoder):
         Returns:
             Encoder: XLMREncoder object.
         """
-        return XLMREncoder(pretrained_model, load_pretrained_weights, local_files_only)
+        return XLMREncoder(
+            pretrained_model, load_pretrained_weights, local_files_only
+        )
 
     def forward(
         self, input_ids: torch.Tensor, attention_mask: torch.Tensor, **kwargs
@@ -113,10 +118,10 @@ class XLMREncoder(BERTEncoder):
             last_hidden_states, _, all_layers = output
 
         return {
-            "sentemb": last_hidden_states[:, 0, :],
-            "wordemb": last_hidden_states,
-            "all_layers": all_layers,
-            "attention_mask": attention_mask,
+            'sentemb': last_hidden_states[:, 0, :],
+            'wordemb': last_hidden_states,
+            'all_layers': all_layers,
+            'attention_mask': attention_mask,
         }
 
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):

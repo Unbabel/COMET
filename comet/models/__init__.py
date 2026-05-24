@@ -30,11 +30,11 @@ from .regression.referenceless import ReferencelessRegression
 from .regression.regression_metric import RegressionMetric
 
 str2model = {
-    "referenceless_regression_metric": ReferencelessRegression,
-    "regression_metric": RegressionMetric,
-    "ranking_metric": RankingMetric,
-    "unified_metric": UnifiedMetric,
-    "xcomet_metric": XCOMETMetric,
+    'referenceless_regression_metric': ReferencelessRegression,
+    'regression_metric': RegressionMetric,
+    'ranking_metric': RankingMetric,
+    'unified_metric': UnifiedMetric,
+    'xcomet_metric': XCOMETMetric,
 }
 
 
@@ -45,7 +45,9 @@ def download_model(
 ) -> str:
     try:
         model_path = snapshot_download(
-            repo_id=model, cache_dir=saving_directory, local_files_only=local_files_only
+            repo_id=model,
+            cache_dir=saving_directory,
+            local_files_only=local_files_only,
         )
     except Exception:
         try:
@@ -53,7 +55,9 @@ def download_model(
         except Exception:
             raise KeyError(f"Model '{model}' not supported by COMET.")
     else:
-        checkpoint_path = os.path.join(*[model_path, "checkpoints", "model.ckpt"])
+        checkpoint_path = os.path.join(
+            *[model_path, 'checkpoints', 'model.ckpt']
+        )
     return checkpoint_path
 
 
@@ -82,16 +86,16 @@ def load_from_checkpoint(
     checkpoint_path = Path(checkpoint_path)
 
     if not checkpoint_path.is_file():
-        raise Exception(f"Invalid checkpoint path: {checkpoint_path}")
+        raise Exception(f'Invalid checkpoint path: {checkpoint_path}')
 
     parent_folder = checkpoint_path.parents[1]  # .parent.parent
-    hparams_file = parent_folder / "hparams.yaml"
+    hparams_file = parent_folder / 'hparams.yaml'
 
     if hparams_file.is_file():
         with open(hparams_file) as yaml_file:
             hparams = yaml.load(yaml_file.read(), Loader=yaml.FullLoader)
 
-        model_class = str2model[hparams["class_identifier"]]
+        model_class = str2model[hparams['class_identifier']]
 
         # Check comet version and hparams for layer_transformation
         # This is a workaround for the bug reported in version 2.2.4
@@ -101,27 +105,28 @@ def load_from_checkpoint(
 
             import packaging.version as parse_version
 
-            comet_version = metadata.distribution("unbabel-comet").version
+            comet_version = metadata.distribution('unbabel-comet').version
             use_softmax = (
-                parse_version.parse(comet_version) >= parse_version.parse("2.2.4")
-                and hparams.get("layer_transformation") == "sparsemax_patch"
+                parse_version.parse(comet_version)
+                >= parse_version.parse('2.2.4')
+                and hparams.get('layer_transformation') == 'sparsemax_patch'
             )
         except:
             use_softmax = False
 
         # Add the override parameter only if needed
         kwargs = {
-            "checkpoint_path": checkpoint_path,
-            "load_pretrained_weights": False,
-            "hparams_file": hparams_file if reload_hparams else None,
-            "map_location": torch.device("cpu"),
-            "strict": strict,
-            "local_files_only": local_files_only,
+            'checkpoint_path': checkpoint_path,
+            'load_pretrained_weights': False,
+            'hparams_file': hparams_file if reload_hparams else None,
+            'map_location': torch.device('cpu'),
+            'strict': strict,
+            'local_files_only': local_files_only,
         }
         if use_softmax:
-            kwargs["layer_transformation"] = "softmax"
+            kwargs['layer_transformation'] = 'softmax'
 
         model = model_class.load_from_checkpoint(**kwargs)
         return model
     else:
-        raise Exception(f"hparams.yaml file is missing from {parent_folder}!")
+        raise Exception(f'hparams.yaml file is missing from {parent_folder}!')

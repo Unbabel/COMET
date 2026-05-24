@@ -17,6 +17,7 @@ BERT Encoder
 ==============
     Pretrained BERT encoder from Hugging Face.
 """
+
 from typing import Dict, Optional
 
 import importlib_metadata
@@ -24,8 +25,10 @@ import packaging.version as packaging_version
 import torch
 from transformers import BertConfig, BertModel
 
-transformers_version = importlib_metadata.distribution("transformers").version
-if packaging_version.Version(transformers_version) >= packaging_version.Version("v5.0.0rc0"):
+transformers_version = importlib_metadata.distribution('transformers').version
+if packaging_version.Version(transformers_version) >= packaging_version.Version(
+    'v5.0.0rc0'
+):
     from transformers import BertTokenizer as BertTokenizer
 else:
     from transformers import BertTokenizerFast as BertTokenizer
@@ -116,7 +119,9 @@ class BERTEncoder(Encoder):
         Returns:
             Encoder: XLMREncoder object.
         """
-        return BERTEncoder(pretrained_model, load_pretrained_weights, local_files_only)
+        return BERTEncoder(
+            pretrained_model, load_pretrained_weights, local_files_only
+        )
 
     def freeze_embeddings(self) -> None:
         """Frezees the embedding layer."""
@@ -136,23 +141,23 @@ class BERTEncoder(Encoder):
         # Last layer keeps LR
         opt_parameters = [
             {
-                "params": self.model.encoder.layer[-1].parameters(),
-                "lr": lr,
+                'params': self.model.encoder.layer[-1].parameters(),
+                'lr': lr,
             }
         ]
         # Decay at each layer.
         for i in range(2, self.num_layers):
             opt_parameters.append(
                 {
-                    "params": self.model.encoder.layer[-i].parameters(),
-                    "lr": lr * decay ** (i - 1),
+                    'params': self.model.encoder.layer[-i].parameters(),
+                    'lr': lr * decay ** (i - 1),
                 }
             )
         # Embedding Layer
         opt_parameters.append(
             {
-                "params": self.model.embeddings.parameters(),
-                "lr": lr * decay ** (self.num_layers),
+                'params': self.model.embeddings.parameters(),
+                'lr': lr * decay ** (self.num_layers),
             }
         )
         return opt_parameters
@@ -162,7 +167,7 @@ class BERTEncoder(Encoder):
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         token_type_ids: Optional[torch.tensor] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, torch.Tensor]:
         """BERT model forward
 
@@ -183,14 +188,14 @@ class BERTEncoder(Encoder):
             output_hidden_states=True,
             return_dict=False,
         )
-        
+
         last_hidden_states, pooler_output, all_layers = output
-        
+
         return {
-            "sentemb": pooler_output,
-            "wordemb": last_hidden_states,
-            "all_layers": all_layers,
-            "attention_mask": attention_mask,
+            'sentemb': pooler_output,
+            'wordemb': last_hidden_states,
+            'all_layers': all_layers,
+            'attention_mask': attention_mask,
         }
 
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):

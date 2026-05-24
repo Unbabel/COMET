@@ -18,12 +18,15 @@ RemBERT Encoder
     Pretrained RemBERT encoder from Google. This encoder is similar to BERT but uses
     sentencepiece like XLMR.
 """
+
 import importlib_metadata
 import packaging.version as packaging_version
 from transformers import RemBertConfig, RemBertModel
 
-transformers_version = importlib_metadata.distribution("transformers").version
-if packaging_version.Version(transformers_version) >= packaging_version.Version("v5.0.0rc0"):
+transformers_version = importlib_metadata.distribution('transformers').version
+if packaging_version.Version(transformers_version) >= packaging_version.Version(
+    'v5.0.0rc0'
+):
     from transformers import RemBertTokenizer as RemBertTokenizer
 else:
     from transformers import RemBertTokenizerFast as RemBertTokenizer

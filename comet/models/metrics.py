@@ -19,6 +19,7 @@ Metrics
     Regression and Ranking metrics to be used during training to measure
     correlations with human judgements
 """
+
 from itertools import combinations
 from typing import Any, Callable, List, Optional
 
@@ -29,7 +30,9 @@ from torchmetrics import Metric
 from torchmetrics.classification import MulticlassMatthewsCorrCoef
 
 
-def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> float:
+def system_accuracy(
+    y_hat: List[float], y: List[float], system: List[str]
+) -> float:
     """Implementation of system-level accuracy proposed in
         [To Ship not to Ship](https://aclanthology.org/2021.wmt-1.57/)
 
@@ -42,23 +45,23 @@ def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> fl
         Float: System-level accuracy.
     """
     try:
-        data = pd.DataFrame({"y_hat": y_hat, "y": y, "system": system})
+        data = pd.DataFrame({'y_hat': y_hat, 'y': y, 'system': system})
     except ValueError:
         raise Exception(
-            "The program will be interrupted, followed by a series of errors."
+            'The program will be interrupted, followed by a series of errors.'
             " This probably happens because you're using ddp strategy in the"
-            " trainer config. System accuracy computation does not currently"
-            " work with ddp. Please make sure your VALIDATION data DOES NOT"
+            ' trainer config. System accuracy computation does not currently'
+            ' work with ddp. Please make sure your VALIDATION data DOES NOT'
             " include a 'system' column, and try again."
         )
 
-    data = data.groupby("system").mean()
+    data = data.groupby('system').mean()
     pairs = list(combinations(data.index.tolist(), 2))
 
     tp = 0
     for system_a, system_b in pairs:
-        human_delta = data.loc[system_a]["y"] - data.loc[system_b]["y"]
-        model_delta = data.loc[system_a]["y_hat"] - data.loc[system_b]["y_hat"]
+        human_delta = data.loc[system_a]['y'] - data.loc[system_b]['y']
+        model_delta = data.loc[system_a]['y_hat'] - data.loc[system_b]['y_hat']
         if (human_delta >= 0) ^ (model_delta < 0):
             tp += 1
 
@@ -67,14 +70,14 @@ def system_accuracy(y_hat: List[float], y: List[float], system: List[str]) -> fl
 
 
 class MCCMetric(MulticlassMatthewsCorrCoef):
-    def __init__(self, prefix: str = "", **kwargs) -> None:
+    def __init__(self, prefix: str = '', **kwargs) -> None:
         super().__init__(**kwargs)
         self.prefix = prefix
 
     def compute(self) -> torch.Tensor:
         """Computes matthews correlation coefficient."""
         mcc = super(MCCMetric, self).compute()
-        return {self.prefix + "_mcc": mcc}
+        return {self.prefix + '_mcc': mcc}
 
 
 class RegressionMetrics(Metric):
@@ -86,7 +89,7 @@ class RegressionMetrics(Metric):
 
     def __init__(
         self,
-        prefix: str = "",
+        prefix: str = '',
         dist_sync_on_step: bool = False,
         process_group: Optional[Any] = None,
         dist_sync_fn: Optional[Callable] = None,
@@ -96,9 +99,9 @@ class RegressionMetrics(Metric):
             process_group=process_group,
             dist_sync_fn=dist_sync_fn,
         )
-        self.add_state("preds", default=[], dist_reduce_fx="cat")
-        self.add_state("target", default=[], dist_reduce_fx="cat")
-        self.add_state("systems", default=[], dist_reduce_fx=None)
+        self.add_state('preds', default=[], dist_reduce_fx='cat')
+        self.add_state('target', default=[], dist_reduce_fx='cat')
+        self.add_state('systems', default=[], dist_reduce_fx=None)
         self.prefix = prefix
 
     def update(
@@ -131,16 +134,16 @@ class RegressionMetrics(Metric):
         spearman, _ = stats.spearmanr(preds.tolist(), target.tolist())
         pearson, _ = stats.pearsonr(preds.tolist(), target.tolist())
         report = {
-            self.prefix + "_kendall": kendall,
-            self.prefix + "_spearman": spearman,
-            self.prefix + "_pearson": pearson,
+            self.prefix + '_kendall': kendall,
+            self.prefix + '_spearman': spearman,
+            self.prefix + '_pearson': pearson,
         }
 
         if len(self.systems) > 0:
             system_acc = system_accuracy(
                 preds.cpu().tolist(), target.cpu().tolist(), self.systems
             )
-            report["system_acc"] = system_acc
+            report['system_acc'] = system_acc
 
         return report
 
@@ -150,7 +153,7 @@ class WMTKendall(Metric):
 
     def __init__(
         self,
-        prefix: str = "",
+        prefix: str = '',
         dist_sync_on_step: bool = False,
         process_group: Optional[Any] = None,
         dist_sync_fn: Optional[Callable] = None,
@@ -160,8 +163,12 @@ class WMTKendall(Metric):
             process_group=process_group,
             dist_sync_fn=dist_sync_fn,
         )
-        self.add_state("concordance", default=torch.tensor(0), dist_reduce_fx="sum")
-        self.add_state("discordance", default=torch.tensor(0), dist_reduce_fx="sum")
+        self.add_state(
+            'concordance', default=torch.tensor(0), dist_reduce_fx='sum'
+        )
+        self.add_state(
+            'discordance', default=torch.tensor(0), dist_reduce_fx='sum'
+        )
         self.prefix = prefix
 
     def update(self, distance_pos: torch.Tensor, distance_neg: torch.Tensor):
@@ -176,6 +183,6 @@ class WMTKendall(Metric):
     def compute(self):
         return {
             self.prefix
-            + "_kendall": (self.concordance - self.discordance)
+            + '_kendall': (self.concordance - self.discordance)
             / (self.concordance + self.discordance)
         }

@@ -33,10 +33,12 @@ class CustomWriter(BasePredictionWriter):
         write_interval (str): When to perform write operations. Defaults to 'epoch'
     """
 
-    def __init__(self, write_interval="epoch") -> None:
+    def __init__(self, write_interval='epoch') -> None:
         super().__init__(write_interval)
 
-    def write_on_epoch_end(self, trainer, pl_module, predictions, batch_indices):
+    def write_on_epoch_end(
+        self, trainer, pl_module, predictions, batch_indices
+    ):
         """Saves predictions after running inference on all samples."""
 
         # We need to save predictions in the most secure manner possible to avoid
@@ -48,7 +50,7 @@ class CustomWriter(BasePredictionWriter):
                 tempfile.mkdtemp(),
             ]
             logger.info(
-                "Created temporary folder to store predictions: {}.".format(
+                'Created temporary folder to store predictions: {}.'.format(
                     output_dir[0]
                 )
             )
@@ -67,13 +69,16 @@ class CustomWriter(BasePredictionWriter):
         # this will create N (num processes) files in `output_dir` each containing
         # the predictions of it's respective rank
         torch.save(
-            predictions, os.path.join(self.output_dir, f"pred_{trainer.global_rank}.pt")
+            predictions,
+            os.path.join(self.output_dir, f'pred_{trainer.global_rank}.pt'),
         )
         # optionally, you can also save `batch_indices` to get the information about
         # the data index from your prediction data
         torch.save(
             batch_indices,
-            os.path.join(self.output_dir, f"batch_indices_{trainer.global_rank}.pt"),
+            os.path.join(
+                self.output_dir, f'batch_indices_{trainer.global_rank}.pt'
+            ),
         )
 
     def gather_all_predictions(self):
@@ -86,10 +91,12 @@ class CustomWriter(BasePredictionWriter):
 
         def flatten_predictions(predictions):
             flatten_pred = Prediction(
-                scores=torch.cat([pred["scores"] for pred in predictions], dim=0)
+                scores=torch.cat(
+                    [pred['scores'] for pred in predictions], dim=0
+                )
             )
-            if "metadata" in predictions[0]:
-                flatten_pred["metadata"] = flatten_metadata(
+            if 'metadata' in predictions[0]:
+                flatten_pred['metadata'] = flatten_metadata(
                     [pred.metadata for pred in predictions]
                 )
             return flatten_pred
@@ -97,29 +104,34 @@ class CustomWriter(BasePredictionWriter):
         files = sorted(os.listdir(self.output_dir))
         pred = flatten_predictions(
             [
-                flatten_predictions(torch.load(os.path.join(self.output_dir, f)))
+                flatten_predictions(
+                    torch.load(os.path.join(self.output_dir, f))
+                )
                 for f in files
-                if "pred" in f
+                if 'pred' in f
             ]
         )
         indices = flatten(
             [
                 flatten(torch.load(os.path.join(self.output_dir, f))[0])
                 for f in files
-                if "batch_indices" in f
+                if 'batch_indices' in f
             ]
         )
         output = Prediction(
             scores=restore_list_order(pred.scores.tolist(), indices),
             system_score=sum(pred.scores.tolist()) / len(pred.scores),
         )
-        if "metadata" in pred:
-            output["metadata"] = Prediction(
-                **{k: restore_list_order(v, indices) for k, v in pred.metadata.items()}
+        if 'metadata' in pred:
+            output['metadata'] = Prediction(
+                **{
+                    k: restore_list_order(v, indices)
+                    for k, v in pred.metadata.items()
+                }
             )
         return output
 
     def cleanup(self):
         """Cleans temporary files."""
-        logger.info("Cleanup temporary folder: {}.".format(self.output_dir))
+        logger.info('Cleanup temporary folder: {}.'.format(self.output_dir))
         shutil.rmtree(self.output_dir)

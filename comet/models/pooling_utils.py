@@ -70,9 +70,13 @@ def average_pooling(
         start_inds, ctx_mask = find_start_inds_and_mask_tokens(
             mask, tokens, separator_index
         )
-        wordemb = mask_fill_index(0.0, tokens, embeddings, start_inds, padding_index)
+        wordemb = mask_fill_index(
+            0.0, tokens, embeddings, start_inds, padding_index
+        )
         sentemb = torch.sum(wordemb, 1)
-        sum_mask = ctx_mask.unsqueeze(-1).expand(embeddings.size()).float().sum(1)
+        sum_mask = (
+            ctx_mask.unsqueeze(-1).expand(embeddings.size()).float().sum(1)
+        )
     else:
         wordemb = mask_fill(0.0, tokens, embeddings, padding_index)
         sentemb = torch.sum(wordemb, 1)
@@ -94,7 +98,9 @@ def max_pooling(
     Return:
         torch.Tensor: Sentence embedding
     """
-    return mask_fill(float("-inf"), tokens, embeddings, padding_index).max(dim=1)[0]
+    return mask_fill(float('-inf'), tokens, embeddings, padding_index).max(
+        dim=1
+    )[0]
 
 
 # From https://github.com/amazon-science/doc-mt-metrics/blob/5385cc28930aae9924edcb3201645dd3810b12c0/COMET/comet/models/pooling_utils.py#L18
@@ -125,7 +131,11 @@ def mask_fill_index(
     for i, start in enumerate(start_inds):
         padding_maks2[i, 1 : start + 1] = True
     padding_mask = torch.logical_or(padding_mask, padding_maks2.unsqueeze(-1))
-    return embeddings.float().masked_fill_(padding_mask, fill_value).type_as(embeddings)
+    return (
+        embeddings.float()
+        .masked_fill_(padding_mask, fill_value)
+        .type_as(embeddings)
+    )
 
 
 def mask_fill(
@@ -147,4 +157,8 @@ def mask_fill(
         torch.Tensor: Word embeddings [batch_size x seq_length x hidden_size]
     """
     padding_mask = tokens.eq(padding_index).unsqueeze(-1)
-    return embeddings.float().masked_fill_(padding_mask, fill_value).type_as(embeddings)
+    return (
+        embeddings.float()
+        .masked_fill_(padding_mask, fill_value)
+        .type_as(embeddings)
+    )

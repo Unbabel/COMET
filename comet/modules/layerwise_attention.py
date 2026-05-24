@@ -26,6 +26,7 @@ Layer-Wise Attention Mechanism
     Original implementation:
         - https://github.com/Hyperparticle/udify
 """
+
 from typing import List, Optional
 
 import torch
@@ -39,7 +40,7 @@ class LayerwiseAttention(torch.nn.Module):
         layer_norm: bool = False,
         layer_weights: Optional[List[int]] = None,
         dropout: float = None,
-        layer_transformation: str = "softmax",
+        layer_transformation: str = 'softmax',
     ) -> None:
         super(LayerwiseAttention, self).__init__()
         self.num_layers = num_layers
@@ -47,7 +48,7 @@ class LayerwiseAttention(torch.nn.Module):
         self.dropout = dropout
 
         self.transform_fn = torch.softmax
-        if layer_transformation == "sparsemax":
+        if layer_transformation == 'sparsemax':
             from entmax import sparsemax
 
             self.transform_fn = sparsemax
@@ -55,12 +56,8 @@ class LayerwiseAttention(torch.nn.Module):
         if layer_weights is None:
             layer_weights = [0.0] * num_layers
         elif len(layer_weights) != num_layers:
-            raise Exception(
-                "Length of layer_weights {} differs \
-                from num_layers {}".format(
-                    layer_weights, num_layers
-                )
-            )
+            raise Exception('Length of layer_weights {} differs \
+                from num_layers {}'.format(layer_weights, num_layers))
 
         self.scalar_parameters = ParameterList(
             [
@@ -77,8 +74,8 @@ class LayerwiseAttention(torch.nn.Module):
         if self.dropout:
             dropout_mask = torch.zeros(len(self.scalar_parameters))
             dropout_fill = torch.empty(len(self.scalar_parameters)).fill_(-1e20)
-            self.register_buffer("dropout_mask", dropout_mask)
-            self.register_buffer("dropout_fill", dropout_fill)
+            self.register_buffer('dropout_mask', dropout_mask)
+            self.register_buffer('dropout_fill', dropout_fill)
 
     def forward(
         self,
@@ -87,10 +84,8 @@ class LayerwiseAttention(torch.nn.Module):
     ) -> torch.Tensor:
         if len(tensors) != self.num_layers:
             raise Exception(
-                "{} tensors were passed, but the module was initialized to \
-                mix {} tensors.".format(
-                    len(tensors), self.num_layers
-                )
+                '{} tensors were passed, but the module was initialized to \
+                mix {} tensors.'.format(len(tensors), self.num_layers)
             )
 
         def _layer_norm(tensor, broadcast_mask, mask):
@@ -105,23 +100,30 @@ class LayerwiseAttention(torch.nn.Module):
             variance = (((tensor_masked - mean) * broadcast_mask) ** 2).view(
                 batch_size, -1
             ).sum(1) / num_elements_not_masked
-            normalized_tensor = (tensor - mean) / torch.sqrt(variance + 1e-12).view(
-                batch_size, 1, 1
-            )
+            normalized_tensor = (tensor - mean) / torch.sqrt(
+                variance + 1e-12
+            ).view(batch_size, 1, 1)
             return normalized_tensor
 
         # BUG: Pytorch bug fix when Parameters are not well copied across GPUs
         # https://github.com/pytorch/pytorch/issues/36035
-        if len([parameter for parameter in self.scalar_parameters]) != self.num_layers:
+        if (
+            len([parameter for parameter in self.scalar_parameters])
+            != self.num_layers
+        ):
             weights = torch.tensor(self.weights, device=tensors[0].device)
             gamma = torch.tensor(self.gamma_value, device=tensors[0].device)
         else:
-            weights = torch.cat([parameter for parameter in self.scalar_parameters])
+            weights = torch.cat(
+                [parameter for parameter in self.scalar_parameters]
+            )
             gamma = self.gamma
 
         if self.training and self.dropout:
             weights = torch.where(
-                self.dropout_mask.uniform_() > self.dropout, weights, self.dropout_fill
+                self.dropout_mask.uniform_() > self.dropout,
+                weights,
+                self.dropout_fill,
             )
 
         normed_weights = self.transform_fn(weights, dim=0)
@@ -139,5 +141,7 @@ class LayerwiseAttention(torch.nn.Module):
 
             pieces = []
             for weight, tensor in zip(normed_weights, tensors):
-                pieces.append(weight * _layer_norm(tensor, broadcast_mask, mask_float))
+                pieces.append(
+                    weight * _layer_norm(tensor, broadcast_mask, mask_float)
+                )
             return gamma * sum(pieces)

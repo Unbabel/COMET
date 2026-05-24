@@ -22,14 +22,17 @@ Unified Metric
 
     Inspired on [UniTE](https://arxiv.org/pdf/2204.13346.pdf)
 """
+
 from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
 from torch import nn
-from transformers.optimization import (Adafactor,
-                                       get_constant_schedule_with_warmup)
+from transformers.optimization import (
+    Adafactor,
+    get_constant_schedule_with_warmup,
+)
 
 from comet.models.base import CometModel
 from comet.models.metrics import MCCMetric, RegressionMetrics
@@ -96,29 +99,29 @@ class UnifiedMetric(CometModel):
         self,
         nr_frozen_epochs: Union[float, int] = 0.9,
         keep_embeddings_frozen: bool = True,
-        optimizer: str = "AdamW",
+        optimizer: str = 'AdamW',
         warmup_steps: int = 0,
         encoder_learning_rate: float = 3.0e-06,
         learning_rate: float = 3.0e-05,
         layerwise_decay: float = 0.95,
-        encoder_model: str = "XLM-RoBERTa",
-        pretrained_model: str = "microsoft/infoxlm-large",
-        sent_layer: Union[str, int] = "mix",
-        layer_transformation: str = "sparsemax",
+        encoder_model: str = 'XLM-RoBERTa',
+        pretrained_model: str = 'microsoft/infoxlm-large',
+        sent_layer: Union[str, int] = 'mix',
+        layer_transformation: str = 'sparsemax',
         layer_norm: bool = True,
         word_layer: int = 24,
-        loss: str = "mse",
+        loss: str = 'mse',
         dropout: float = 0.1,
         batch_size: int = 4,
         train_data: List[str] = [],
         validation_data: List[str] = [],
         hidden_sizes: List[int] = [3072, 1024],
-        activations: str = "Tanh",
+        activations: str = 'Tanh',
         final_activation: Optional[str] = None,
-        input_segments: List[str] = ["mt", "src", "ref"],
+        input_segments: List[str] = ['mt', 'src', 'ref'],
         word_level_training: bool = False,
         loss_lambda: float = 0.65,
-        error_labels: List[str] = ["minor", "major"],
+        error_labels: List[str] = ['minor', 'major'],
         cross_entropy_weights: Optional[List[float]] = None,
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
@@ -141,7 +144,7 @@ class UnifiedMetric(CometModel):
             batch_size=batch_size,
             train_data=train_data,
             validation_data=validation_data,
-            class_identifier="unified_metric",
+            class_identifier='unified_metric',
             load_pretrained_weights=load_pretrained_weights,
             local_files_only=local_files_only,
         )
@@ -156,7 +159,9 @@ class UnifiedMetric(CometModel):
         self.word_level = word_level_training
         if word_level_training:
             self.encoder.labelset = self.label_encoder
-            self.hidden2tag = nn.Linear(self.encoder.output_units, self.num_classes)
+            self.hidden2tag = nn.Linear(
+                self.encoder.output_units, self.num_classes
+            )
 
         if len(self.hparams.input_segments) == 3:
             # By default 3rd input [mt:src:ref] has 50% weight,
@@ -191,7 +196,7 @@ class UnifiedMetric(CometModel):
     def init_metrics(self):
         """Initializes training and validation metrics"""
         # Train and Dev correlation metrics
-        self.train_corr = RegressionMetrics(prefix="train")
+        self.train_corr = RegressionMetrics(prefix='train')
         self.val_corr = nn.ModuleList(
             [RegressionMetrics(prefix=d) for d in self.hparams.validation_data]
         )
@@ -199,7 +204,9 @@ class UnifiedMetric(CometModel):
             self.label_encoder = LabelSet(self.hparams.error_labels)
             self.num_classes = len(self.label_encoder.labels_to_id)
             # Train and Dev MCC
-            self.train_mcc = MCCMetric(num_classes=self.num_classes, prefix="train")
+            self.train_mcc = MCCMetric(
+                num_classes=self.num_classes, prefix='train'
+            )
             self.val_mcc = nn.ModuleList(
                 [
                     MCCMetric(num_classes=self.num_classes, prefix=d)
@@ -212,13 +219,15 @@ class UnifiedMetric(CometModel):
         self.sentloss = nn.MSELoss()
         if self.word_level:
             if self.hparams.cross_entropy_weights:
-                assert len(self.hparams.cross_entropy_weights) == self.num_classes
+                assert (
+                    len(self.hparams.cross_entropy_weights) == self.num_classes
+                )
                 loss_weights = torch.tensor(self.hparams.cross_entropy_weights)
             else:
                 loss_weights = None
 
             self.wordloss = nn.CrossEntropyLoss(
-                reduction="mean", ignore_index=-1, weight=loss_weights
+                reduction='mean', ignore_index=-1, weight=loss_weights
             )
 
     def requires_references(self) -> bool:
@@ -229,13 +238,15 @@ class UnifiedMetric(CometModel):
         Return:
             [bool]: True if the model was trained to work exclusively with references.
         """
-        if self.hparams.input_segments == ["mt", "ref"]:
+        if self.hparams.input_segments == ['mt', 'ref']:
             return True
         return False
 
     def configure_optimizers(
         self,
-    ) -> Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
+    ) -> Tuple[
+        List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]
+    ]:
         """Pytorch Lightning method to initialize a training Optimizer and learning
         rate scheduler.
 
@@ -247,25 +258,28 @@ class UnifiedMetric(CometModel):
             self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
         )
         params += [
-            {"params": self.estimator.parameters(), "lr": self.hparams.learning_rate}
+            {
+                'params': self.estimator.parameters(),
+                'lr': self.hparams.learning_rate,
+            }
         ]
         if self.word_level:
             params += [
                 {
-                    "params": self.hidden2tag.parameters(),
-                    "lr": self.hparams.learning_rate,
+                    'params': self.hidden2tag.parameters(),
+                    'lr': self.hparams.learning_rate,
                 },
             ]
 
         if self.layerwise_attention:
             params += [
                 {
-                    "params": self.layerwise_attention.parameters(),
-                    "lr": self.hparams.learning_rate,
+                    'params': self.layerwise_attention.parameters(),
+                    'lr': self.hparams.learning_rate,
                 }
             ]
 
-        if self.hparams.optimizer == "Adafactor":
+        if self.hparams.optimizer == 'Adafactor':
             optimizer = Adafactor(
                 params,
                 lr=self.hparams.learning_rate,
@@ -300,10 +314,10 @@ class UnifiedMetric(CometModel):
         # Make sure everything except score is str type
         for col in columns:
             df[col] = df[col].astype(str)
-        columns.append("score")
-        df["score"] = df["score"].astype("float16")
+        columns.append('score')
+        df['score'] = df['score'].astype('float16')
         df = df[columns]
-        return df.to_dict("records")
+        return df.to_dict('records')
 
     def read_validation_data(self, path: str) -> List[dict]:
         """Reads a csv file with validation data.
@@ -318,15 +332,15 @@ class UnifiedMetric(CometModel):
         # Deep copy input segments
         columns = self.hparams.input_segments[:]
         # If system in columns we will use this to calculate system-level accuracy
-        if "system" in df.columns:
-            columns.append("system")
+        if 'system' in df.columns:
+            columns.append('system')
         # Make sure everything except score is str type
         for col in columns:
             df[col] = df[col].astype(str)
-        columns.append("score")
-        df["score"] = df["score"].astype("float16")
+        columns.append('score')
+        df['score'] = df['score'].astype('float16')
         df = df[columns]
-        return df.to_dict("records")
+        return df.to_dict('records')
 
     def concat_inputs(
         self,
@@ -359,23 +373,27 @@ class UnifiedMetric(CometModel):
             full_input, _, _ = self.encoder.concat_sequences(
                 input_sequences, return_label_ids=self.word_level
             )
-            model_inputs["inputs"] = (src_input, ref_input, full_input)
-            model_inputs["mt_length"] = input_sequences[0]["attention_mask"].sum(dim=1)
+            model_inputs['inputs'] = (src_input, ref_input, full_input)
+            model_inputs['mt_length'] = input_sequences[0][
+                'attention_mask'
+            ].sum(dim=1)
             return model_inputs
 
         # Otherwise we will have one single input sequence that concatenates the MT
         # with SRC/REF.
         else:
-            model_inputs["inputs"] = (
+            model_inputs['inputs'] = (
                 self.encoder.concat_sequences(
                     input_sequences, return_label_ids=self.word_level
                 )[0],
             )
-            model_inputs["mt_length"] = input_sequences[0]["attention_mask"].sum(dim=1)
+            model_inputs['mt_length'] = input_sequences[0][
+                'attention_mask'
+            ].sum(dim=1)
         return model_inputs
 
     def prepare_sample(
-        self, sample: List[Dict[str, Union[str, float]]], stage: str = "fit"
+        self, sample: List[Dict[str, Union[str, float]]], stage: str = 'fit'
     ) -> Union[Tuple[Dict[str, torch.Tensor]], Dict[str, torch.Tensor]]:
         """Tokenizes input data and prepares targets for training.
 
@@ -389,45 +407,47 @@ class UnifiedMetric(CometModel):
         """
         inputs = {k: [d[k] for d in sample] for k in sample[0]}
         input_sequences = [
-            self.encoder.prepare_sample(inputs["mt"], self.word_level, None),
+            self.encoder.prepare_sample(inputs['mt'], self.word_level, None),
         ]
 
         src_input, ref_input = False, False
-        if ("src" in inputs) and ("src" in self.hparams.input_segments):
-            input_sequences.append(self.encoder.prepare_sample(inputs["src"]))
+        if ('src' in inputs) and ('src' in self.hparams.input_segments):
+            input_sequences.append(self.encoder.prepare_sample(inputs['src']))
             src_input = True
 
-        if ("ref" in inputs) and ("ref" in self.hparams.input_segments):
-            input_sequences.append(self.encoder.prepare_sample(inputs["ref"]))
+        if ('ref' in inputs) and ('ref' in self.hparams.input_segments):
+            input_sequences.append(self.encoder.prepare_sample(inputs['ref']))
             ref_input = True
 
         unified_input = src_input and ref_input
         model_inputs = self.concat_inputs(input_sequences, unified_input)
-        if stage == "predict":
-            return model_inputs["inputs"]
+        if stage == 'predict':
+            return model_inputs['inputs']
 
-        scores = [float(s) for s in inputs["score"]]
+        scores = [float(s) for s in inputs['score']]
         targets = Target(score=torch.tensor(scores, dtype=torch.float))
 
-        if "system" in inputs:
-            targets["system"] = inputs["system"]
+        if 'system' in inputs:
+            targets['system'] = inputs['system']
 
         if self.word_level:
             # Labels will be the same accross all inputs because we are only
             # doing sequence tagging on the MT. We will only use the mask corresponding
             # to the MT segment.
-            seq_len = model_inputs["mt_length"].max()
-            targets["mt_length"] = model_inputs["mt_length"]
-            targets["labels"] = model_inputs["inputs"][0]["label_ids"][:, :seq_len]
+            seq_len = model_inputs['mt_length'].max()
+            targets['mt_length'] = model_inputs['mt_length']
+            targets['labels'] = model_inputs['inputs'][0]['label_ids'][
+                :, :seq_len
+            ]
 
-        return model_inputs["inputs"], targets
+        return model_inputs['inputs'], targets
 
     def forward(
         self,
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         token_type_ids: Optional[torch.Tensor] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, torch.Tensor]:
         """Forward function.
 
@@ -455,36 +475,44 @@ class UnifiedMetric(CometModel):
                 isinstance(self.hparams.word_layer, int)
                 and 0 <= self.hparams.word_layer < self.encoder.num_layers
             ):
-                wordemb = encoder_out["all_layers"][self.hparams.word_layer]
+                wordemb = encoder_out['all_layers'][self.hparams.word_layer]
             else:
                 raise Exception(
-                    "Invalid model word layer {}.".format(self.hparams.word_layer)
+                    'Invalid model word layer {}.'.format(
+                        self.hparams.word_layer
+                    )
                 )
 
         # embeddings used for the sentence-level regression task
         if self.layerwise_attention:
             embeddings = self.layerwise_attention(
-                encoder_out["all_layers"], attention_mask
+                encoder_out['all_layers'], attention_mask
             )
         elif (
             isinstance(self.hparams.sent_layer, int)
             and 0 <= self.hparams.sent_layer < self.encoder.num_layers
         ):
-            embeddings = encoder_out["all_layers"][self.hparams.sent_layer]
+            embeddings = encoder_out['all_layers'][self.hparams.sent_layer]
         else:
             raise Exception(
-                "Invalid model sent layer {}.".format(self.hparams.word_layer)
+                'Invalid model sent layer {}.'.format(self.hparams.word_layer)
             )
-        sentemb = embeddings[:, 0, :]  # We take the CLS token as sentence-embedding
+        sentemb = embeddings[
+            :, 0, :
+        ]  # We take the CLS token as sentence-embedding
 
         if self.word_level:
             sentence_output = self.estimator(sentemb)
             word_output = self.hidden2tag(wordemb)
-            return Prediction(score=sentence_output.view(-1), logits=word_output)
+            return Prediction(
+                score=sentence_output.view(-1), logits=word_output
+            )
 
         return Prediction(score=self.estimator(sentemb).view(-1))
 
-    def compute_loss(self, prediction: Prediction, target: Target) -> torch.Tensor:
+    def compute_loss(
+        self, prediction: Prediction, target: Target
+    ) -> torch.Tensor:
         """Receives model batch prediction and respective targets and computes
         a loss value
 
@@ -500,9 +528,9 @@ class UnifiedMetric(CometModel):
             predictions = prediction.logits.reshape(-1, self.num_classes)
             targets = target.labels.reshape(-1).type(torch.LongTensor).cuda()
             word_loss = self.wordloss(predictions, targets)
-            return sentence_loss * (1 - self.hparams.loss_lambda) + word_loss * (
-                self.hparams.loss_lambda
-            )
+            return sentence_loss * (
+                1 - self.hparams.loss_lambda
+            ) + word_loss * (self.hparams.loss_lambda)
         else:
             return sentence_loss
 
@@ -539,7 +567,7 @@ class UnifiedMetric(CometModel):
             self._frozen = False
 
         self.log(
-            "train_loss",
+            'train_loss',
             loss_value,
             on_step=True,
             on_epoch=True,
@@ -549,7 +577,10 @@ class UnifiedMetric(CometModel):
         return loss_value
 
     def validation_step(
-        self, batch: Tuple[Dict[str, torch.Tensor]], batch_nb: int, dataloader_idx: int
+        self,
+        batch: Tuple[Dict[str, torch.Tensor]],
+        batch_nb: int,
+        dataloader_idx: int,
     ) -> None:
         """Pytorch Lightning validation_step.
 
@@ -562,7 +593,9 @@ class UnifiedMetric(CometModel):
         batch_input, batch_target = batch
         predictions = [self.forward(**input_seq) for input_seq in batch_input]
         # Final score is the average of the 3 scores when using references.
-        scores = torch.stack([pred.score for pred in predictions], dim=0).mean(dim=0)
+        scores = torch.stack([pred.score for pred in predictions], dim=0).mean(
+            dim=0
+        )
         if self.word_level:
             seq_len = batch_target.mt_length.max()
             # Final probs for each word is the average of the 3 forward passes.
@@ -587,7 +620,7 @@ class UnifiedMetric(CometModel):
             self.val_corr[dataloader_idx - 1].update(
                 scores,
                 batch_target.score,
-                batch_target["system"] if "system" in batch_target else None,
+                batch_target['system'] if 'system' in batch_target else None,
             )
             if self.word_level:
                 self.val_mcc[dataloader_idx - 1].update(probs, targets)
@@ -599,7 +632,9 @@ class UnifiedMetric(CometModel):
         self.train_corr.reset()
 
         if self.word_level:
-            self.log_dict(self.train_mcc.compute(), prog_bar=False, sync_dist=True)
+            self.log_dict(
+                self.train_mcc.compute(), prog_bar=False, sync_dist=True
+            )
             self.train_mcc.reset()
 
         val_metrics = []
@@ -617,10 +652,12 @@ class UnifiedMetric(CometModel):
             self.log_dict(results, prog_bar=False, sync_dist=True)
             val_metrics.append(results)
 
-        average_results = {"val_" + k.split("_")[-1]: [] for k in val_metrics[0].keys()}
+        average_results = {
+            'val_' + k.split('_')[-1]: [] for k in val_metrics[0].keys()
+        }
         for i in range(len(val_metrics)):
             for k, v in val_metrics[i].items():
-                average_results["val_" + k.split("_")[-1]].append(v)
+                average_results['val_' + k.split('_')[-1]].append(v)
 
         self.log_dict(
             {k: sum(v) / len(v) for k, v in average_results.items()},
@@ -634,7 +671,7 @@ class UnifiedMetric(CometModel):
         Args:
             value (int): number of runs per sample.
         """
-        raise NotImplementedError("MCD not implemented for this model!")
+        raise NotImplementedError('MCD not implemented for this model!')
 
     def decode(
         self,
@@ -658,7 +695,9 @@ class UnifiedMetric(CometModel):
             seq_len = len(mt_offsets[i])
             error_spans, in_span, span = [], False, {}
             for token_id, probs, token_offset in zip(
-                input_ids[i, :seq_len], subword_probs[i][:seq_len], mt_offsets[i]
+                input_ids[i, :seq_len],
+                subword_probs[i][:seq_len],
+                mt_offsets[i],
             ):
                 if self.decoding_threshold:
                     if torch.sum(probs[1:]) > self.decoding_threshold:
@@ -682,26 +721,26 @@ class UnifiedMetric(CometModel):
                 # Label set:
                 # O I-minor I-major
                 # Begin of annotation span
-                if label.startswith("I") and not in_span:
+                if label.startswith('I') and not in_span:
                     in_span = True
-                    span["tokens"] = [
+                    span['tokens'] = [
                         token_id,
                     ]
-                    span["severity"] = label.split("-")[1]
-                    span["offset"] = list(token_offset)
-                    span["confidence"] = [
+                    span['severity'] = label.split('-')[1]
+                    span['offset'] = list(token_offset)
+                    span['confidence'] = [
                         probability,
                     ]
 
                 # Inside an annotation span
-                elif label.startswith("I") and in_span:
-                    span["tokens"].append(token_id)
-                    span["confidence"].append(probability)
+                elif label.startswith('I') and in_span:
+                    span['tokens'].append(token_id)
+                    span['confidence'].append(probability)
                     # Update offset end
-                    span["offset"][1] = token_offset[1]
+                    span['offset'][1] = token_offset[1]
 
                 # annotation span finished.
-                elif label == "O" and in_span:
+                elif label == 'O' and in_span:
                     error_spans.append(span)
                     in_span, span = False, {}
 
@@ -709,11 +748,13 @@ class UnifiedMetric(CometModel):
             for span in error_spans:
                 sentence_output.append(
                     {
-                        "text": self.encoder.tokenizer.decode(span["tokens"]),
-                        "confidence": torch.concat(span["confidence"]).mean().item(),
-                        "severity": span["severity"],
-                        "start": span["offset"][0],
-                        "end": span["offset"][1],
+                        'text': self.encoder.tokenizer.decode(span['tokens']),
+                        'confidence': torch.concat(span['confidence'])
+                        .mean()
+                        .item(),
+                        'severity': span['severity'],
+                        'start': span['offset'][0],
+                        'end': span['offset'][1],
                     }
                 )
             decoded_output.append(sentence_output)
@@ -740,9 +781,9 @@ class UnifiedMetric(CometModel):
         if len(batch) == 3:
             predictions = [self.forward(**input_seq) for input_seq in batch]
             # Final score is the average of the 3 scores!
-            avg_scores = torch.stack([pred.score for pred in predictions], dim=0).mean(
-                dim=0
-            )
+            avg_scores = torch.stack(
+                [pred.score for pred in predictions], dim=0
+            ).mean(dim=0)
             batch_prediction = Prediction(
                 scores=avg_scores,
                 metadata=Prediction(
@@ -752,7 +793,7 @@ class UnifiedMetric(CometModel):
                 ),
             )
             if self.word_level:
-                mt_mask = batch[0]["label_ids"] != -1
+                mt_mask = batch[0]['label_ids'] != -1
                 mt_length = mt_mask.sum(dim=1)
                 seq_len = mt_length.max()
                 subword_probs = [
@@ -761,22 +802,26 @@ class UnifiedMetric(CometModel):
                 ]
                 subword_probs = torch.sum(torch.stack(subword_probs), dim=0)
                 error_spans = self.decode(
-                    subword_probs, batch[0]["input_ids"], batch[0]["mt_offsets"]
+                    subword_probs,
+                    batch[0]['input_ids'],
+                    batch[0]['mt_offsets'],
                 )
-                batch_prediction.metadata["error_spans"] = error_spans
+                batch_prediction.metadata['error_spans'] = error_spans
 
         else:
             model_output = self.forward(**batch[0])
             batch_prediction = Prediction(scores=model_output.score)
             if self.word_level:
-                mt_mask = batch[0]["label_ids"] != -1
+                mt_mask = batch[0]['label_ids'] != -1
                 mt_length = mt_mask.sum(dim=1)
                 seq_len = mt_length.max()
-                subword_probs = nn.functional.softmax(model_output.logits, dim=2)[
-                    :, :seq_len, :
-                ]
+                subword_probs = nn.functional.softmax(
+                    model_output.logits, dim=2
+                )[:, :seq_len, :]
                 error_spans = self.decode(
-                    subword_probs, batch[0]["input_ids"], batch[0]["mt_offsets"]
+                    subword_probs,
+                    batch[0]['input_ids'],
+                    batch[0]['mt_offsets'],
                 )
                 batch_prediction = Prediction(
                     scores=model_output.score,

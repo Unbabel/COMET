@@ -18,6 +18,7 @@ CometModel
     Abstract Model class that implements some of the Pytorch Lightning logic.
     Extend this class to create new model and metrics within COMET.
 """
+
 import abc
 import logging
 import os
@@ -28,8 +29,12 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pytorch_lightning as ptl
 import torch
-from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
-                              Subset)
+from torch.utils.data import (
+    DataLoader,
+    RandomSampler,
+    SequentialSampler,
+    Subset,
+)
 
 from comet.encoders import str2encoder
 from comet.modules import LayerwiseAttention
@@ -38,11 +43,16 @@ from .lru_cache import tensor_lru_cache
 from .pooling_utils import average_pooling, max_pooling
 from .predict_pbar import PredictProgressBar
 from .predict_writer import CustomWriter
-from .utils import (OrderedSampler, Prediction, Target, flatten_metadata,
-                    restore_list_order)
+from .utils import (
+    OrderedSampler,
+    Prediction,
+    Target,
+    flatten_metadata,
+    restore_list_order,
+)
 
-if "COMET_EMBEDDINGS_CACHE" in os.environ:
-    CACHE_SIZE = int(os.environ["COMET_EMBEDDINGS_CACHE"])
+if 'COMET_EMBEDDINGS_CACHE' in os.environ:
+    CACHE_SIZE = int(os.environ['COMET_EMBEDDINGS_CACHE'])
 else:
     CACHE_SIZE = 1024
 
@@ -92,18 +102,18 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
         keep_embeddings_frozen: bool = True,
-        optimizer: str = "AdamW",
+        optimizer: str = 'AdamW',
         warmup_steps: int = 0,
         encoder_learning_rate: float = 1.0e-06,
         learning_rate: float = 1.5e-05,
         layerwise_decay: float = 0.95,
-        encoder_model: str = "XLM-RoBERTa",
-        pretrained_model: str = "xlm-roberta-large",
-        pool: str = "avg",
-        layer: Union[str, int] = "mix",
-        layer_transformation: str = "softmax",
+        encoder_model: str = 'XLM-RoBERTa',
+        pretrained_model: str = 'xlm-roberta-large',
+        pool: str = 'avg',
+        layer: Union[str, int] = 'mix',
+        layer_transformation: str = 'softmax',
         layer_norm: bool = True,
-        loss: str = "mse",
+        loss: str = 'mse',
         dropout: float = 0.1,
         batch_size: int = 4,
         train_data: List[str] = [],
@@ -115,11 +125,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         super().__init__()
         self.save_hyperparameters()
         self.encoder = str2encoder[self.hparams.encoder_model].from_pretrained(
-            self.hparams.pretrained_model, load_pretrained_weights, local_files_only
+            self.hparams.pretrained_model,
+            load_pretrained_weights,
+            local_files_only,
         )
 
         self.epoch_nr = 0
-        if self.hparams.layer == "mix":
+        if self.hparams.layer == 'mix':
             self.layerwise_attention = LayerwiseAttention(
                 layer_transformation=layer_transformation,
                 num_layers=self.encoder.num_layers,
@@ -159,7 +171,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         """Function that extends COMET to use preceding context as described in
         https://statmt.org/wmt22/pdf/2022.wmt-1.6.pdf."""
         logger.warning(
-            "Context should only be enabled for RegressionMetric with Average Pooling."
+            'Context should only be enabled for RegressionMetric with Average Pooling.'
         )
 
     @abc.abstractmethod
@@ -186,7 +198,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
     def prepare_sample(
         self,
         sample: List[dict],
-        stage: str = "fit",
+        stage: str = 'fit',
         *args,
         **kwargs,
     ):
@@ -225,7 +237,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
     def freeze_encoder(self) -> None:
         """Deactivates training for encoder model parameters (keeping them frozen)"""
-        logger.info("Encoder model frozen.")
+        logger.info('Encoder model frozen.')
         self.encoder.freeze()
 
     @property
@@ -233,7 +245,9 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         """Loss function"""
         return torch.nn.MSELoss()
 
-    def compute_loss(self, prediction: Prediction, target: Target) -> torch.Tensor:
+    def compute_loss(
+        self, prediction: Prediction, target: Target
+    ) -> torch.Tensor:
         """Computes Loss value between a batch Prediction and respective Target."""
         return self.loss(prediction.score, target.score)
 
@@ -241,7 +255,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         """Activates fine-tuning of encoder parameters."""
         if self._frozen:
             if self.trainer.is_global_zero:
-                logger.info("Encoder model fine-tuning")
+                logger.info('Encoder model fine-tuning')
 
             self.encoder.unfreeze()
             self._frozen = False
@@ -327,24 +341,29 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         )
         if self.layerwise_attention:
             embeddings = self.layerwise_attention(
-                encoder_out["all_layers"], attention_mask
+                encoder_out['all_layers'], attention_mask
             )
 
-        elif self.hparams.layer >= 0 and self.hparams.layer < self.encoder.num_layers:
-            embeddings = encoder_out["all_layers"][self.hparams.layer]
+        elif (
+            self.hparams.layer >= 0
+            and self.hparams.layer < self.encoder.num_layers
+        ):
+            embeddings = encoder_out['all_layers'][self.hparams.layer]
 
         else:
-            raise Exception("Invalid model layer {}.".format(self.hparams.layer))
+            raise Exception(
+                'Invalid model layer {}.'.format(self.hparams.layer)
+            )
 
-        if self.hparams.pool == "default":
-            sentemb = encoder_out["sentemb"]
+        if self.hparams.pool == 'default':
+            sentemb = encoder_out['sentemb']
 
-        elif self.hparams.pool == "max":
+        elif self.hparams.pool == 'max':
             sentemb = max_pooling(
                 input_ids, embeddings, self.encoder.tokenizer.pad_token_id
             )
 
-        elif self.hparams.pool == "avg":
+        elif self.hparams.pool == 'avg':
             sentemb = average_pooling(
                 input_ids,
                 embeddings,
@@ -354,11 +373,11 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 self.use_context,
             )
 
-        elif self.hparams.pool == "cls":
+        elif self.hparams.pool == 'cls':
             sentemb = embeddings[:, 0, :]
 
         else:
-            raise Exception("Invalid pooling technique.")
+            raise Exception('Invalid pooling technique.')
 
         return sentemb
 
@@ -389,7 +408,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self._frozen = False
 
         self.log(
-            "train_loss",
+            'train_loss',
             loss_value,
             on_step=True,
             on_epoch=True,
@@ -412,13 +431,15 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         batch_input, batch_target = batch
         batch_prediction = self.forward(**batch_input)
         if dataloader_idx == 0:
-            self.train_metrics.update(batch_prediction.score, batch_target["score"])
+            self.train_metrics.update(
+                batch_prediction.score, batch_target['score']
+            )
 
         elif dataloader_idx > 0:
             self.val_metrics[dataloader_idx - 1].update(
                 batch_prediction.score,
-                batch_target["score"],
-                batch_target["system"] if "system" in batch_target else None,
+                batch_target['score'],
+                batch_target['system'] if 'system' in batch_target else None,
             )
 
     def on_predict_start(self) -> None:
@@ -450,7 +471,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             mcd_outputs = torch.stack(
                 [self(**batch).score for _ in range(self.mc_dropout)]
             )
-            model_outputs["metadata"] = Prediction(
+            model_outputs['metadata'] = Prediction(
                 mcd_scores=mcd_outputs.mean(dim=0),
                 mcd_std=mcd_outputs.std(dim=0),
             )
@@ -469,13 +490,16 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.log_dict(results, prog_bar=False)
             val_metrics.append(results)
 
-        average_results = {"val_" + k.split("_")[-1]: [] for k in val_metrics[0].keys()}
+        average_results = {
+            'val_' + k.split('_')[-1]: [] for k in val_metrics[0].keys()
+        }
         for i in range(len(val_metrics)):
             for k, v in val_metrics[i].items():
-                average_results["val_" + k.split("_")[-1]].append(v)
+                average_results['val_' + k.split('_')[-1]].append(v)
 
         self.log_dict(
-            {k: sum(v) / len(v) for k, v in average_results.items()}, prog_bar=True
+            {k: sum(v) / len(v) for k, v in average_results.items()},
+            prog_bar=True,
         )
 
     def setup(self, stage: str) -> None:
@@ -483,11 +507,12 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
         stage (str): either 'fit', 'validate', 'test', or 'predict'
         """
-        if stage in (None, "fit"):
+        if stage in (None, 'fit'):
             train_dataset = self.read_training_data(self.hparams.train_data[0])
 
             self.validation_sets = [
-                self.read_validation_data(d) for d in self.hparams.validation_data
+                self.read_validation_data(d)
+                for d in self.hparams.validation_data
             ]
 
             self.first_epoch_total_steps = len(train_dataset) // (
@@ -495,7 +520,8 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             )
             # Always validate the model with part of training.
             train_subset = np.random.choice(
-                a=len(train_dataset), size=min(1000, int(len(train_dataset) * 0.2))
+                a=len(train_dataset),
+                size=min(1000, int(len(train_dataset) * 0.2)),
             )
             self.train_subset = Subset(train_dataset, train_subset)
 
@@ -508,13 +534,13 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             self.current_epoch % len(self.hparams.train_data)
         ]
         train_dataset = self.read_training_data(data_path)
-        logger.info(f"Loading {data_path}.")
+        logger.info(f'Loading {data_path}.')
 
         return DataLoader(
             dataset=train_dataset,
             sampler=RandomSampler(train_dataset),
             batch_size=self.hparams.batch_size,
-            collate_fn=lambda s: self.prepare_sample(s, stage="fit"),
+            collate_fn=lambda s: self.prepare_sample(s, stage='fit'),
             num_workers=2 * self.trainer.num_devices,
         )
 
@@ -524,7 +550,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             DataLoader(
                 dataset=self.train_subset,
                 batch_size=self.hparams.batch_size,
-                collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
+                collate_fn=lambda s: self.prepare_sample(s, stage='validate'),
                 num_workers=2 * self.trainer.num_devices,
             )
         ]
@@ -533,7 +559,9 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
                 DataLoader(
                     dataset=validation_set,
                     batch_size=self.hparams.batch_size,
-                    collate_fn=lambda s: self.prepare_sample(s, stage="validate"),
+                    collate_fn=lambda s: self.prepare_sample(
+                        s, stage='validate'
+                    ),
                     num_workers=2 * self.trainer.num_devices,
                 )
             )
@@ -543,7 +571,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         """This is to avoid having a lamba function inside the predict dataloader
         `collate_fn=lambda x: self.prepare_sample(x, inference=True)`
         """
-        return self.prepare_sample(sample, stage="predict")
+        return self.prepare_sample(sample, stage='predict')
 
     def predict(
         self,
@@ -553,7 +581,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
         devices: Union[List[int], str, int] = None,
         mc_dropout: int = 0,
         progress_bar: bool = True,
-        accelerator: str = "auto",
+        accelerator: str = 'auto',
         num_workers: int = None,
         length_batching: bool = True,
     ) -> Prediction:
@@ -587,30 +615,34 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
 
         if gpus > 0 and devices is not None:
             assert len(devices) == gpus, AssertionError(
-                "List of devices must be same size as `gpus` or None if `gpus=0`"
+                'List of devices must be same size as `gpus` or None if `gpus=0`'
             )
         elif gpus > 0:
             devices = gpus
         else:  # gpu = 0
-            devices = "auto"
+            devices = 'auto'
 
         sampler = SequentialSampler(samples)
         if length_batching and gpus < 2:
             try:
-                sort_ids = np.argsort([len(sample["src"]) for sample in samples])
+                sort_ids = np.argsort(
+                    [len(sample['src']) for sample in samples]
+                )
             except KeyError:
-                sort_ids = np.argsort([len(sample["ref"]) for sample in samples])
+                sort_ids = np.argsort(
+                    [len(sample['ref']) for sample in samples]
+                )
             sampler = OrderedSampler(sort_ids)
 
         # On Windows, only num_workers=0 is supported.
-        is_windows = os.name == "nt"
+        is_windows = os.name == 'nt'
         if num_workers is None:
             # Guideline for workers that typically works well.
             num_workers = 0 if is_windows else 2 * gpus
         elif is_windows and num_workers != 0:
             logger.warning(
-                "Due to limits of multiprocessing on Windows, it is likely that setting num_workers > 0 will result"
-                " in scores of 0. It is therefore recommended to set num_workers=0 or leave it to None (default)."
+                'Due to limits of multiprocessing on Windows, it is likely that setting num_workers > 0 will result'
+                ' in scores of 0. It is therefore recommended to set num_workers=0 or leave it to None (default).'
             )
 
         self.eval()
@@ -621,7 +653,7 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             collate_fn=self.prepare_for_inference,
             num_workers=num_workers,
             multiprocessing_context=(
-                "fork" if torch.backends.mps.is_available() else None
+                'fork' if torch.backends.mps.is_available() else None
             ),
         )
         if gpus > 1:
@@ -639,16 +671,16 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             enable_progress_bar = False
 
         warnings.filterwarnings(
-            "ignore",
+            'ignore',
             category=UserWarning,
-            message=".*Consider increasing the value of the `num_workers` argument` .*",
+            message='.*Consider increasing the value of the `num_workers` argument` .*',
         )
         trainer = ptl.Trainer(
             devices=devices,
             logger=False,
             callbacks=callbacks,
-            accelerator=accelerator if gpus > 0 else "cpu",
-            strategy="auto" if gpus < 2 else "ddp",
+            accelerator=accelerator if gpus > 0 else 'cpu',
+            strategy='auto' if gpus < 2 else 'ddp',
             enable_progress_bar=enable_progress_bar,
         )
         return_predictions = False if gpus > 1 else True
@@ -669,25 +701,34 @@ class CometModel(ptl.LightningModule, metaclass=abc.ABCMeta):
             # If we are not in the GLOBAL RANK we will return None
             exit()
 
-        scores = torch.cat([pred["scores"] for pred in predictions], dim=0).tolist()
-        if "metadata" in predictions[0]:
-            metadata = flatten_metadata([pred["metadata"] for pred in predictions])
+        scores = torch.cat(
+            [pred['scores'] for pred in predictions], dim=0
+        ).tolist()
+        if 'metadata' in predictions[0]:
+            metadata = flatten_metadata(
+                [pred['metadata'] for pred in predictions]
+            )
         else:
             metadata = []
 
-        output = Prediction(scores=scores, system_score=sum(scores) / len(scores))
+        output = Prediction(
+            scores=scores, system_score=sum(scores) / len(scores)
+        )
 
         # Restore order of samples!
         if length_batching and gpus < 2:
-            output["scores"] = restore_list_order(scores, sort_ids)
+            output['scores'] = restore_list_order(scores, sort_ids)
             if metadata:
-                output["metadata"] = Prediction(
-                    **{k: restore_list_order(v, sort_ids) for k, v in metadata.items()}
+                output['metadata'] = Prediction(
+                    **{
+                        k: restore_list_order(v, sort_ids)
+                        for k, v in metadata.items()
+                    }
                 )
             return output
         else:
             # Add metadata to output
             if metadata:
-                output["metadata"] = metadata
+                output['metadata'] = metadata
 
             return output
