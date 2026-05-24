@@ -25,6 +25,7 @@ import packaging.version as packaging_version
 import torch
 from transformers import XLMRobertaConfig, XLMRobertaModel
 
+# Handles tokenizer imports for both transformers v4 and v5.
 transformers_version = importlib_metadata.distribution('transformers').version
 if packaging_version.parse(transformers_version) >= packaging_version.parse(
     'v5.0.0rc0'
@@ -112,6 +113,7 @@ class XLMREncoder(BERTEncoder):
             return_dict=False,
         )
 
+        # ModelOutput no longer includes pooler_output if model is initialised with `add_pooling_layer=False`
         if len(output) < 3:
             last_hidden_states, all_layers = output
         else:
@@ -124,6 +126,7 @@ class XLMREncoder(BERTEncoder):
             'attention_mask': attention_mask,
         }
 
+    # TokenizersBackend does not have a built-in build_inputs_with_special_tokens method.
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
         cls = [self.tokenizer.cls_token_id]
         sep = [self.tokenizer.sep_token_id]

@@ -25,13 +25,14 @@ import packaging.version as packaging_version
 import torch
 from transformers import BertConfig, BertModel
 
+# Handles tokenizer imports for both transformers v4 and v5.
 transformers_version = importlib_metadata.distribution('transformers').version
 if packaging_version.Version(transformers_version) >= packaging_version.Version(
     'v5.0.0rc0'
 ):
     from transformers import BertTokenizer as BertTokenizer
 else:
-    from transformers import BertTokenizerFast as BertTokenizer
+    from transformers import BertTokenizer as BertTokenizer
 
 from comet.encoders.base import Encoder
 
@@ -189,9 +190,10 @@ class BERTEncoder(Encoder):
             return_dict=False,
         )
 
+        # ModelOutput no longer includes pooler_output if model is initialised with `add_pooling_layer=False`
         if len(output) < 3:
             last_hidden_states, all_layers = output
-            pooler_output = None
+            pooler_output = None  # Since `add_pooling_layer=False`, pooler_output would be None
         else:
             last_hidden_states, pooler_output, all_layers = output
 
@@ -202,6 +204,7 @@ class BERTEncoder(Encoder):
             'attention_mask': attention_mask,
         }
 
+    # TokenizersBackend does not have a built-in build_inputs_with_special_tokens method.
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
         cls = [self.tokenizer.cls_token_id]
         sep = [self.tokenizer.sep_token_id]

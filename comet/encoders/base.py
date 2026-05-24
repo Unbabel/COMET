@@ -308,6 +308,8 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
                 torch.zeros(len(new_sequence[1:-1]) + 2, dtype=torch.int)
             )
             for j in range(1, len(inputs)):
+                # Handles TokenizersBackend (transformers v5) and PretrainedTokenizerFast (transformers v4).
+                # Transformers v4
                 if hasattr(self.tokenizer, 'build_inputs_with_special_tokens'):
                     new_sequence = (
                         self.tokenizer.build_inputs_with_special_tokens(
@@ -315,6 +317,7 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
                         )
                     )
                 else:
+                    # Transformers v5
                     new_sequence = self.build_inputs_with_special_tokens(
                         new_sequence[1:-1], concat_input_ids[j][i][1:-1]
                     )
@@ -360,6 +363,8 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
 
         return encoder_input, lengths, max_len
 
+    # TokenizersBackend does not have a built-in build_inputs_with_special_tokens method.
+    # To be overrided
     def build_inputs_with_special_tokens(
         self, token_ids_0: list[int], token_ids_1: Optional[list[int]] = None
     ) -> list[int]:

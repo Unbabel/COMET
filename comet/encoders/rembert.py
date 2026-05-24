@@ -23,6 +23,7 @@ import importlib_metadata
 import packaging.version as packaging_version
 from transformers import RemBertConfig, RemBertModel
 
+# Handles tokenizer imports for both transformers v4 and v5.
 transformers_version = importlib_metadata.distribution('transformers').version
 if packaging_version.Version(transformers_version) >= packaging_version.Version(
     'v5.0.0rc0'

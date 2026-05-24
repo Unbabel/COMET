@@ -23,6 +23,7 @@ import importlib_metadata
 import packaging.version as packaging_version
 from transformers import BertConfig, BertModel
 
+# Handles tokenizer imports for both transformers v4 and v5.
 transformers_version = importlib_metadata.distribution('transformers').version
 if packaging_version.Version(transformers_version) >= packaging_version.Version(
     'v5.0.0rc0'
@@ -89,6 +90,7 @@ class MiniLMEncoder(XLMREncoder):
             pretrained_model, load_pretrained_weights, local_files_only
         )
 
+    # TokenizersBackend does not have a built-in build_inputs_with_special_tokens method.
     def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
         cls = [self.tokenizer.cls_token_id]
         sep = [self.tokenizer.sep_token_id]
