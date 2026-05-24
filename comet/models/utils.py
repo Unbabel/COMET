@@ -13,26 +13,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import itertools
-from typing import List, Tuple, Any
+from collections import OrderedDict
+from typing import Any, List, Tuple
 
 import torch
 from torch.utils.data import Sampler
-from collections import OrderedDict
 
 
 class ModelOutput(OrderedDict):
-    """ This was copied from previous versions of HuggingFace Transformers. Latest
+    """This was copied from previous versions of HuggingFace Transformers. Latest
     version made some breaking changes into ModelOutputs which impacted Prediction
     and Target classes defined bellow.
 
     Base class for all model outputs as dataclass. Has a `__getitem__` that allows
-    indexing by integer or slice (like a tuple) or strings (like a dictionary) 
+    indexing by integer or slice (like a tuple) or strings (like a dictionary)
     that will ignore the `None` attributes. Otherwise behaves like a regular
     python dictionary.
 
     <Tip warning={true}>
 
-    You can't unpack a `ModelOutput` directly. Use the [`to_tuple`] method to 
+    You can't unpack a `ModelOutput` directly. Use the [`to_tuple`] method to
     convert it to a tuple before.
 
     </Tip>
@@ -43,12 +43,16 @@ class ModelOutput(OrderedDict):
 
         # Safety and consistency checks
         if not len(class_fields):
-            raise ValueError(f"{self.__class__.__name__} has no fields.")
+            raise ValueError(f'{self.__class__.__name__} has no fields.')
         if not all(field.default is None for field in class_fields[1:]):
-            raise ValueError(f"{self.__class__.__name__} should not have more than one required field.")
+            raise ValueError(
+                f'{self.__class__.__name__} should not have more than one required field.'
+            )
 
         first_field = getattr(self, class_fields[0].name)
-        other_fields_are_none = all(getattr(self, field.name) is None for field in class_fields[1:])
+        other_fields_are_none = all(
+            getattr(self, field.name) is None for field in class_fields[1:]
+        )
 
         if other_fields_are_none and not is_tensor(first_field):
             if isinstance(first_field, dict):
@@ -83,16 +87,24 @@ class ModelOutput(OrderedDict):
                     self[field.name] = v
 
     def __delitem__(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``__delitem__`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f'You cannot use ``__delitem__`` on a {self.__class__.__name__} instance.'
+        )
 
     def setdefault(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``setdefault`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f'You cannot use ``setdefault`` on a {self.__class__.__name__} instance.'
+        )
 
     def pop(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``pop`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f'You cannot use ``pop`` on a {self.__class__.__name__} instance.'
+        )
 
     def update(self, *args, **kwargs):
-        raise Exception(f"You cannot use ``update`` on a {self.__class__.__name__} instance.")
+        raise Exception(
+            f'You cannot use ``update`` on a {self.__class__.__name__} instance.'
+        )
 
     def __getitem__(self, k):
         if isinstance(k, str):
@@ -135,16 +147,16 @@ class Target(ModelOutput):
 class LabelSet:
     """Taken from: https://github.com/LightTag/sequence-labeling-with-transformers/"""
 
-    def __init__(self, labels: List[str] = ["minor", "major", "critical"]):
+    def __init__(self, labels: List[str] = ['minor', 'major', 'critical']):
         self.labels_to_id = {}
         self.ids_to_label = {}
-        self.labels_to_id["O"] = 0
-        self.ids_to_label[0] = "O"
+        self.labels_to_id['O'] = 0
+        self.ids_to_label[0] = 'O'
         num = 0  # in case there are no labels
         # Writing BILU will give us incremntal ids for the labels
-        for _num, (label, s) in enumerate(itertools.product(labels, "I")):
+        for _num, (label, s) in enumerate(itertools.product(labels, 'I')):
             num = _num + 1  # skip 0
-            l = f"{s}-{label}"
+            l = f'{s}-{label}'
             self.labels_to_id[l] = num
             self.ids_to_label[num] = l
 
@@ -166,7 +178,9 @@ def flatten_metadata(metadata):
     """Metadata from the model output can be in various forms and this function
     will gather all metadata and flatten everything.
     """
-    metadata = Prediction(**{k: [dic[k] for dic in metadata] for k in metadata[0]})
+    metadata = Prediction(
+        **{k: [dic[k] for dic in metadata] for k in metadata[0]}
+    )
     for k, v in metadata.items():
         if torch.is_tensor(v[0]):
             # If we have tensors we can use cat to flatten them.

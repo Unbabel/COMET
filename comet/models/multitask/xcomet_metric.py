@@ -43,29 +43,34 @@ class XCOMETMetric(UnifiedMetric):
         self,
         nr_frozen_epochs: Union[float, int] = 0.3,
         keep_embeddings_frozen: bool = True,
-        optimizer: str = "AdamW",
+        optimizer: str = 'AdamW',
         warmup_steps: int = 0,
         encoder_learning_rate: float = 1.0e-06,
         learning_rate: float = 3.66e-06,
         layerwise_decay: float = 0.983,
-        encoder_model: str = "XLM-RoBERTa-XL",
-        pretrained_model: str = "facebook/xlm-roberta-xl",
-        sent_layer: Union[str, int] = "mix",
-        layer_transformation: str = "sparsemax",
+        encoder_model: str = 'XLM-RoBERTa-XL',
+        pretrained_model: str = 'facebook/xlm-roberta-xl',
+        sent_layer: Union[str, int] = 'mix',
+        layer_transformation: str = 'sparsemax',
         layer_norm: bool = False,
         word_layer: int = 36,
-        loss: str = "mse",
+        loss: str = 'mse',
         dropout: float = 0.1,
         batch_size: int = 4,
         train_data: List[str] = [],
         validation_data: List[str] = [],
         hidden_sizes: List[int] = [2560, 1280],
-        activations: str = "Tanh",
+        activations: str = 'Tanh',
         final_activation: Optional[str] = None,
         word_level_training: bool = True,
-        error_labels: List[str] = ["minor", "major", "critical"],
+        error_labels: List[str] = ['minor', 'major', 'critical'],
         loss_lambda: float = 0.055,
-        cross_entropy_weights: Optional[List[float]] = [0.08, 0.486, 0.505, 0.533],
+        cross_entropy_weights: Optional[List[float]] = [
+            0.08,
+            0.486,
+            0.505,
+            0.533,
+        ],
         load_pretrained_weights: bool = True,
         local_files_only: bool = False,
     ) -> None:
@@ -87,7 +92,7 @@ class XCOMETMetric(UnifiedMetric):
             batch_size=batch_size,
             train_data=train_data,
             validation_data=validation_data,
-            class_identifier="xcomet_metric",
+            class_identifier='xcomet_metric',
             load_pretrained_weights=load_pretrained_weights,
             local_files_only=local_files_only,
         )
@@ -98,8 +103,8 @@ class XCOMETMetric(UnifiedMetric):
             dropout=self.hparams.dropout,
             final_activation=self.hparams.final_activation,
         )
-        assert error_labels == ["minor", "major", "critical"]
-        self.hparams.input_segments = ["mt", "src", "ref"]
+        assert error_labels == ['minor', 'major', 'critical']
+        self.hparams.input_segments = ['mt', 'src', 'ref']
         self.word_level = True
         self.encoder.labelset = self.label_encoder
         self.hidden2tag = nn.Linear(self.encoder.output_units, self.num_classes)
@@ -145,11 +150,11 @@ class XCOMETMetric(UnifiedMetric):
             for sentence_spans in error_spans:
                 sentence_score = 0
                 for annotation in sentence_spans:
-                    if annotation["severity"] == "minor":
+                    if annotation['severity'] == 'minor':
                         sentence_score += 1
-                    elif annotation["severity"] == "major":
+                    elif annotation['severity'] == 'major':
                         sentence_score += 5
-                    elif annotation["severity"] == "critical":
+                    elif annotation['severity'] == 'critical':
                         sentence_score += 10
 
                 if sentence_score > 25:
@@ -172,7 +177,7 @@ class XCOMETMetric(UnifiedMetric):
                 ],
                 dim=0,
             ).sum(dim=0)
-            mt_mask = batch[0]["label_ids"] != -1
+            mt_mask = batch[0]['label_ids'] != -1
             mt_length = mt_mask.sum(dim=1)
             seq_len = mt_length.max()
 
@@ -183,12 +188,13 @@ class XCOMETMetric(UnifiedMetric):
             ]
             subword_probs = torch.sum(torch.stack(subword_probs), dim=0)
             error_spans = self.decode(
-                subword_probs, batch[0]["input_ids"], batch[0]["mt_offsets"]
+                subword_probs, batch[0]['input_ids'], batch[0]['mt_offsets']
             )
             mqm_scores = _compute_mqm_from_spans(error_spans)
             final_scores = (
                 regression_scores
-                + mqm_scores.to(regression_scores.device) * self.score_weights[3]
+                + mqm_scores.to(regression_scores.device)
+                * self.score_weights[3]
             )
             batch_prediction = Prediction(
                 scores=final_scores,
@@ -207,14 +213,14 @@ class XCOMETMetric(UnifiedMetric):
             regression_score = torch.where(
                 model_output.score > 1.0, 1.0, model_output.score
             )
-            mt_mask = batch[0]["label_ids"] != -1
+            mt_mask = batch[0]['label_ids'] != -1
             mt_length = mt_mask.sum(dim=1)
             seq_len = mt_length.max()
             subword_probs = nn.functional.softmax(model_output.logits, dim=2)[
                 :, :seq_len, :
             ]
             error_spans = self.decode(
-                subword_probs, batch[0]["input_ids"], batch[0]["mt_offsets"]
+                subword_probs, batch[0]['input_ids'], batch[0]['mt_offsets']
             )
             mqm_scores = _compute_mqm_from_spans(error_spans)
             final_scores = (

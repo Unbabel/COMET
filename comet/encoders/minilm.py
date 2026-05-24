@@ -15,10 +15,22 @@
 r"""
 MiniLM Encoder
 ==============
-    Pretrained MiniLM encoder from Microsoft. This encoder uses a BERT 
+    Pretrained MiniLM encoder from Microsoft. This encoder uses a BERT
     architecture with an XLMR tokenizer.
 """
-from transformers import BertConfig, BertModel, XLMRobertaTokenizerFast
+
+import importlib_metadata
+import packaging.version as packaging_version
+from transformers import BertConfig, BertModel
+
+# Handles tokenizer imports for both transformers v4 and v5.
+transformers_version = importlib_metadata.distribution('transformers').version
+if packaging_version.Version(transformers_version) >= packaging_version.Version(
+    'v5.0.0rc0'
+):
+    from transformers import XLMRobertaTokenizer as XLMRobertaTokenizer
+else:
+    from transformers import XLMRobertaTokenizerFast as XLMRobertaTokenizer
 
 from comet.encoders.xlmr import Encoder, XLMREncoder
 
@@ -40,8 +52,10 @@ class MiniLMEncoder(XLMREncoder):
         local_files_only: bool = False,
     ) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = XLMRobertaTokenizerFast.from_pretrained(
-            "xlm-roberta-base", use_fast=True, local_files_only=local_files_only
+        self.tokenizer = XLMRobertaTokenizer.from_pretrained(
+            'xlm-roberta-base',
+            use_fast=True,
+            local_files_only=local_files_only,
         )
         if load_pretrained_weights:
             self.model = BertModel.from_pretrained(pretrained_model)
@@ -75,3 +89,12 @@ class MiniLMEncoder(XLMREncoder):
         return MiniLMEncoder(
             pretrained_model, load_pretrained_weights, local_files_only
         )
+
+    # TokenizersBackend does not have a built-in build_inputs_with_special_tokens method.
+    def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
+        cls = [self.tokenizer.cls_token_id]
+        sep = [self.tokenizer.sep_token_id]
+
+        if token_ids_1 is None:
+            return cls + token_ids_0 + sep
+        return cls + token_ids_0 + sep + sep + token_ids_1 + sep

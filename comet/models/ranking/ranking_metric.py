@@ -22,13 +22,15 @@ Ranking Metric
     `good` translations closer to the anchors (source & reference) than `worse`
     translations.
 """
+
 from typing import Dict, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
 import torch.nn.functional as F
 from torch import nn
-from transformers.optimization import Adafactor, get_constant_schedule_with_warmup
+from transformers.optimization import (Adafactor,
+                                       get_constant_schedule_with_warmup)
 
 from comet.models.base import CometModel
 from comet.models.metrics import WMTKendall
@@ -75,18 +77,18 @@ class RankingMetric(CometModel):
         self,
         nr_frozen_epochs: Union[float, int] = 0.1,
         keep_embeddings_frozen: bool = False,
-        optimizer: str = "AdamW",
+        optimizer: str = 'AdamW',
         warmup_steps: int = 0,
         encoder_learning_rate: float = 1e-05,
         learning_rate: float = 3e-05,
         layerwise_decay: float = 0.95,
-        encoder_model: str = "XLM-RoBERTa",
-        pretrained_model: str = "xlm-roberta-base",
-        pool: str = "avg",
-        layer: Union[str, int] = "mix",
-        layer_transformation: str = "softmax",
+        encoder_model: str = 'XLM-RoBERTa',
+        pretrained_model: str = 'xlm-roberta-base',
+        pool: str = 'avg',
+        layer: Union[str, int] = 'mix',
+        layer_transformation: str = 'softmax',
         layer_norm: bool = True,
-        loss: str = "triplet-margin",
+        loss: str = 'triplet-margin',
         dropout: float = 0.1,
         batch_size: int = 8,
         train_data: List[str] = [],
@@ -112,7 +114,7 @@ class RankingMetric(CometModel):
             batch_size=batch_size,
             train_data=train_data,
             validation_data=validation_data,
-            class_identifier="ranking_metric",
+            class_identifier='ranking_metric',
             load_pretrained_weights=load_pretrained_weights,
             local_files_only=local_files_only,
         )
@@ -120,7 +122,7 @@ class RankingMetric(CometModel):
 
     def init_metrics(self):
         """Initializes train/validation metrics."""
-        self.train_metrics = WMTKendall(prefix="train")
+        self.train_metrics = WMTKendall(prefix='train')
         self.val_metrics = nn.ModuleList(
             [WMTKendall(prefix=d) for d in self.hparams.validation_data]
         )
@@ -134,7 +136,9 @@ class RankingMetric(CometModel):
 
     def configure_optimizers(
         self,
-    ) -> Tuple[List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]]:
+    ) -> Tuple[
+        List[torch.optim.Optimizer], List[torch.optim.lr_scheduler.LambdaLR]
+    ]:
         """Pytorch Lightning method to configure optimizers and schedulers."""
         layer_parameters = self.encoder.layerwise_lr(
             self.hparams.encoder_learning_rate, self.hparams.layerwise_decay
@@ -142,15 +146,15 @@ class RankingMetric(CometModel):
         if self.layerwise_attention:
             layerwise_attn_params = [
                 {
-                    "params": self.layerwise_attention.parameters(),
-                    "lr": self.hparams.learning_rate,
+                    'params': self.layerwise_attention.parameters(),
+                    'lr': self.hparams.learning_rate,
                 }
             ]
             params = layer_parameters + layerwise_attn_params
         else:
             params = layer_parameters
 
-        if self.hparams.optimizer == "Adafactor":
+        if self.hparams.optimizer == 'Adafactor':
             optimizer = Adafactor(
                 params,
                 lr=self.hparams.learning_rate,
@@ -171,7 +175,7 @@ class RankingMetric(CometModel):
         return [optimizer], [scheduler]
 
     def prepare_sample(
-        self, sample: List[Dict[str, Union[str, float]]], stage: str = "fit"
+        self, sample: List[Dict[str, Union[str, float]]], stage: str = 'fit'
     ) -> Dict[str, torch.Tensor]:
         """This method will be called by dataloaders to prepared data to input to the
         model.
@@ -188,26 +192,26 @@ class RankingMetric(CometModel):
         """
         sample = {k: [str(dic[k]) for dic in sample] for k in sample[0]}
 
-        if stage == "predict":
-            src_inputs = self.encoder.prepare_sample(sample["src"])
-            mt_inputs = self.encoder.prepare_sample(sample["mt"])
-            ref_inputs = self.encoder.prepare_sample(sample["ref"])
+        if stage == 'predict':
+            src_inputs = self.encoder.prepare_sample(sample['src'])
+            mt_inputs = self.encoder.prepare_sample(sample['mt'])
+            ref_inputs = self.encoder.prepare_sample(sample['ref'])
 
-            ref_inputs = {"ref_" + k: v for k, v in ref_inputs.items()}
-            src_inputs = {"src_" + k: v for k, v in src_inputs.items()}
-            mt_inputs = {"mt_" + k: v for k, v in mt_inputs.items()}
+            ref_inputs = {'ref_' + k: v for k, v in ref_inputs.items()}
+            src_inputs = {'src_' + k: v for k, v in src_inputs.items()}
+            mt_inputs = {'mt_' + k: v for k, v in mt_inputs.items()}
 
             return {**ref_inputs, **src_inputs, **mt_inputs}
 
-        ref_inputs = self.encoder.prepare_sample(sample["ref"])
-        src_inputs = self.encoder.prepare_sample(sample["src"])
-        pos_inputs = self.encoder.prepare_sample(sample["pos"])
-        neg_inputs = self.encoder.prepare_sample(sample["neg"])
+        ref_inputs = self.encoder.prepare_sample(sample['ref'])
+        src_inputs = self.encoder.prepare_sample(sample['src'])
+        pos_inputs = self.encoder.prepare_sample(sample['pos'])
+        neg_inputs = self.encoder.prepare_sample(sample['neg'])
 
-        ref_inputs = {"ref_" + k: v for k, v in ref_inputs.items()}
-        src_inputs = {"src_" + k: v for k, v in src_inputs.items()}
-        pos_inputs = {"pos_" + k: v for k, v in pos_inputs.items()}
-        neg_inputs = {"neg_" + k: v for k, v in neg_inputs.items()}
+        ref_inputs = {'ref_' + k: v for k, v in ref_inputs.items()}
+        src_inputs = {'src_' + k: v for k, v in src_inputs.items()}
+        pos_inputs = {'pos_' + k: v for k, v in pos_inputs.items()}
+        neg_inputs = {'neg_' + k: v for k, v in neg_inputs.items()}
 
         return {**ref_inputs, **src_inputs, **pos_inputs, **neg_inputs}
 
@@ -240,10 +244,18 @@ class RankingMetric(CometModel):
             Dictionary with triplet loss, distance between anchors and positive samples
             and  distance between anchors and negative samples.
         """
-        src_sentemb = self.get_sentence_embedding(src_input_ids, src_attention_mask)
-        ref_sentemb = self.get_sentence_embedding(ref_input_ids, ref_attention_mask)
-        pos_sentemb = self.get_sentence_embedding(pos_input_ids, pos_attention_mask)
-        neg_sentemb = self.get_sentence_embedding(neg_input_ids, neg_attention_mask)
+        src_sentemb = self.get_sentence_embedding(
+            src_input_ids, src_attention_mask
+        )
+        ref_sentemb = self.get_sentence_embedding(
+            ref_input_ids, ref_attention_mask
+        )
+        pos_sentemb = self.get_sentence_embedding(
+            pos_input_ids, pos_attention_mask
+        )
+        neg_sentemb = self.get_sentence_embedding(
+            neg_input_ids, neg_attention_mask
+        )
 
         loss = self.loss(src_sentemb, pos_sentemb, neg_sentemb) + self.loss(
             ref_sentemb, pos_sentemb, neg_sentemb
@@ -264,9 +276,9 @@ class RankingMetric(CometModel):
         )
 
         return {
-            "loss": loss,
-            "distance_pos": distance_pos,
-            "distance_neg": distance_neg,
+            'loss': loss,
+            'distance_pos': distance_pos,
+            'distance_neg': distance_neg,
         }
 
     def read_training_data(self, path: str) -> List[dict]:
@@ -277,12 +289,12 @@ class RankingMetric(CometModel):
             List[dict]: List with input samples in the form of a dict
         """
         df = pd.read_csv(path)
-        df = df[["src", "pos", "neg", "ref"]]
-        df["src"] = df["src"].astype(str)
-        df["pos"] = df["pos"].astype(str)
-        df["neg"] = df["neg"].astype(str)
-        df["ref"] = df["ref"].astype(str)
-        return df.to_dict("records")
+        df = df[['src', 'pos', 'neg', 'ref']]
+        df['src'] = df['src'].astype(str)
+        df['pos'] = df['pos'].astype(str)
+        df['neg'] = df['neg'].astype(str)
+        df['ref'] = df['ref'].astype(str)
+        return df.to_dict('records')
 
     def read_validation_data(self, path: str) -> List[dict]:
         """Method that reads the validation data (a csv file) and returns a list of
@@ -308,7 +320,7 @@ class RankingMetric(CometModel):
             [torch.Tensor] Loss value
         """
         batch_prediction = self.forward(**batch)
-        loss_value = batch_prediction["loss"]
+        loss_value = batch_prediction['loss']
 
         if (
             self.nr_frozen_epochs < 1.0
@@ -318,7 +330,7 @@ class RankingMetric(CometModel):
             self.unfreeze_encoder()
             self._frozen = False
 
-        self.log("train_loss", loss_value, on_step=True, on_epoch=True)
+        self.log('train_loss', loss_value, on_step=True, on_epoch=True)
         return loss_value
 
     def validation_step(
@@ -334,16 +346,18 @@ class RankingMetric(CometModel):
             batch_idx (int): Integer displaying which batch this is.
         """
         batch_prediction = self.forward(**batch)
-        loss_value = batch_prediction["loss"]
-        self.log("val_loss", loss_value, on_step=True, on_epoch=True)
+        loss_value = batch_prediction['loss']
+        self.log('val_loss', loss_value, on_step=True, on_epoch=True)
 
         if dataloader_idx == 0:
             self.train_metrics.update(
-                batch_prediction["distance_pos"], batch_prediction["distance_neg"]
+                batch_prediction['distance_pos'],
+                batch_prediction['distance_neg'],
             )
         elif dataloader_idx > 0:
             self.val_metrics[dataloader_idx - 1].update(
-                batch_prediction["distance_pos"], batch_prediction["distance_neg"]
+                batch_prediction['distance_pos'],
+                batch_prediction['distance_neg'],
             )
 
     def predict_step(
@@ -366,13 +380,13 @@ class RankingMetric(CometModel):
 
         def _predict_forward(batch):
             src_sentemb = self.get_sentence_embedding(
-                batch["src_input_ids"], batch["src_attention_mask"]
+                batch['src_input_ids'], batch['src_attention_mask']
             )
             ref_sentemb = self.get_sentence_embedding(
-                batch["ref_input_ids"], batch["ref_attention_mask"]
+                batch['ref_input_ids'], batch['ref_attention_mask']
             )
             mt_sentemb = self.get_sentence_embedding(
-                batch["mt_input_ids"], batch["mt_attention_mask"]
+                batch['mt_input_ids'], batch['mt_attention_mask']
             )
             src_distance = F.pairwise_distance(mt_sentemb, src_sentemb)
             ref_distance = F.pairwise_distance(mt_sentemb, ref_sentemb)
@@ -388,7 +402,7 @@ class RankingMetric(CometModel):
             )
 
         if self.mc_dropout:
-            raise NotImplementedError("MCD not implemented for this model!")
+            raise NotImplementedError('MCD not implemented for this model!')
 
         else:
             return _predict_forward(batch)

@@ -17,6 +17,7 @@ Feed Forward
 ============
     Feed Forward Neural Network module that can be used for classification or regression
 """
+
 from typing import List, Optional
 
 import torch
@@ -41,7 +42,7 @@ class FeedForward(nn.Module):
         in_dim: int,
         out_dim: int = 1,
         hidden_sizes: List[int] = [3072, 1024],
-        activations: str = "Tanh",
+        activations: str = 'Tanh',
         final_activation: Optional[str] = None,
         dropout: float = 0.1,
     ) -> None:
@@ -66,7 +67,7 @@ class FeedForward(nn.Module):
         if hasattr(nn, activation.title()):
             return getattr(nn, activation.title())()
         else:
-            raise Exception(f"{activation} is not a valid activation function!")
+            raise Exception(f'{activation} is not a valid activation function!')
 
     def forward(self, in_features: torch.Tensor) -> torch.Tensor:
         # When casting models to float 16 self.ff(in_features) was giving some problems reported
@@ -74,9 +75,9 @@ class FeedForward(nn.Module):
 
         # Check the dtype of self.ff parameters
         ff_dtypes = {param.dtype for param in self.ff.parameters()}
-        
+
         # If all parameters are float16 and in_features is not, convert it
         if ff_dtypes == {torch.float16} and in_features.dtype != torch.float16:
             in_features = in_features.to(torch.float16)
-        
+
         return self.ff(in_features)

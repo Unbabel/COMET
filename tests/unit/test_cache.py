@@ -38,5 +38,6 @@ class TestLRUCache(unittest.TestCase):
                 tmp = self.add(torch.tensor(0), torch.tensor(1))
 
         self.assertTrue(
-            "Tensor needs to be at least 1-Dimensional." in str(context.exception)
+            'Tensor needs to be at least 1-Dimensional.'
+            in str(context.exception)
         )

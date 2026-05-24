@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-LRU Cache 
+LRU Cache
 ==========
 LRU Cache function decorator modified to work with tensor arguments.
 
@@ -21,6 +21,7 @@ Original implementation: https://github.com/python/cpython/blob/3.10/Lib/functoo
 Our modification modifies the _make_key function to use tensor str representation
 intead of the object reference. Other than that we use the original implementation
 """
+
 from _thread import RLock
 from functools import _CacheInfo, _HashedSeq, update_wrapper
 
@@ -52,10 +53,10 @@ def _make_key(
     for x in args:
         if torch.is_tensor(x):
             if len(x.size()) == 0:
-                raise Exception("Tensor needs to be at least 1-Dimensional.")
-            
+                raise Exception('Tensor needs to be at least 1-Dimensional.')
+
             if len(x.size()) == 1:
-                new_args.append("\n".join([repr(x), repr(x.shape)]))
+                new_args.append('\n'.join([repr(x), repr(x.shape)]))
             else:
                 new_args.append(
                     # HACK: Tensor representations omit some tensor content.
@@ -63,9 +64,9 @@ def _make_key(
                     # The current solution is an approximation to the actual tensor
                     # full representation. This can still lead to `false` cache hits!
                     x.__repr__()
-                    + "\n"
+                    + '\n'
                     + x.diagonal().__repr__()
-                    + "\n"
+                    + '\n'
                     + x.shape.__repr__()
                 )
         else:
@@ -99,14 +100,16 @@ def tensor_lru_cache(maxsize=128, typed=False):
         # The user_function was passed in directly via the maxsize argument
         user_function, maxsize = maxsize, 128
         wrapper = _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo)
-        wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}
+        wrapper.cache_parameters = lambda: {'maxsize': maxsize, 'typed': typed}
         return update_wrapper(wrapper, user_function)
     elif maxsize is not None:
-        raise TypeError("Expected first argument to be an integer, a callable, or None")
+        raise TypeError(
+            'Expected first argument to be an integer, a callable, or None'
+        )
 
     def decorating_function(user_function):
         wrapper = _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo)
-        wrapper.cache_parameters = lambda: {"maxsize": maxsize, "typed": typed}
+        wrapper.cache_parameters = lambda: {'maxsize': maxsize, 'typed': typed}
         return update_wrapper(wrapper, user_function)
 
     return decorating_function

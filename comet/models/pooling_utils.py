@@ -12,16 +12,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import torch
 from typing import List, Union
+
+import torch
+
 
 # From https://github.com/amazon-science/doc-mt-metrics/blob/5385cc28930aae9924edcb3201645dd3810b12c0/COMET/comet/models/pooling_utils.py#L18
 def find_start_inds_and_mask_tokens(
-        mask: torch.Tensor,
-        tokens: torch.Tensor,
-        separator_index: int,
+    mask: torch.Tensor,
+    tokens: torch.Tensor,
+    separator_index: int,
 ) -> Union[List[int], torch.Tensor]:
-    """Finds the starting indices of each sentence for multi-sentence sequences and 
+    """Finds the starting indices of each sentence for multi-sentence sequences and
     creates a new mask to omit all context sentences from the pooling function.
 
     Args:
@@ -38,10 +40,11 @@ def find_start_inds_and_mask_tokens(
             # if there are more than one find where the last sentence starts
             ind = separators[-2].cpu().numpy().item()
             start_inds.append(ind)
-            ctx_mask[i, 1:ind+1] = 0
+            ctx_mask[i, 1 : ind + 1] = 0
         else:
             start_inds.append(0)
     return start_inds, ctx_mask
+
 
 def average_pooling(
     tokens: torch.Tensor,
@@ -49,7 +52,7 @@ def average_pooling(
     mask: torch.Tensor,
     padding_index: int,
     separator_index: int,
-    enable_context: bool = False
+    enable_context: bool = False,
 ) -> torch.Tensor:
     """Average pooling method.
 
@@ -64,11 +67,17 @@ def average_pooling(
         torch.Tensor: Sentence embedding
     """
     if enable_context:
-        start_inds, ctx_mask = find_start_inds_and_mask_tokens(mask, tokens, separator_index)
-        wordemb = mask_fill_index(0.0, tokens, embeddings, start_inds, padding_index)
+        start_inds, ctx_mask = find_start_inds_and_mask_tokens(
+            mask, tokens, separator_index
+        )
+        wordemb = mask_fill_index(
+            0.0, tokens, embeddings, start_inds, padding_index
+        )
         sentemb = torch.sum(wordemb, 1)
-        sum_mask = ctx_mask.unsqueeze(-1).expand(embeddings.size()).float().sum(1)
-    else: 
+        sum_mask = (
+            ctx_mask.unsqueeze(-1).expand(embeddings.size()).float().sum(1)
+        )
+    else:
         wordemb = mask_fill(0.0, tokens, embeddings, padding_index)
         sentemb = torch.sum(wordemb, 1)
         sum_mask = mask.unsqueeze(-1).expand(embeddings.size()).float().sum(1)
@@ -89,15 +98,18 @@ def max_pooling(
     Return:
         torch.Tensor: Sentence embedding
     """
-    return mask_fill(float("-inf"), tokens, embeddings, padding_index).max(dim=1)[0]
+    return mask_fill(float('-inf'), tokens, embeddings, padding_index).max(
+        dim=1
+    )[0]
+
 
 # From https://github.com/amazon-science/doc-mt-metrics/blob/5385cc28930aae9924edcb3201645dd3810b12c0/COMET/comet/models/pooling_utils.py#L18
 def mask_fill_index(
-        fill_value: float,
-        tokens: torch.Tensor,
-        embeddings: torch.Tensor,
-        start_inds: list,
-        padding_index: int,
+    fill_value: float,
+    tokens: torch.Tensor,
+    embeddings: torch.Tensor,
+    start_inds: list,
+    padding_index: int,
 ) -> torch.Tensor:
     """
     Masks embeddings representing padded elements and context sentences for multi-sentence sequences.
@@ -108,16 +120,23 @@ def mask_fill_index(
         embeddings: word embeddings [bsz x seq_len x hiddens].
         start_inds: Start of sentence indices.
         padding_index: Index of the padding token.
-    
+
     Return:
         torch.Tensor: Sentence embedding
     """
     padding_mask = tokens.eq(padding_index).unsqueeze(-1)
-    padding_maks2 = torch.zeros(tokens.shape, dtype=torch.bool, device=padding_mask.device)
+    padding_maks2 = torch.zeros(
+        tokens.shape, dtype=torch.bool, device=padding_mask.device
+    )
     for i, start in enumerate(start_inds):
-        padding_maks2[i, 1: start+1] = True
+        padding_maks2[i, 1 : start + 1] = True
     padding_mask = torch.logical_or(padding_mask, padding_maks2.unsqueeze(-1))
-    return embeddings.float().masked_fill_(padding_mask, fill_value).type_as(embeddings)
+    return (
+        embeddings.float()
+        .masked_fill_(padding_mask, fill_value)
+        .type_as(embeddings)
+    )
+
 
 def mask_fill(
     fill_value: float,
@@ -138,4 +157,8 @@ def mask_fill(
         torch.Tensor: Word embeddings [batch_size x seq_length x hidden_size]
     """
     padding_mask = tokens.eq(padding_index).unsqueeze(-1)
-    return embeddings.float().masked_fill_(padding_mask, fill_value).type_as(embeddings)
+    return (
+        embeddings.float()
+        .masked_fill_(padding_mask, fill_value)
+        .type_as(embeddings)
+    )

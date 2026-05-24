@@ -17,7 +17,19 @@ XLM-RoBERTa-XL Encoder
 ==============
     Pretrained XLM-RoBERTa-XL  encoder from Hugging Face.
 """
-from transformers import XLMRobertaTokenizerFast, XLMRobertaXLConfig, XLMRobertaXLModel
+
+import importlib_metadata
+import packaging.version as packaging_version
+from transformers import XLMRobertaXLConfig, XLMRobertaXLModel
+
+# Handles tokenizer imports for both transformers v4 and v5.
+transformers_version = importlib_metadata.distribution('transformers').version
+if packaging_version.Version(transformers_version) >= packaging_version.Version(
+    'v5.0.0rc0'
+):
+    from transformers import XLMRobertaTokenizer as XLMRobertaTokenizer
+else:
+    from transformers import XLMRobertaTokenizerFast as XLMRobertaTokenizer
 
 from comet.encoders.base import Encoder
 from comet.encoders.xlmr import XLMREncoder
@@ -40,7 +52,7 @@ class XLMRXLEncoder(XLMREncoder):
         local_files_only: bool = False,
     ) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = XLMRobertaTokenizerFast.from_pretrained(
+        self.tokenizer = XLMRobertaTokenizer.from_pretrained(
             pretrained_model, local_files_only=local_files_only
         )
         if load_pretrained_weights:
@@ -77,3 +89,12 @@ class XLMRXLEncoder(XLMREncoder):
         return XLMRXLEncoder(
             pretrained_model, load_pretrained_weights, local_files_only
         )
+
+    # TokenizersBackend does not have a built-in build_inputs_with_special_tokens method.
+    def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
+        cls = [self.tokenizer.cls_token_id]
+        sep = [self.tokenizer.sep_token_id]
+
+        if token_ids_1 is None:
+            return cls + token_ids_0 + sep
+        return cls + token_ids_0 + sep + sep + token_ids_1 + sep

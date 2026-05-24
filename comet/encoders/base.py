@@ -16,6 +16,7 @@ Encoder Model base
 ====================
     Module defining the common interface between all pretrained encoder models.
 """
+
 import abc
 from typing import Dict, List, Optional, Tuple
 
@@ -129,16 +130,16 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
     ) -> Tuple[List[int], List[int]]:
         """Inspired by: https://github.com/LightTag/sequence-labeling-with-transformers/"""
         tokens = tokenized.tokens
-        aligned_labels = ["O"] * len(tokens)
+        aligned_labels = ['O'] * len(tokens)
         for anno in annotations:
             # A set that stores the token indices of the annotation
             annotation_token_ix_set = set()
-            for char_ix in range(anno["start"], anno["end"]):
+            for char_ix in range(anno['start'], anno['end']):
                 token_ix = tokenized.char_to_token(char_ix)
                 if token_ix is not None:
                     annotation_token_ix_set.add(token_ix)
             for _, token_ix in enumerate(sorted(annotation_token_ix_set)):
-                prefix = "I"
+                prefix = 'I'
                 aligned_labels[token_ix] = f"{prefix}-{anno['severity']}"
 
         def get_label_id(item):
@@ -148,7 +149,7 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
             label = self.labelset.labels_to_id.get(item)
             if label is None:
                 raise Exception(
-                    f"{label} does not exist in self.labelset: {self.labelset.labels_to_id.keys()}"
+                    f'{label} does not exist in self.labelset: {self.labelset.labels_to_id.keys()}'
                 )
             return label
 
@@ -183,14 +184,16 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
 
         attention_mask = [[1 for _ in seq] for seq in input_ids]
         max_length = max([len(l) for l in input_ids])
-        input_ids = self.pad_list(input_ids, max_length, self.tokenizer.pad_token_id)
+        input_ids = self.pad_list(
+            input_ids, max_length, self.tokenizer.pad_token_id
+        )
         label_ids = self.pad_list(label_ids, max_length, -1)
         attention_mask = self.pad_list(attention_mask, max_length, 0)
         return {
-            "input_ids": torch.tensor(input_ids),
-            "label_ids": torch.tensor(label_ids),
-            "attention_mask": torch.tensor(attention_mask),
-            "offsets": offsets,  # Used during inference
+            'input_ids': torch.tensor(input_ids),
+            'label_ids': torch.tensor(label_ids),
+            'attention_mask': torch.tensor(attention_mask),
+            'offsets': offsets,  # Used during inference
         }
 
     def prepare_sample(
@@ -217,7 +220,7 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         else:
             tokenizer_output = self.tokenizer(
                 sample,
-                return_tensors="pt",
+                return_tensors='pt',
                 padding=True,
                 truncation=True,
                 max_length=self.max_positions - 2,
@@ -277,9 +280,10 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
                 concatenated into a single input.
         """
         concat_input_ids = []
+
         # Remove padding before concatenation
         for encoder_input in inputs:
-            input_ids = encoder_input["input_ids"]
+            input_ids = encoder_input['input_ids']
             input_ids = [
                 x.masked_select(x.ne(self.tokenizer.pad_token_id)).tolist()
                 for x in input_ids.unbind(dim=0)
@@ -295,7 +299,7 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
             # because that method adds them again
             lengths = tuple(len(x[i][1:-1]) for x in concat_input_ids)
 
-            # self.max_positions = 512 but we need to remove 4 aditional tokens
+            # self.max_positions = 512 but we need to remove 4 additional tokens
             # [CLS]...[SEP]...[SEP]...[SEP]
             special_tokens = 1 + len(inputs) * self.size_separator
             new_sequence = concat_input_ids[0][i]
@@ -304,9 +308,20 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
                 torch.zeros(len(new_sequence[1:-1]) + 2, dtype=torch.int)
             )
             for j in range(1, len(inputs)):
-                new_sequence = self.tokenizer.build_inputs_with_special_tokens(
-                    new_sequence[1:-1], concat_input_ids[j][i][1:-1]
-                )
+                # Handles TokenizersBackend (transformers v5) and PretrainedTokenizerFast (transformers v4).
+                # Transformers v4
+                if hasattr(self.tokenizer, 'build_inputs_with_special_tokens'):
+                    new_sequence = (
+                        self.tokenizer.build_inputs_with_special_tokens(
+                            new_sequence[1:-1], concat_input_ids[j][i][1:-1]
+                        )
+                    )
+                else:
+                    # Transformers v5
+                    new_sequence = self.build_inputs_with_special_tokens(
+                        new_sequence[1:-1], concat_input_ids[j][i][1:-1]
+                    )
+
             if sum(lengths) > self.max_positions - special_tokens:
                 new_sequence = new_sequence[: self.max_positions]
 
@@ -315,29 +330,44 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
         lengths = [t.shape[0] for t in batch]
         max_len = max(lengths)
         padded = [
-            self.pad_tensor(t, max_len, self.tokenizer.pad_token_id) for t in batch
+            self.pad_tensor(t, max_len, self.tokenizer.pad_token_id)
+            for t in batch
         ]
         lengths = torch.tensor(lengths, dtype=torch.long)
         padded = torch.stack(padded, dim=0).contiguous()
         attention_mask = torch.arange(max_len)[None, :] < lengths[:, None]
         if return_label_ids:
             label_ids = [
-                self.pad_tensor(t, max_len, -1) for t in inputs[0]["label_ids"]
+                self.pad_tensor(t, max_len, -1) for t in inputs[0]['label_ids']
             ]
             label_ids = torch.stack(label_ids, dim=0).contiguous()
             encoder_input = {
-                "input_ids": padded,
-                "attention_mask": attention_mask,
-                "label_ids": label_ids,
-                "mt_offsets": inputs[0]["offsets"],  # Used during inference
+                'input_ids': padded,
+                'attention_mask': attention_mask,
+                'label_ids': label_ids,
+                'mt_offsets': inputs[0]['offsets'],  # Used during inference
             }
 
         else:
-            encoder_input = {"input_ids": padded, "attention_mask": attention_mask}
+            encoder_input = {
+                'input_ids': padded,
+                'attention_mask': attention_mask,
+            }
 
         if self.uses_token_type_ids:
-            token_type_ids = [self.pad_tensor(t, max_len, 1) for t in token_type_ids]
+            token_type_ids = [
+                self.pad_tensor(t, max_len, 1) for t in token_type_ids
+            ]
             token_type_ids = torch.stack(token_type_ids, dim=0).contiguous()
-            encoder_input["token_type_ids"] = token_type_ids
+            encoder_input['token_type_ids'] = token_type_ids
 
         return encoder_input, lengths, max_len
+
+    # TokenizersBackend does not have a built-in build_inputs_with_special_tokens method.
+    # To be overrided
+    def build_inputs_with_special_tokens(
+        self, token_ids_0: list[int], token_ids_1: Optional[list[int]] = None
+    ) -> list[int]:
+        if token_ids_1 is None:
+            return token_ids_0
+        return token_ids_0 + token_ids_1

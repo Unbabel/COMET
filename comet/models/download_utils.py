@@ -29,27 +29,25 @@ logger = logging.getLogger(__name__)
 
 available_legacy_metrics = {
     # WMT20 Models
-    "emnlp20-comet-rank": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/emnlp20-comet-rank.tar.gz",
-    "wmt20-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-da.tar.gz",
-    "wmt20-comet-qe-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da.tar.gz",
-    "wmt20-comet-qe-da-v2": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da-v2.tar.gz",
-
+    'emnlp20-comet-rank': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/emnlp20-comet-rank.tar.gz',
+    'wmt20-comet-da': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-da.tar.gz',
+    'wmt20-comet-qe-da': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da.tar.gz',
+    'wmt20-comet-qe-da-v2': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt20/wmt20-comet-qe-da-v2.tar.gz',
     # WMT21 Models
-    "wmt21-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-da.tar.gz",
-    "wmt21-comet-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-mqm.tar.gz",
-    "wmt21-cometinho-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-mqm.tar.gz",
-    "wmt21-cometinho-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-da.tar.gz",
-    "wmt21-comet-qe-mqm": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-mqm.tar.gz",
-    "wmt21-comet-qe-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-da.tar.gz",
-
+    'wmt21-comet-da': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-da.tar.gz',
+    'wmt21-comet-mqm': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-mqm.tar.gz',
+    'wmt21-cometinho-mqm': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-mqm.tar.gz',
+    'wmt21-cometinho-da': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-cometinho-da.tar.gz',
+    'wmt21-comet-qe-mqm': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-mqm.tar.gz',
+    'wmt21-comet-qe-da': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/wmt21/wmt21-comet-qe-da.tar.gz',
     # EAMT22 Models
-    "eamt22-cometinho-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-cometinho-da.tar.gz",
-    "eamt22-prune-comet-da": "https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-prune-comet-da.tar.gz",
+    'eamt22-cometinho-da': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-cometinho-da.tar.gz',
+    'eamt22-prune-comet-da': 'https://unbabel-experimental-models.s3.amazonaws.com/comet/eamt22/eamt22-prune-comet-da.tar.gz',
 }
 
 
 def get_cache_folder():
-    cache_directory = Path.home() / ".cache" / "torch" / "unbabel_comet"
+    cache_directory = Path.home() / '.cache' / 'torch' / 'unbabel_comet'
     if not cache_directory.exists():
         cache_directory.mkdir(exist_ok=True, parents=True)
 
@@ -83,7 +81,9 @@ def _reporthook(t):
     return inner
 
 
-def _maybe_extract(compressed_filename: str, directory: str, extension: str = None):
+def _maybe_extract(
+    compressed_filename: str, directory: str, extension: str = None
+):
     """Extract a compressed file to ``directory``.
 
     :param compressed_filename: Compressed file.
@@ -91,30 +91,32 @@ def _maybe_extract(compressed_filename: str, directory: str, extension: str = No
     :param extension: Extension of the file; Otherwise, attempts to
         extract extension from the filename.
     """
-    logger.info("Extracting {}".format(compressed_filename))
+    logger.info('Extracting {}'.format(compressed_filename))
 
     if extension is None:
         basename = os.path.basename(compressed_filename)
-        extension = basename.split(".", 1)[1]
+        extension = basename.split('.', 1)[1]
 
-    if "zip" in extension:
-        with zipfile.ZipFile(compressed_filename, "r") as zip_:
+    if 'zip' in extension:
+        with zipfile.ZipFile(compressed_filename, 'r') as zip_:
             zip_.extractall(directory)
 
-    elif "tar.gz" in extension or "tgz" in extension:
+    elif 'tar.gz' in extension or 'tgz' in extension:
         # `tar` is much faster than python's `tarfile` implementation
-        with open(os.devnull, "w") as devnull:
+        with open(os.devnull, 'w') as devnull:
             subprocess.call(
-                ["tar", "-C", directory, "-zxvf", compressed_filename], stdout=devnull
+                ['tar', '-C', directory, '-zxvf', compressed_filename],
+                stdout=devnull,
             )
 
-    elif "tar" in extension:
-        with open(os.devnull, "w") as devnull:
+    elif 'tar' in extension:
+        with open(os.devnull, 'w') as devnull:
             subprocess.call(
-                ["tar", "-C", directory, "-xvf", compressed_filename], stdout=devnull
+                ['tar', '-C', directory, '-xvf', compressed_filename],
+                stdout=devnull,
             )
 
-    logger.info("Extracted {}".format(compressed_filename))
+    logger.info('Extracted {}'.format(compressed_filename))
 
 
 def _get_filename_from_url(url):
@@ -178,18 +180,20 @@ def download_file_maybe_extract(
     if not os.path.isdir(directory):
         os.makedirs(directory)
 
-    logger.info("Downloading {}".format(filename))
+    logger.info('Downloading {}'.format(filename))
 
     # Download
-    with tqdm(unit="B", unit_scale=True, miniters=1, desc=filename) as t:
-        urllib.request.urlretrieve(url, filename=filepath, reporthook=_reporthook(t))
+    with tqdm(unit='B', unit_scale=True, miniters=1, desc=filename) as t:
+        urllib.request.urlretrieve(
+            url, filename=filepath, reporthook=_reporthook(t)
+        )
 
     _maybe_extract(
         compressed_filename=filepath, directory=directory, extension=extension
     )
 
     if not _check_download(*check_files):
-        raise ValueError("[DOWNLOAD FAILED] `*check_files` not found")
+        raise ValueError('[DOWNLOAD FAILED] `*check_files` not found')
 
     return filepath
 
@@ -209,42 +213,44 @@ def download_model_legacy(model: str, saving_directory: str = None) -> str:
     if saving_directory is None:
         saving_directory = get_cache_folder()
 
-    if not saving_directory.endswith("/"):
-        saving_directory += "/"
+    if not saving_directory.endswith('/'):
+        saving_directory += '/'
 
     if not os.path.exists(saving_directory):
         os.makedirs(saving_directory)
 
     if os.path.isdir(saving_directory + model):
-        logger.info(f"{model} is already in cache.")
-        if not model.endswith("/"):
-            model += "/"
+        logger.info(f'{model} is already in cache.')
+        if not model.endswith('/'):
+            model += '/'
 
     elif model not in available_legacy_metrics.keys():
         raise Exception(
-            f"{model} is not in the `available_legacy_metrics` or is a valid checkpoint folder."
+            f'{model} is not in the `available_legacy_metrics` or is a valid checkpoint folder.'
         )
 
-    elif available_legacy_metrics[model].startswith("https://"):
+    elif available_legacy_metrics[model].startswith('https://'):
         download_file_maybe_extract(
             available_legacy_metrics[model], directory=saving_directory
         )
 
     else:
-        raise Exception("Invalid model name!")
+        raise Exception('Invalid model name!')
 
     # CLEAN Cache
-    if os.path.exists(saving_directory + model + ".zip"):
-        os.remove(saving_directory + model + ".zip")
-    if os.path.exists(saving_directory + model + ".tar.gz"):
-        os.remove(saving_directory + model + ".tar.gz")
-    if os.path.exists(saving_directory + model + ".tar"):
-        os.remove(saving_directory + model + ".tar")
+    if os.path.exists(saving_directory + model + '.zip'):
+        os.remove(saving_directory + model + '.zip')
+    if os.path.exists(saving_directory + model + '.tar.gz'):
+        os.remove(saving_directory + model + '.tar.gz')
+    if os.path.exists(saving_directory + model + '.tar'):
+        os.remove(saving_directory + model + '.tar')
 
-    checkpoints_folder = saving_directory + model + "/checkpoints"
+    checkpoints_folder = saving_directory + model + '/checkpoints'
     checkpoints = [
-        file for file in os.listdir(checkpoints_folder) if file.endswith(".ckpt")
+        file
+        for file in os.listdir(checkpoints_folder)
+        if file.endswith('.ckpt')
     ]
     checkpoint = checkpoints[-1]
-    checkpoint_path = checkpoints_folder + "/" + checkpoint
+    checkpoint_path = checkpoints_folder + '/' + checkpoint
     return checkpoint_path

@@ -15,10 +15,22 @@
 r"""
 RemBERT Encoder
 ===============
-    Pretrained RemBERT encoder from Google. This encoder is similar to BERT but uses 
+    Pretrained RemBERT encoder from Google. This encoder is similar to BERT but uses
     sentencepiece like XLMR.
 """
-from transformers import RemBertConfig, RemBertModel, RemBertTokenizerFast
+
+import importlib_metadata
+import packaging.version as packaging_version
+from transformers import RemBertConfig, RemBertModel
+
+# Handles tokenizer imports for both transformers v4 and v5.
+transformers_version = importlib_metadata.distribution('transformers').version
+if packaging_version.Version(transformers_version) >= packaging_version.Version(
+    'v5.0.0rc0'
+):
+    from transformers import RemBertTokenizer as RemBertTokenizer
+else:
+    from transformers import RemBertTokenizerFast as RemBertTokenizer
 
 from comet.encoders.xlmr import Encoder, XLMREncoder
 
@@ -40,7 +52,7 @@ class RemBERTEncoder(XLMREncoder):
         local_files_only: bool = False,
     ) -> None:
         super(Encoder, self).__init__()
-        self.tokenizer = RemBertTokenizerFast.from_pretrained(
+        self.tokenizer = RemBertTokenizer.from_pretrained(
             pretrained_model, use_fast=True, local_files_only=local_files_only
         )
         if load_pretrained_weights:
@@ -84,3 +96,10 @@ class RemBERTEncoder(XLMREncoder):
         return RemBERTEncoder(
             pretrained_model, load_pretrained_weights, local_files_only
         )
+
+    def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
+        cls = [self.tokenizer.cls_token_id]
+        sep = [self.tokenizer.sep_token_id]
+        if token_ids_1 is None:
+            return cls + token_ids_0 + sep
+        return cls + token_ids_0 + sep + token_ids_1 + sep

@@ -13,14 +13,14 @@
 # limitations under the License.
 from .bert import BERTEncoder
 from .minilm import MiniLMEncoder
-from .xlmr import XLMREncoder
 from .rembert import RemBERTEncoder
+from .xlmr import XLMREncoder
 from .xlmr_xl import XLMRXLEncoder
 
 str2encoder = {
-    "BERT": BERTEncoder,
-    "XLM-RoBERTa": XLMREncoder,
-    "MiniLM": MiniLMEncoder,
-    "XLM-RoBERTa-XL": XLMRXLEncoder,
-    "RemBERT": RemBERTEncoder,
+    'BERT': BERTEncoder,
+    'XLM-RoBERTa': XLMREncoder,
+    'MiniLM': MiniLMEncoder,
+    'XLM-RoBERTa-XL': XLMRXLEncoder,
+    'RemBERT': RemBERTEncoder,
 }

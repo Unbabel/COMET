@@ -17,10 +17,22 @@ BERT Encoder
 ==============
     Pretrained BERT encoder from Hugging Face.
 """
+
 from typing import Dict, Optional
 
+import importlib_metadata
+import packaging.version as packaging_version
 import torch
-from transformers import BertConfig, BertModel, BertTokenizerFast
+from transformers import BertConfig, BertModel
+
+# Handles tokenizer imports for both transformers v4 and v5.
+transformers_version = importlib_metadata.distribution('transformers').version
+if packaging_version.Version(transformers_version) >= packaging_version.Version(
+    'v5.0.0rc0'
+):
+    from transformers import BertTokenizer as BertTokenizer
+else:
+    from transformers import BertTokenizer as BertTokenizer
 
 from comet.encoders.base import Encoder
 
@@ -42,7 +54,7 @@ class BERTEncoder(Encoder):
         local_files_only: bool = False,
     ) -> None:
         super().__init__()
-        self.tokenizer = BertTokenizerFast.from_pretrained(
+        self.tokenizer = BertTokenizer.from_pretrained(
             pretrained_model, use_fast=True, local_files_only=local_files_only
         )
         if load_pretrained_weights:
@@ -108,7 +120,9 @@ class BERTEncoder(Encoder):
         Returns:
             Encoder: XLMREncoder object.
         """
-        return BERTEncoder(pretrained_model, load_pretrained_weights, local_files_only)
+        return BERTEncoder(
+            pretrained_model, load_pretrained_weights, local_files_only
+        )
 
     def freeze_embeddings(self) -> None:
         """Frezees the embedding layer."""
@@ -128,23 +142,23 @@ class BERTEncoder(Encoder):
         # Last layer keeps LR
         opt_parameters = [
             {
-                "params": self.model.encoder.layer[-1].parameters(),
-                "lr": lr,
+                'params': self.model.encoder.layer[-1].parameters(),
+                'lr': lr,
             }
         ]
         # Decay at each layer.
         for i in range(2, self.num_layers):
             opt_parameters.append(
                 {
-                    "params": self.model.encoder.layer[-i].parameters(),
-                    "lr": lr * decay ** (i - 1),
+                    'params': self.model.encoder.layer[-i].parameters(),
+                    'lr': lr * decay ** (i - 1),
                 }
             )
         # Embedding Layer
         opt_parameters.append(
             {
-                "params": self.model.embeddings.parameters(),
-                "lr": lr * decay ** (self.num_layers),
+                'params': self.model.embeddings.parameters(),
+                'lr': lr * decay ** (self.num_layers),
             }
         )
         return opt_parameters
@@ -154,7 +168,7 @@ class BERTEncoder(Encoder):
         input_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         token_type_ids: Optional[torch.tensor] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, torch.Tensor]:
         """BERT model forward
 
@@ -168,16 +182,32 @@ class BERTEncoder(Encoder):
             Dict[str, torch.Tensor]: dictionary with 'sentemb', 'wordemb', 'all_layers'
                 and 'attention_mask'.
         """
-        last_hidden_states, pooler_output, all_layers = self.model(
+        output = self.model(
             input_ids=input_ids,
             token_type_ids=token_type_ids,
             attention_mask=attention_mask,
             output_hidden_states=True,
             return_dict=False,
         )
+
+        # ModelOutput no longer includes pooler_output if model is initialised with `add_pooling_layer=False`
+        if len(output) < 3:
+            last_hidden_states, all_layers = output
+            pooler_output = None  # Since `add_pooling_layer=False`, pooler_output would be None
+        else:
+            last_hidden_states, pooler_output, all_layers = output
+
         return {
-            "sentemb": pooler_output,
-            "wordemb": last_hidden_states,
-            "all_layers": all_layers,
-            "attention_mask": attention_mask,
+            'sentemb': pooler_output,
+            'wordemb': last_hidden_states,
+            'all_layers': all_layers,
+            'attention_mask': attention_mask,
         }
+
+    # TokenizersBackend does not have a built-in build_inputs_with_special_tokens method.
+    def build_inputs_with_special_tokens(self, token_ids_0, token_ids_1=None):
+        cls = [self.tokenizer.cls_token_id]
+        sep = [self.tokenizer.sep_token_id]
+        if token_ids_1 is None:
+            return cls + token_ids_0 + sep
+        return cls + token_ids_0 + sep + token_ids_1 + sep
