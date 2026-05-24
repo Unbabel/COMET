@@ -98,6 +98,7 @@ def load_from_checkpoint(
         # issue number #244
         try:
             from importlib import metadata
+
             import packaging.version as parse_version
 
             comet_version = metadata.distribution("unbabel-comet").version

@@ -19,11 +19,10 @@ BERT Encoder
 """
 from typing import Dict, Optional
 
-import torch
-from transformers import BertConfig, BertModel
-
 import importlib_metadata
 import packaging.version as packaging_version
+import torch
+from transformers import BertConfig, BertModel
 
 transformers_version = importlib_metadata.distribution("transformers").version
 if packaging_version.Version(transformers_version) >= packaging_version.Version("v5.0.0rc0"):

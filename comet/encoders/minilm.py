@@ -20,7 +20,6 @@ MiniLM Encoder
 """
 import importlib_metadata
 import packaging.version as packaging_version
-
 from transformers import BertConfig, BertModel
 
 transformers_version = importlib_metadata.distribution("transformers").version

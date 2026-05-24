@@ -19,14 +19,10 @@ XLM-RoBERTa Encoder
 """
 from typing import Dict
 
-import torch
 import importlib_metadata
 import packaging.version as packaging_version
-
-from transformers import (
-    XLMRobertaConfig,
-    XLMRobertaModel
-)
+import torch
+from transformers import XLMRobertaConfig, XLMRobertaModel
 
 transformers_version = importlib_metadata.distribution("transformers").version
 if packaging_version.parse(transformers_version) >= packaging_version.parse("v5.0.0rc0"):
