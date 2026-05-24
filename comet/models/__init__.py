@@ -104,7 +104,9 @@ def load_from_checkpoint(
             import importlib_metadata
             import packaging.version as parse_version
 
-            comet_version = importlib_metadata.distribution('unbabel-comet').version
+            comet_version = importlib_metadata.distribution(
+                'unbabel-comet'
+            ).version
             use_softmax = (
                 parse_version.parse(comet_version)
                 >= parse_version.parse('2.2.4')

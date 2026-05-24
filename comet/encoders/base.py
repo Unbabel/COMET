@@ -308,9 +308,17 @@ class Encoder(nn.Module, metaclass=abc.ABCMeta):
                 torch.zeros(len(new_sequence[1:-1]) + 2, dtype=torch.int)
             )
             for j in range(1, len(inputs)):
-                new_sequence = self.build_inputs_with_special_tokens(
-                    new_sequence[1:-1], concat_input_ids[j][i][1:-1]
-                )
+                if hasattr(self.tokenizer, 'build_inputs_with_special_tokens'):
+                    new_sequence = (
+                        self.tokenizer.build_inputs_with_special_tokens(
+                            new_sequence[1:-1], concat_input_ids[j][i][1:-1]
+                        )
+                    )
+                else:
+                    new_sequence = self.build_inputs_with_special_tokens(
+                        new_sequence[1:-1], concat_input_ids[j][i][1:-1]
+                    )
+
             if sum(lengths) > self.max_positions - special_tokens:
                 new_sequence = new_sequence[: self.max_positions]
 
