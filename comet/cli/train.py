@@ -171,6 +171,7 @@ def initialize_model(configs):
 
 
 def train_command() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = read_arguments()
     cfg = parser.parse_args()
     seed_everything(cfg.seed_everything)

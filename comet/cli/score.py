@@ -66,6 +66,7 @@ from comet.models.utils import split_sequence_into_sublists
 torch.set_float32_matmul_precision('high')
 
 def score_command() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = ArgumentParser(description="Command for scoring MT systems.")
     parser.add_argument("-s", "--sources", type=Path_fr)
     parser.add_argument("-t", "--translations", type=Path_fr, nargs="+")

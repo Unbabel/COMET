@@ -58,6 +58,7 @@ optional arguments:
   --print_cache_info    Print information about COMET cache. (default: False)
 """
 import json
+import logging
 import os
 from itertools import combinations
 from typing import Dict, Generator, List, Tuple, Union
@@ -425,6 +426,7 @@ def get_cfg() -> Namespace:
 
 def compare_command() -> None:
     """CLI that uses comet to compare multiple systems in a pairwise manner."""
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     cfg, parser = get_cfg()
     seed_everything(1)
 
