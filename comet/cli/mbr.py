@@ -44,6 +44,7 @@ optional arguments:
   -o OUTPUT, --output OUTPUT
                         Best candidates after running MBR decoding. (required, type: str)
 """
+import logging
 import os
 from typing import List, Tuple
 
@@ -183,6 +184,7 @@ def rerank_top_k(
     return topk_translations
 
 def mbr_command() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = ArgumentParser(description="Command for Minimum Bayes Risk Decoding.")
     parser.add_argument("-s", "--sources", type=Path_fr, required=True)
     parser.add_argument("-t", "--translations", type=Path_fr, required=True)

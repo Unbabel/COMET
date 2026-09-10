@@ -18,7 +18,12 @@ import logging
 
 from .models import load_from_checkpoint, download_model
 
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+# Library code must not call logging.basicConfig(): it configures the root
+# logger for the whole process the moment `comet` is imported, which is why
+# e.g. `logging.getLogger("pytorch_lightning").setLevel(logging.ERROR)` after
+# `import comet` doesn't fully suppress PL's info/debug output (see #259).
+# The comet-* CLI entry points call basicConfig themselves; library users
+# (e.g. `evaluate.load("comet")`) now get to decide their own logging setup.
 logger = logging.getLogger(__name__)
 
 
