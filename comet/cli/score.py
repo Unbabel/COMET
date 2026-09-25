@@ -194,6 +194,19 @@ def score_command() -> None:
     else:
         data = {"src": [sources for _ in translations], "mt": translations}
 
+    # Segments are paired by line number, so all files must have the same length.
+    line_counts = [(cfg.sources, len(sources))]
+    line_counts += [
+        (path_fr, len(lines)) for path_fr, lines in zip(cfg.translations, translations)
+    ]
+    if cfg.references is not None:
+        line_counts.append((cfg.references, len(references)))
+    if len({count for _, count in line_counts}) > 1:
+        parser.error(
+            "All input files must have the same number of lines, got: "
+            + ", ".join("{}: {} lines".format(path, n) for path, n in line_counts)
+        )
+
     if cfg.gpus > 1:
         # Flatten all data to score across multiple GPUs
         for k, v in data.items():

@@ -462,6 +462,19 @@ def compare_command() -> None:
     else:
         systems = [{"src": sources, "mt": system} for system in translations]
 
+    # Segments are paired by line number, so all files must have the same length.
+    line_counts = [(cfg.sources, len(sources))]
+    line_counts += [
+        (system, len(lines)) for system, lines in zip(cfg.translations, translations)
+    ]
+    if cfg.references is not None:
+        line_counts.append((cfg.references, len(references)))
+    if len({count for _, count in line_counts}) > 1:
+        parser.error(
+            "All input files must have the same number of lines, got: "
+            + ", ".join("{}: {} lines".format(path, n) for path, n in line_counts)
+        )
+
     seg_scores = score(cfg, systems)
     population_size = seg_scores.shape[1]
     sys_scores = bootstrap_resampling(
